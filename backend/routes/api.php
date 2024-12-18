@@ -46,6 +46,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/wallet/bank-transfer', [WalletController::class, 'bankTransferPayment']);
         Route::post('/wallet/initiate-paystack-payment', [WalletController::class, 'initiatePaystackPayment']);
         Route::post('/wallet/verify-paystack-payment', [WalletController::class, 'verifyPaystackPayment']);
+        
+        // Quote Details and Messages
+        Route::get('/quotes/{id}', [QuoteController::class, 'show']);
+        Route::post('/quotes/{id}/messages', [QuoteController::class, 'sendMessage']);
     });
 });
 

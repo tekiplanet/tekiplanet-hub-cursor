@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quote;
 use App\Models\Service;
+use App\Models\QuoteMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -76,5 +77,60 @@ class QuoteController extends Controller
             'success' => true,
             'quotes' => $quotes
         ]);
+    }
+
+    public function show($id)
+    {
+        try {
+            $quote = Quote::with([
+                'service',
+                'user',
+                'messages' => function($query) {
+                    $query->orderBy('created_at', 'asc');
+                },
+                'messages.user:id,first_name,last_name,avatar'
+            ])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'quote' => $quote
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quote not found'
+            ], 404);
+        }
+    }
+
+    public function sendMessage(Request $request, $quoteId)
+    {
+        $request->validate([
+            'message' => 'required|string'
+        ]);
+
+        try {
+            $quote = Quote::findOrFail($quoteId);
+            
+            $message = QuoteMessage::create([
+                'quote_id' => $quoteId,
+                'user_id' => auth()->id(),
+                'message' => $request->message,
+                'sender_type' => 'user'
+            ]);
+
+            // Load the user relationship for the response
+            $message->load('user:id,first_name,last_name,avatar');
+
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send message'
+            ], 500);
+        }
     }
 }
