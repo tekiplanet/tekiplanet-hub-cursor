@@ -35,23 +35,6 @@ const Settings = () => {
         <ScrollArea className="flex-1">
           <Tabs defaultValue="profile" className="w-full h-full">
             <div className="pb-16">
-              {/* Theme Settings */}
-              <Card className="m-4">
-                <CardHeader>
-                  <CardTitle>Theme Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Palette className="h-5 w-5" />
-                    <Label htmlFor="theme-toggle">Dark Mode</Label>
-                  </div>
-                  <Switch 
-                    id="dark-mode" 
-                    checked={theme === 'dark'}
-                    onCheckedChange={toggleTheme}
-                  />
-                </CardContent>
-              </Card>
 
               {/* Profile Settings */}
               <TabsContent value="profile" className="m-0 p-4">
