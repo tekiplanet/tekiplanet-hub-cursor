@@ -44,12 +44,67 @@ const featuredProducts = [
   {
     id: 1,
     name: 'MacBook Pro M2',
-    image: 'https://example.com/macbook.jpg',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2026&q=80',
     price: 1299.99,
     category: 'Laptops',
     rating: 4.8,
   },
-  // Add more products...
+  {
+    id: 2,
+    name: 'Gaming PC RTX 4090',
+    image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2187&q=80',
+    price: 2499.99,
+    category: 'Desktop PCs',
+    rating: 4.9,
+  },
+  {
+    id: 3,
+    name: 'Professional Powerstation',
+    image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
+    price: 3499.99,
+    category: 'Workstations',
+    rating: 4.7,
+  },
+  {
+    id: 4,
+    name: 'Mechanical Keyboard',
+    image: 'https://images.unsplash.com/photo-1601445638532-3c6f6c3aa1d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80',
+    price: 159.99,
+    category: 'Accessories',
+    rating: 4.6,
+  },
+  {
+    id: 5,
+    name: 'Gaming Monitor 32"',
+    image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    price: 499.99,
+    category: 'Gaming',
+    rating: 4.8,
+  },
+  {
+    id: 6,
+    name: 'Wireless Mouse',
+    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1767&q=80',
+    price: 79.99,
+    category: 'Accessories',
+    rating: 4.5,
+  },
+  {
+    id: 7,
+    name: 'Cyber Security Kit',
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    price: 299.99,
+    category: 'Security',
+    rating: 4.7,
+  },
+  {
+    id: 8,
+    name: 'Power Station 1000W',
+    image: 'https://images.unsplash.com/photo-1623126908029-58cb08a2b272?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    price: 899.99,
+    category: 'Power',
+    rating: 4.9,
+  }
 ];
 
 // Categories with icons
