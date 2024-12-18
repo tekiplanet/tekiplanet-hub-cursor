@@ -92,12 +92,24 @@ class QuoteController extends Controller
         try {
             $quote = Quote::with([
                 'service',
+                'service.quoteFields',
                 'user',
                 'messages' => function($query) {
                     $query->orderBy('created_at', 'asc');
                 },
                 'messages.user:id,first_name,last_name,avatar'
             ])->findOrFail($id);
+
+            if ($quote->quote_fields) {
+                $formattedFields = [];
+                foreach ($quote->quote_fields as $fieldId => $value) {
+                    $field = $quote->service->quoteFields->where('id', $fieldId)->first();
+                    if ($field) {
+                        $formattedFields[$field->label] = $value;
+                    }
+                }
+                $quote->quote_fields = $formattedFields;
+            }
 
             $quote->unread_messages_count = $quote->messages()
                 ->where('sender_type', 'admin')
@@ -109,6 +121,7 @@ class QuoteController extends Controller
                 'quote' => $quote
             ]);
         } catch (\Exception $e) {
+            \Log::error('Quote show error:', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Quote not found'

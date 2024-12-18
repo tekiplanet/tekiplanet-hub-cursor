@@ -35,6 +35,9 @@ interface Quote {
     };
   }>;
   unread_messages_count: number;
+  quote_fields: {
+    [key: string]: string | number | boolean;
+  } | null;
 }
 
 function QuoteDetails() {
@@ -48,6 +51,8 @@ function QuoteDetails() {
     const fetchQuoteDetails = async () => {
       try {
         const data = await quoteService.getQuoteDetails(quoteId);
+        console.log('Quote data:', data.quote);
+        console.log('Quote fields:', data.quote.quote_fields);
         setQuote(data.quote);
       } catch (error) {
         console.error('Failed to fetch quote details:', error);
@@ -186,7 +191,8 @@ function QuoteDetails() {
 
         <TabsContent value="details">
           <Card>
-            <CardContent className="space-y-4 pt-6">
+            <CardContent className="space-y-6 pt-6">
+              {/* Standard Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-medium mb-1">Industry</h3>
@@ -205,6 +211,30 @@ function QuoteDetails() {
                   <p>{format(new Date(quote.project_deadline), 'MMM d, yyyy')}</p>
                 </div>
               </div>
+
+              {/* Dynamic Quote Fields */}
+              {quote.quote_fields && Object.keys(quote.quote_fields).length > 0 && (
+                <>
+                  <div className="border-t pt-6">
+                    <h2 className="text-lg font-semibold mb-4">Additional Information</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(quote.quote_fields).map(([title, value]) => (
+                        <div key={title}>
+                          <h3 className="font-medium mb-1">
+                            {title}
+                          </h3>
+                          <p>
+                            {typeof value === 'boolean' 
+                              ? (value ? 'Yes' : 'No')
+                              : String(value)
+                            }
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
