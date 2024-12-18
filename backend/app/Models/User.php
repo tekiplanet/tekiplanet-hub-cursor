@@ -87,6 +87,14 @@ class User extends Authenticatable
         return $this->hasMany(Enrollment::class);
     }
 
+    /**
+     * Add this relationship to the existing User model
+     */
+    public function businessProfile()
+    {
+        return $this->hasOne(BusinessProfile::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

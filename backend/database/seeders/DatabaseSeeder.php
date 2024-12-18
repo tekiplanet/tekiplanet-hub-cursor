@@ -21,6 +21,12 @@ use Database\Seeders\ServiceSeeder;
 use Database\Seeders\ServiceQuoteFieldSeeder;
 use Database\Seeders\ServiceCategorySeeder;
 use Database\Seeders\QuoteMessagesSeeder;
+use Database\Seeders\BusinessProfileSeeder;
+use Database\Seeders\ProjectSeeder;
+use Database\Seeders\ProjectStageSeeder;
+use Database\Seeders\ProjectTeamMemberSeeder;
+use Database\Seeders\ProjectFileSeeder;
+use Database\Seeders\ProjectInvoiceSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -47,6 +53,12 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             ServiceQuoteFieldSeeder::class,
             QuoteMessagesSeeder::class,
+            BusinessProfileSeeder::class,
+            ProjectSeeder::class,
+            ProjectStageSeeder::class,
+            ProjectTeamMemberSeeder::class,
+            ProjectFileSeeder::class,
+            ProjectInvoiceSeeder::class,
         ]);
     }
 }

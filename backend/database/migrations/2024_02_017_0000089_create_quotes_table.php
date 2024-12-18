@@ -10,7 +10,7 @@ class CreateQuotesTable extends Migration
     {
         Schema::create('quotes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('service_id');
+            $table->foreignUuid('service_id')->constrained()->onDelete('cascade');
             $table->uuid('user_id');
             $table->string('industry');
             $table->string('budget_range');
@@ -25,11 +25,6 @@ class CreateQuotesTable extends Migration
             $table->decimal('estimated_value', 15, 2)->nullable();
             $table->string('source')->nullable();
             $table->string('referral_code')->nullable();
-
-            $table->foreign('service_id')
-                ->references('id')
-                ->on('services')
-                ->onDelete('cascade');
 
             $table->foreign('user_id')
                 ->references('id')
