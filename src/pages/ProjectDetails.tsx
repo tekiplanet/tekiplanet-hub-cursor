@@ -199,18 +199,21 @@ function ProjectDetails() {
                 key={member.id} 
                 className="flex items-center space-x-4 p-3 bg-muted/50 rounded-lg"
               >
-                {member.user.avatar && (
+                {member.user.avatar ? (
                   <img 
                     src={member.user.avatar} 
                     alt={member.user.name} 
                     className="h-10 w-10 rounded-full object-cover" 
                   />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                    {member.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
                 )}
                 <div className="flex-grow">
                   <h3 className="font-medium">{member.user.name}</h3>
                   <span className="text-sm text-muted-foreground">{member.role}</span>
                 </div>
-                <Badge variant="outline">{member.status}</Badge>
               </div>
             ))}
           </TabsContent>
