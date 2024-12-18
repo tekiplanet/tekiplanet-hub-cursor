@@ -15,6 +15,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Import Swiper styles
 import 'swiper/css';
@@ -76,9 +93,19 @@ const heroSlides = [
   },
 ];
 
+// Add this mock data
+const brands = [
+  "Apple", "Dell", "HP", "Lenovo", "ASUS", "Acer", "MSI", "Samsung"
+];
+
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  // Move the state declarations here
+  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,21 +171,158 @@ export default function Store() {
 
       {/* Search and Filter Section */}
       <section className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex gap-2 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search products..."
-              className="pl-10"
+              className="pl-10 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2 whitespace-nowrap">
+                <Filter className="h-4 w-4" />
+                {!isMobile && "Filters"}
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[300px] sm:w-[400px]">
+              <SheetHeader>
+                <SheetTitle>Filter Products</SheetTitle>
+              </SheetHeader>
+              <div className="py-6 space-y-6">
+                {/* Category Filter */}
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem 
+                          key={category.id} 
+                          value={category.name.toLowerCase().replace(/\s+/g, '-')}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Price Range Filter */}
+                <div className="space-y-2">
+                  <Label>Price Range</Label>
+                  <div className="pt-2">
+                    <Slider
+                      defaultValue={[0, 5000]}
+                      max={5000}
+                      step={100}
+                      value={priceRange}
+                      onValueChange={setPriceRange}
+                      className="mb-2"
+                    />
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>${priceRange[0]}</span>
+                      <span>${priceRange[1]}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Brands Filter */}
+                <div className="space-y-2">
+                  <Label>Brands</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {brands.map((brand) => (
+                      <div key={brand} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={brand}
+                          checked={selectedBrands.includes(brand)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedBrands([...selectedBrands, brand]);
+                            } else {
+                              setSelectedBrands(selectedBrands.filter(b => b !== brand));
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={brand}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {brand}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Active Filters */}
+                {(selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+                  <div className="space-y-2">
+                    <Label>Active Filters</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCategory && (
+                        <Badge variant="secondary" className="gap-1">
+                          {selectedCategory}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0 px-1 hover:bg-transparent"
+                            onClick={() => setSelectedCategory("")}
+                          >
+                            ×
+                          </Button>
+                        </Badge>
+                      )}
+                      {selectedBrands.map(brand => (
+                        <Badge key={brand} variant="secondary" className="gap-1">
+                          {brand}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0 px-1 hover:bg-transparent"
+                            onClick={() => setSelectedBrands(selectedBrands.filter(b => b !== brand))}
+                          >
+                            ×
+                          </Button>
+                        </Badge>
+                      ))}
+                      {(priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+                        <Badge variant="secondary">
+                          ${priceRange[0]} - ${priceRange[1]}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedCategory("");
+                      setSelectedBrands([]);
+                      setPriceRange([0, 5000]);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                  <Button className="flex-1">Apply Filters</Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </section>
 
