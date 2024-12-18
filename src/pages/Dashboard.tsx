@@ -44,6 +44,7 @@ import {
 import ThemeToggle from '@/components/ThemeToggle'
 import PaymentConfirmation from "@/pages/PaymentConfirmation";
 import TransactionDetails from "@/pages/TransactionDetails";
+import Store from "./Store";
 
 interface MenuItem {
   label: string;
@@ -57,6 +58,11 @@ const menuItems: MenuItem[] = [
     label: "Home",
     path: "/dashboard",
     icon: <Home className="w-4 h-4" />
+  },
+  {
+    label: "Store",
+    path: "/dashboard/store",
+    icon: <ShoppingBag className="w-4 h-4" />
   },
   {
     label: "Wallet",
@@ -212,6 +218,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
             {renderDashboard()}
           </>
         } />
+        <Route path="store" element={<Store />} />
         <Route path="academy" element={<Academy />} />
         <Route path="academy/my-courses" element={<MyCourses />} />
         <Route path="academy/:courseId" element={<CourseDetails />} />
