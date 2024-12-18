@@ -100,6 +100,10 @@ const QuoteRequestsList: React.FC = () => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  const handleQuoteClick = (quoteId: string) => {
+    navigate(`/dashboard/quotes/${quoteId}`);
+  };
+
   if (isLoading) {
     return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -192,6 +196,7 @@ const QuoteRequestsList: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
+                onClick={() => handleQuoteClick(quote.id)}
               >
                 <Card className="hover:shadow-md transition-shadow">
                   <CardHeader className="p-4 pb-2">
@@ -215,7 +220,7 @@ const QuoteRequestsList: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[160px]">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleQuoteClick(quote.id)}>
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem>
