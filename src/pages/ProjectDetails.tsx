@@ -29,7 +29,8 @@ import {
   ListTodo,
   File,
   FileSpreadsheet,
-  Image
+  Image,
+  XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -421,9 +422,11 @@ function ProjectDetails() {
                             <Badge variant="outline" className={getStatusColor(invoice.status)}>
                               {invoice.status}
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              Due: {invoice.due_date}
-                            </span>
+                            {invoice.status === 'pending' && (
+                              <span className="text-sm text-destructive font-medium">
+                                Due: {invoice.due_date}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -434,21 +437,57 @@ function ProjectDetails() {
                           <p className="text-sm text-muted-foreground">Amount</p>
                           <p className="font-bold text-lg">{invoice.amount}</p>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="shrink-0"
-                        >
-                          <Download className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <div className="flex gap-2">
+                          {invoice.status === 'pending' && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="shrink-0"
+                                onClick={() => window.open(invoice.file_path, '_blank')}
+                              >
+                                <Download className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                className="shrink-0"
+                              >
+                                <DollarSign className="h-4 w-4 mr-2" />
+                                Pay Now
+                              </Button>
+                            </>
+                          )}
+                          {invoice.status === 'paid' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => window.open(invoice.receipt_path, '_blank')}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Receipt
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Paid Status */}
-                      {invoice.paid_at && (
+                      {invoice.status === 'paid' && invoice.paid_at && (
                         <div className="mt-3 pt-3 border-t">
                           <div className="flex items-center gap-2 text-sm text-green-600">
                             <CheckCircle className="h-4 w-4" />
                             <span className="truncate">Paid on {invoice.paid_at}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cancelled Status */}
+                      {invoice.status === 'cancelled' && (
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex items-center gap-2 text-sm text-destructive">
+                            <XCircle className="h-4 w-4" />
+                            <span className="truncate">Invoice cancelled</span>
                           </div>
                         </div>
                       )}
