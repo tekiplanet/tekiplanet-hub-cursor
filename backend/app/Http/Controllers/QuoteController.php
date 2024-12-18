@@ -72,7 +72,14 @@ class QuoteController extends Controller
         $quotes = Quote::with(['service', 'user'])
             ->where('user_id', Auth::id())
             ->latest()
-            ->paginate(10);
+            ->get()
+            ->map(function ($quote) {
+                $quote->unread_messages_count = $quote->messages()
+                    ->where('sender_type', 'admin')
+                    ->where('is_read', false)
+                    ->count();
+                return $quote;
+            });
 
         return response()->json([
             'success' => true,
@@ -91,6 +98,11 @@ class QuoteController extends Controller
                 },
                 'messages.user:id,first_name,last_name,avatar'
             ])->findOrFail($id);
+
+            $quote->unread_messages_count = $quote->messages()
+                ->where('sender_type', 'admin')
+                ->where('is_read', false)
+                ->count();
 
             return response()->json([
                 'success' => true,
@@ -138,6 +150,25 @@ class QuoteController extends Controller
                 'success' => false,
                 'message' => 'Failed to send message',
                 'error' => $e->getMessage() // Include this in development
+            ], 500);
+        }
+    }
+
+    public function markMessagesAsRead($quoteId)
+    {
+        try {
+            QuoteMessage::where('quote_id', $quoteId)
+                ->where('sender_type', 'admin')
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+
+            return response()->json([
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark messages as read'
             ], 500);
         }
     }

@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Quote Details and Messages
         Route::get('/quotes/{id}', [QuoteController::class, 'show']);
         Route::post('/quotes/{id}/messages', [QuoteController::class, 'sendMessage']);
+        Route::post('/quotes/{id}/mark-messages-read', [QuoteController::class, 'markMessagesAsRead']);
     });
 });
 

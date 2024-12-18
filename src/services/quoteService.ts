@@ -19,5 +19,15 @@ export const quoteService = {
       console.error('Error sending message:', error);
       throw error;
     }
+  },
+
+  async markMessagesAsRead(quoteId: string) {
+    try {
+      const response = await apiClient.post(`/quotes/${quoteId}/mark-messages-read`);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      throw error;
+    }
   }
 }; 

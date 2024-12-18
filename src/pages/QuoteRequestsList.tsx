@@ -34,7 +34,12 @@ interface Quote {
   status: 'pending' | 'reviewed' | 'accepted' | 'rejected';
   project_deadline: string;
   created_at: string;
+  unread_messages_count: number;
 }
+
+const NotificationBadge = () => (
+  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-ping-slow" />
+);
 
 const QuoteRequestsList: React.FC = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -50,8 +55,8 @@ const QuoteRequestsList: React.FC = () => {
         const response = await apiClient.get('/quotes');
         
         if (response.data.success) {
-          setQuotes(response.data.quotes.data);
-          setFilteredQuotes(response.data.quotes.data);
+          setQuotes(response.data.quotes);
+          setFilteredQuotes(response.data.quotes);
         } else {
           toast.error('Failed to load quote requests');
         }
@@ -202,8 +207,19 @@ const QuoteRequestsList: React.FC = () => {
                   <CardHeader className="p-4 pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <div className="space-y-1 flex-1 min-w-0">
-                        <CardTitle className="text-base font-medium truncate">
+                        <CardTitle className="text-base font-medium truncate flex items-center gap-2">
                           {quote.service.name}
+                          {quote.unread_messages_count > 0 && (
+                            <div className="relative flex items-center justify-center">
+                              <NotificationBadge />
+                              <Badge 
+                                variant="destructive" 
+                                className="relative h-5 w-5 rounded-full p-0 flex items-center justify-center"
+                              >
+                                {quote.unread_messages_count}
+                              </Badge>
+                            </div>
+                          )}
                         </CardTitle>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Badge variant={getStatusVariant(quote.status)} className="rounded-full">

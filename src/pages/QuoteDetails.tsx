@@ -34,6 +34,7 @@ interface Quote {
       avatar: string;
     };
   }>;
+  unread_messages_count: number;
 }
 
 function QuoteDetails() {
@@ -114,6 +115,20 @@ function QuoteDetails() {
     scrollToBottom();
   }, [quote?.messages]);
 
+  const markMessagesAsRead = async () => {
+    try {
+      await quoteService.markMessagesAsRead(quoteId!);
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (quote?.unread_messages_count > 0) {
+      markMessagesAsRead();
+    }
+  }, [quote?.unread_messages_count]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -150,9 +165,22 @@ function QuoteDetails() {
             <FileText className="h-4 w-4 mr-2" />
             Description
           </TabsTrigger>
-          <TabsTrigger value="conversation">
+          <TabsTrigger value="conversation" className="relative">
             <MessageCircle className="h-4 w-4 mr-2" />
             Conversation
+            {quote.unread_messages_count > 0 && (
+              <div className="absolute -top-2 -right-2">
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-ping-slow" />
+                  <Badge 
+                    variant="destructive" 
+                    className="relative h-5 w-5 rounded-full p-0 flex items-center justify-center"
+                  >
+                    {quote.unread_messages_count}
+                  </Badge>
+                </div>
+              </div>
+            )}
           </TabsTrigger>
         </TabsList>
 
