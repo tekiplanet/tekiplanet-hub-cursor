@@ -102,7 +102,7 @@ export default function Checkout() {
       <div className="container mx-auto px-4 py-8">
         {/* Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center px-4">
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center">
                 <div
@@ -124,7 +124,8 @@ export default function Checkout() {
                 {index < steps.length - 1 && (
                   <div
                     className={cn(
-                      "w-20 h-0.5 mx-2",
+                      "h-0.5 mx-1 md:mx-2",
+                      "w-12 md:w-20",
                       index < steps.findIndex(s => s.id === currentStep)
                         ? "bg-primary"
                         : "bg-muted"
