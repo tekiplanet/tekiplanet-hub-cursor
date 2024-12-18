@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProjectInvoice;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use TCPDF;
 
@@ -11,38 +12,19 @@ class InvoiceController extends Controller
     public function downloadPDF($id)
     {
         try {
-            \Log::info('Attempting to download invoice:', [
-                'id' => $id,
-                'id_type' => gettype($id)
-            ]);
+            // Get settings
+            $settings = Setting::first();
             
-            // Try to find the invoice first
-            $invoice = ProjectInvoice::where('id', $id)->first();
-            
-            if (!$invoice) {
-                \Log::error('Invoice not found:', ['id' => $id]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invoice not found',
-                ], 404);
-            }
-
-            // Load relationships after confirming invoice exists
-            $invoice->load(['project.businessProfile', 'project']);
-
-            \Log::info('Invoice found:', ['invoice_number' => $invoice->invoice_number]);
-
-            // Check if project and business profile exist
-            if (!$invoice->project || !$invoice->project->businessProfile) {
-                throw new \Exception('Project or business profile not found');
-            }
+            // Find the invoice
+            $invoice = ProjectInvoice::with(['project.businessProfile', 'project'])
+                ->findOrFail($id);
 
             // Create new PDF document
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
             // Set document information
             $pdf->SetCreator(PDF_CREATOR);
-            $pdf->SetAuthor('TekiPlanet');
+            $pdf->SetAuthor($settings->site_name ?? 'TekiPlanet');
             $pdf->SetTitle('Invoice #' . $invoice->invoice_number);
 
             // Remove default header/footer
@@ -59,26 +41,111 @@ class InvoiceController extends Controller
             $pdf->SetFont('helvetica', '', 10);
 
             // Company Logo and Info
-            $logoPath = public_path('images/logo.png');
-            if (file_exists($logoPath)) {
-                $pdf->Image($logoPath, 15, 15, 40);
-            } else {
-                \Log::warning('Logo file not found at: ' . $logoPath);
-                // Skip logo or use alternative
+            try {
+                // Use a PNG image URL
+                $logoUrl = 'https://static.vecteezy.com/system/resources/previews/006/298/276/non_2x/gear-smart-eps-icon-digital-tech-business-logo-free-vector.jpg';
+                
+                // Create a temporary file for the downloaded image
+                $tempDownload = tempnam(sys_get_temp_dir(), 'pdf_logo_download');
+                
+                // Download the image
+                $ch = curl_init($logoUrl);
+                $fp = fopen($tempDownload, 'wb');
+                curl_setopt_array($ch, [
+                    CURLOPT_FILE => $fp,
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_USERAGENT => 'Mozilla/5.0',
+                    CURLOPT_TIMEOUT => 30
+                ]);
+                
+                $success = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                fclose($fp);
+                
+                if ($success && $httpCode === 200 && filesize($tempDownload) > 0) {
+                    // Get image info
+                    $imageInfo = getimagesize($tempDownload);
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                    $type = $imageInfo[2];
+                    
+                    // Create a temporary JPG file
+                    $tempJpg = tempnam(sys_get_temp_dir(), 'pdf_logo_jpg') . '.jpg';
+                    
+                    // Convert to JPG if it's a PNG
+                    if ($type === IMAGETYPE_PNG) {
+                        // Use fully qualified function names
+                        $srcImage = \imagecreatefrompng($tempDownload);
+                        $dstImage = \imagecreatetruecolor($width, $height);
+                        
+                        // Handle transparency
+                        \imagealphablending($dstImage, false);
+                        \imagesavealpha($dstImage, true);
+                        $transparent = \imagecolorallocatealpha($dstImage, 255, 255, 255, 127);
+                        \imagefilledrectangle($dstImage, 0, 0, $width, $height, $transparent);
+                        
+                        // Copy and merge
+                        \imagecopy($dstImage, $srcImage, 0, 0, 0, 0, $width, $height);
+                        \imagejpeg($dstImage, $tempJpg, 100);
+                        
+                        // Free memory
+                        \imagedestroy($srcImage);
+                        \imagedestroy($dstImage);
+                        
+                        // Use the JPG file for PDF
+                        $imageFile = $tempJpg;
+                    } else {
+                        // Use original file if it's already a JPG
+                        $imageFile = $tempDownload;
+                    }
+                    
+                    // Calculate dimensions for PDF
+                    $maxWidth = 40;
+                    $aspectRatio = $width / $height;
+                    $newHeight = $maxWidth / $aspectRatio;
+                    
+                    // Add image to PDF
+                    $pdf->Image($imageFile, 15, 15, $maxWidth, $newHeight);
+                    
+                    \Log::info('Logo added successfully', [
+                        'dimensions' => "$width x $height",
+                        'type' => $type,
+                        'file_size' => filesize($imageFile)
+                    ]);
+                    
+                    // Clean up temporary files
+                    if (file_exists($tempDownload)) unlink($tempDownload);
+                    if (isset($tempJpg) && file_exists($tempJpg)) unlink($tempJpg);
+                    
+                } else {
+                    \Log::warning('Failed to download logo', [
+                        'http_code' => $httpCode,
+                        'file_size' => filesize($tempDownload)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Error processing logo:', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                // Continue without the logo
             }
+
             $pdf->SetXY(15, 35);
             $pdf->SetFont('helvetica', 'B', 18);
             $pdf->Cell(0, 10, 'INVOICE', 0, 1, 'R');
             $pdf->SetFont('helvetica', '', 10);
             
-            // Company Details
+            // Company Details using settings
             $pdf->SetXY(120, 45);
             $pdf->MultiCell(75, 5, 
-                "TekiPlanet Limited\n" .
-                "123 Business Avenue\n" .
-                "Lagos, Nigeria\n" .
-                "Email: info@tekiplanet.com\n" .
-                "Phone: +234 123 456 7890",
+                ($settings->site_name ?? "TekiPlanet Limited") . "\n" .
+                ($settings->contact_address ?? "123 Business Avenue") . "\n" .
+                ($settings->support_email ?? "info@tekiplanet.com") . "\n" .
+                ($settings->support_phone ?? "+234 123 456 7890"),
                 0, 'R');
 
             // Invoice Details
@@ -157,16 +224,17 @@ class InvoiceController extends Controller
                 "3. Late payments may incur additional charges",
                 0, 'L');
 
-            // Instead of directly outputting, return as response
-            $pdfContent = $pdf->Output('', 'S');  // 'S' means return as string
+            // Return the PDF
+            $pdfContent = $pdf->Output('', 'S');
 
             return response($pdfContent)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'attachment; filename="Invoice_' . $invoice->invoice_number . '.pdf"')
-                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Origin', config('app.frontend_url'))
                 ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, X-Request-With')
-                ->header('Access-Control-Expose-Headers', 'Content-Disposition');
+                ->header('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length');
 
         } catch (\Exception $e) {
             \Log::error('Failed to generate invoice PDF:', [
@@ -177,8 +245,7 @@ class InvoiceController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate invoice PDF: ' . $e->getMessage(),
-                'error' => $e->getMessage()
+                'message' => 'Failed to generate invoice PDF: ' . $e->getMessage()
             ], 500);
         }
     }

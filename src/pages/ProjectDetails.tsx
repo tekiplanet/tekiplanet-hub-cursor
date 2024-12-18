@@ -30,7 +30,8 @@ import {
   File,
   FileSpreadsheet,
   Image,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import axios from 'axios';
 
 // Helper functions
 function getFileIcon(fileType: string) {
@@ -88,6 +90,7 @@ function ProjectDetails() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
   console.log('Full location:', location);
   console.log('All params:', useParams());
@@ -135,32 +138,41 @@ function ProjectDetails() {
   // Add this function to handle PDF download
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
-      console.log('Invoice ID type:', typeof invoiceId, 'Value:', invoiceId);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/download`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        credentials: 'include',
-      });
+        setIsDownloading(invoiceId);
+        
+        const response = await axios({
+            url: `${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/download`,
+            method: 'GET',
+            responseType: 'blob', // Important for handling PDF
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Accept': 'application/pdf'
+            }
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Server error:', errorData);
-        throw new Error(errorData.message || 'Failed to download invoice');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Invoice_${invoiceId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      toast.error('Failed to download invoice');
-      console.error('Download error:', error);
+        // Create blob from response
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Invoice_${invoiceId}.pdf`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        
+        toast.success('Invoice downloaded successfully');
+    } catch (error: any) {
+        console.error('Download error:', error);
+        toast.error(error.response?.data?.message || 'Failed to download invoice');
+    } finally {
+        setIsDownloading(null);
     }
   };
 
@@ -476,6 +488,7 @@ function ProjectDetails() {
                                 variant="ghost" 
                                 size="icon"
                                 className="shrink-0"
+                                disabled={isDownloading === invoice.id}
                                 onClick={() => {
                                   console.log('Full invoice object:', invoice);
                                   console.log('Invoice ID:', invoice.id);
@@ -492,7 +505,11 @@ function ProjectDetails() {
                                   handleDownloadInvoice(String(invoice.id));
                                 }}
                               >
-                                <Download className="h-4 w-4 text-muted-foreground" />
+                                {isDownloading === invoice.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                ) : (
+                                  <Download className="h-4 w-4 text-muted-foreground" />
+                                )}
                               </Button>
                               <Button 
                                 variant="default" 

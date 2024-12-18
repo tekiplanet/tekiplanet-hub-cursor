@@ -19,13 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // Allow all origins during development
+    'allowed_origins' => [env('FRONTEND_URL', 'http://192.168.43.190:8080')],
 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => ['Content-Type', 'Content-Disposition'],
+    'exposed_headers' => ['Content-Disposition', 'Content-Length', 'Content-Type'],
 
     'max_age' => 0,
 
