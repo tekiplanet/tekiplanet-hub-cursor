@@ -402,18 +402,12 @@ export default function Checkout() {
                       <Badge variant="secondary">Wallet Payment</Badge>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-background rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Wallet className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Wallet Balance</p>
-                          <p className="text-sm text-muted-foreground">Available funds</p>
-                        </div>
-                      </div>
-                      <p className="text-xl font-bold">${user?.wallet_balance?.toFixed(2) || '0.00'}</p>
+                    <div className="flex items-center justify-between p-4 bg-black rounded-lg">
+                      <p className="font-medium text-white">Wallet Balance</p>
+                      <span className="text-xl font-bold text-white">${user?.wallet_balance?.toFixed(2) || '0.00'}</span>
                     </div>
+
+
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center p-4 bg-background rounded-lg border">
