@@ -50,6 +50,7 @@ import ProductDetails from "./ProductDetails";
 import Checkout from "./Checkout";
 import Orders from "./Orders";
 import OrderTracking from "./OrderTracking";
+import Products from "./Products";
 
 interface MenuItem {
   label: string;
@@ -235,6 +236,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
           </>
         } />
         <Route path="store" element={<Store />} />
+        <Route path="products" element={<Products />} />
         <Route path="store/product/:id" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />

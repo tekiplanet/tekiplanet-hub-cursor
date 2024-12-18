@@ -110,11 +110,11 @@ const featuredProducts = [
 
 // Categories with icons
 const categories = [
-  { id: 1, name: 'Laptops', count: 124 },
-  { id: 2, name: 'Desktop PCs', count: 89 },
-  { id: 3, name: 'Powerstation', count: 45 },
-  { id: 4, name: 'Gaming', count: 78 },
-  { id: 5, name: 'Accessories', count: 234 },
+  { id: 'laptops', name: 'Laptops', count: 124 },
+  { id: 'desktops', name: 'Desktop PCs', count: 89 },
+  { id: 'powerstation', name: 'Powerstation', count: 45 },
+  { id: 'gaming', name: 'Gaming', count: 78 },
+  { id: 'accessories', name: 'Accessories', count: 234 },
 ];
 
 // Hero slider data
@@ -163,6 +163,13 @@ export default function Store() {
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/dashboard/products?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -392,6 +399,7 @@ export default function Store() {
               key={category.id}
               whileHover={{ scale: 1.02 }}
               className="bg-card rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate(`/dashboard/products?category=${category.id}`)}
             >
               <h3 className="font-semibold">{category.name}</h3>
               <p className="text-sm text-muted-foreground">{category.count} items</p>
