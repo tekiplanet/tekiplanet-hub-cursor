@@ -22,14 +22,14 @@ class ProjectController extends Controller
             }
 
             $projects = Project::where('business_id', $businessProfile->id)
-                ->with(['stages', 'teamMembers', 'teamMembers.user'])
+                ->with(['stages', 'teamMembers', 'teamMembers.user', 'businessProfile'])
                 ->latest()
                 ->get()
                 ->map(function ($project) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
-                        'client_name' => $project->client_name,
+                        'business_name' => $project->businessProfile->business_name,
                         'status' => strtolower($project->status),
                         'start_date' => $project->start_date->format('M d, Y'),
                         'end_date' => $project->end_date ? $project->end_date->format('M d, Y') : 'Not set',

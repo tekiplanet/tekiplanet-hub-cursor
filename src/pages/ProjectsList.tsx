@@ -7,7 +7,7 @@ import {
   PlusCircle,
   Server,
   Calendar,
-  Wallet
+  BanknoteIcon
 } from 'lucide-react';
 import PagePreloader from '@/components/ui/PagePreloader';
 import { Button } from '@/components/ui/button';
@@ -190,16 +190,19 @@ function ProjectsList() {
                 <Card className="hover:shadow-md transition-shadow">
                   <CardHeader className="p-4 pb-2">
                     <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-1 flex-1 min-w-0">
+                      <div className="space-y-1.5 flex-1 min-w-0">
                         <h3 className="text-base font-medium truncate">
                           {project.name}
                         </h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Badge variant={getStatusVariant(project.status)} className="rounded-full">
-                            {project.status}
-                          </Badge>
-                          <span>•</span>
-                          <span>{project.client_name}</span>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground truncate">
+                            {project.business_name}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge variant={getStatusVariant(project.status)} className="rounded-full">
+                              {project.status}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                       <DropdownMenu>
@@ -222,7 +225,7 @@ function ProjectsList() {
                         <span className="text-muted-foreground">{project.start_date} - {project.end_date}</span>
                       </div>
                       <div className="flex items-center gap-2 justify-end">
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <BanknoteIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-primary">{project.budget}</span>
                       </div>
                     </div>
