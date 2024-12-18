@@ -132,6 +132,38 @@ function ProjectDetails() {
     return <div>Project not found</div>;
   }
 
+  // Add this function to handle PDF download
+  const handleDownloadInvoice = async (invoiceId: string) => {
+    try {
+      console.log('Invoice ID type:', typeof invoiceId, 'Value:', invoiceId);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        throw new Error(errorData.message || 'Failed to download invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice_${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download invoice');
+      console.error('Download error:', error);
+    }
+  };
+
   return (
     <div className="container mx-auto p-0 sm:p-4 max-w-7xl">
       <motion.div 
@@ -444,7 +476,21 @@ function ProjectDetails() {
                                 variant="ghost" 
                                 size="icon"
                                 className="shrink-0"
-                                onClick={() => window.open(invoice.file_path, '_blank')}
+                                onClick={() => {
+                                  console.log('Full invoice object:', invoice);
+                                  console.log('Invoice ID:', invoice.id);
+                                  console.log('Invoice ID type:', typeof invoice.id);
+                                  
+                                  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                                  const isValidUUID = uuidRegex.test(String(invoice.id));
+                                  console.log('Is valid UUID?', isValidUUID);
+
+                                  if (!isValidUUID) {
+                                    toast.error('Invalid invoice ID format');
+                                    return;
+                                  }
+                                  handleDownloadInvoice(String(invoice.id));
+                                }}
                               >
                                 <Download className="h-4 w-4 text-muted-foreground" />
                               </Button>

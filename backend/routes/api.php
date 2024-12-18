@@ -15,6 +15,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceQuoteController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\InvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/quotes/{id}/mark-messages-read', [QuoteController::class, 'markMessagesAsRead']);
         Route::get('/projects', [ProjectController::class, 'index']);
         Route::get('/projects/{id}', [ProjectController::class, 'show']);
+        Route::get('/invoices/{id}/download', [InvoiceController::class, 'downloadPDF']);
     });
 });
 

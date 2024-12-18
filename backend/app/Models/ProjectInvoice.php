@@ -2,12 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class ProjectInvoice extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
 
     protected $fillable = [
         'project_id',
@@ -16,19 +32,15 @@ class ProjectInvoice extends Model
         'status',
         'due_date',
         'paid_at',
-        'description',
-        'payment_method',
-        'transaction_reference',
-        'file_path'
+        'receipt_path',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
         'due_date' => 'datetime',
-        'paid_at' => 'datetime'
+        'paid_at' => 'datetime',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }

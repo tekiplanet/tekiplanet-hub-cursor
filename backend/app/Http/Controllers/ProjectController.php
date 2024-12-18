@@ -70,6 +70,9 @@ class ProjectController extends Controller
                 ], 403);
             }
 
+            // Add this to debug
+            \Log::info('Project invoices:', ['invoices' => $project->invoices]);
+
             return response()->json([
                 'success' => true,
                 'project' => [
