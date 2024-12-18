@@ -101,14 +101,6 @@ export default function Cart() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            className="gap-2"
-            onClick={() => navigate('/store')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Continue Shopping
-          </Button>
           <h1 className="text-2xl font-bold">Shopping Cart ({items.length})</h1>
         </div>
 
