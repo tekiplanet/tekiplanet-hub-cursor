@@ -376,44 +376,109 @@ class InvoiceController extends Controller
                 ], 400);
             }
 
+            // Get transaction
             $transaction = Transaction::where([
+                'user_id' => $invoice->project->businessProfile->user_id,
                 'category' => 'invoice_payment',
-                'reference_number' => 'INV-' . $invoice->id
-            ])->first();
+            ])
+            ->where('description', 'like', "%{$invoice->invoice_number}%")
+            ->first();
 
-            // Create PDF
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            
+            // Get settings
+            $settings = Setting::first();
+            $currency = $settings->default_currency ?? '₦';
+
+            // Create new PDF document with custom size
+            $pdf = new TCPDF('P', 'mm', array(80, 150), true, 'UTF-8', false);
+
             // Set document information
             $pdf->SetCreator(PDF_CREATOR);
-            $pdf->SetAuthor('TekiPlanet');
-            $pdf->SetTitle('Payment Receipt - ' . $invoice->invoice_number);
+            $pdf->SetAuthor($settings->site_name ?? 'TekiPlanet');
+            $pdf->SetTitle('Receipt #' . $invoice->invoice_number);
 
             // Remove default header/footer
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false);
 
+            // Set margins very small
+            $pdf->SetMargins(5, 5, 5);
+            $pdf->SetAutoPageBreak(true, 5);
+
             // Add a page
             $pdf->AddPage();
 
             // Set font
-            $pdf->SetFont('helvetica', '', 12);
+            $pdf->SetFont('helvetica', '', 8);
 
-            // Add receipt content
-            $html = view('pdfs.receipt', [
-                'invoice' => $invoice,
-                'transaction' => $transaction,
-                'receipt_number' => 'RCP-' . strtoupper(substr($invoice->id, 0, 8))
-            ])->render();
+            // Company name and receipt header
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 5, $settings->site_name ?? "TekiPlanet", 0, 1, 'C');
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->Cell(0, 4, 'Payment Receipt', 0, 1, 'C');
+            $pdf->SetFont('helvetica', '', 7);
+            $pdf->Cell(0, 4, '#' . strtoupper(substr($invoice->id, 0, 8)), 0, 1, 'C');
+            
+            // Add some spacing
+            $pdf->Ln(2);
 
-            $pdf->writeHTML($html, true, false, true, false, '');
+            // Payment Details
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->Cell(0, 4, 'PAYMENT DETAILS', 0, 1, 'L');
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->Cell(20, 4, 'Invoice:', 0, 0, 'L');
+            $pdf->Cell(0, 4, '#' . $invoice->invoice_number, 0, 1, 'L');
+            $pdf->Cell(20, 4, 'Date:', 0, 0, 'L');
+            $pdf->Cell(0, 4, $invoice->paid_at->format('d/m/Y H:i'), 0, 1, 'L');
+            $pdf->Cell(20, 4, 'Method:', 0, 0, 'L');
+            $pdf->Cell(0, 4, ucfirst($invoice->payment_method), 0, 1, 'L');
+            $pdf->Cell(20, 4, 'Ref:', 0, 0, 'L');
+            $pdf->Cell(0, 4, $transaction->reference_number, 0, 1, 'L');
+
+            // Add some spacing
+            $pdf->Ln(2);
+
+            // Project Info
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->Cell(0, 4, 'PROJECT INFO', 0, 1, 'L');
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->MultiCell(0, 4, $invoice->project->name . "\n" . $invoice->project->businessProfile->business_name, 0, 'L');
+
+            // Add some spacing
+            $pdf->Ln(2);
+
+            // Amount
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->Cell(0, 4, 'AMOUNT PAID', 0, 1, 'C');
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 6, $currency . number_format($invoice->amount, 2), 0, 1, 'C');
+
+            // Payment Status
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->Cell(0, 6, '✓ Payment Successful', 0, 1, 'C');
+
+            // Add a line
+            $pdf->Line(5, $pdf->GetY() + 2, 75, $pdf->GetY() + 2);
+            $pdf->Ln(4);
+
+            // Footer
+            $pdf->SetFont('helvetica', '', 6);
+            $pdf->MultiCell(0, 3, 
+                ($settings->contact_address ?? "123 Business Avenue") . "\n" .
+                ($settings->support_email ?? "info@tekiplanet.com") . ' | ' .
+                ($settings->support_phone ?? "+234 123 456 7890"), 0, 'C');
 
             // Return the PDF
-            return response($pdf->Output('receipt.pdf', 'S'))
+            return response($pdf->Output('', 'S'))
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'attachment; filename="Receipt_' . $invoice->invoice_number . '.pdf"');
 
         } catch (\Exception $e) {
+            \Log::error('Failed to generate receipt:', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate receipt: ' . $e->getMessage()
