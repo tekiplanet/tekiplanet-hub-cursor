@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { quoteService } from '@/services/quoteService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from 'react-hot-toast';
+import Pusher from 'pusher-js';
 
 interface Quote {
   id: string;
@@ -40,6 +41,7 @@ function QuoteDetails() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchQuoteDetails = async () => {
@@ -75,6 +77,42 @@ function QuoteDetails() {
       console.error('Error sending message:', error);
     }
   };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (!quoteId) return;
+
+    // Initialize Pusher
+    const pusher = new Pusher(import.meta.env.VITE_PUSHER_APP_KEY, {
+      cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+      encrypted: true
+    });
+
+    // Subscribe to the quote channel
+    const channel = pusher.subscribe(`quote.${quoteId}`);
+    
+    // Listen for new messages
+    channel.bind('new-message', (data: { message: Quote['messages'][0] }) => {
+      setQuote(prev => ({
+        ...prev!,
+        messages: [...prev!.messages, data.message]
+      }));
+      scrollToBottom();
+    });
+
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
+  }, [quoteId]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [quote?.messages]);
 
   if (loading) {
     return (
@@ -225,6 +263,7 @@ function QuoteDetails() {
                           )}
                         </div>
                       ))}
+                      <div ref={messagesEndRef} />
                     </div>
                   )}
                 </div>

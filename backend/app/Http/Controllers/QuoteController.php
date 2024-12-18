@@ -8,6 +8,7 @@ use App\Models\QuoteMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use App\Events\NewQuoteMessage;
 
 class QuoteController extends Controller
 {
@@ -122,14 +123,21 @@ class QuoteController extends Controller
             // Load the user relationship for the response
             $message->load('user:id,first_name,last_name,avatar');
 
+            // Broadcast the new message
+            broadcast(new NewQuoteMessage($message))->toOthers();
+
             return response()->json([
                 'success' => true,
                 'message' => $message
             ]);
         } catch (\Exception $e) {
+            \Log::error('Quote Message Error: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send message'
+                'message' => 'Failed to send message',
+                'error' => $e->getMessage() // Include this in development
             ], 500);
         }
     }
