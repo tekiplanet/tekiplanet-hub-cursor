@@ -324,9 +324,9 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       <div className="flex h-screen overflow-hidden bg-background">
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex md:w-64 md:flex-col border-r">
-          <div className="flex flex-col flex-1">
-            {/* User Profile Section */}
-            <div className="border-b px-6 py-4">
+          <div className="flex flex-col h-full">
+            {/* Fixed Header - User Profile Section */}
+            <div className="border-b px-6 py-4 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-10 w-10 ring-2 ring-primary/10">
@@ -362,42 +362,43 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
               </div>
             </div>
 
-            {/* Menu Items */}
-            <nav className="flex-1 space-y-1 px-3 py-3">
-              {menuItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant={location.pathname === item.path ? "default" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-2",
-                    location.pathname === item.path && "bg-primary text-primary-foreground"
-                  )}
-                  onClick={() => navigate(item.path)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <Badge 
-                      variant={location.pathname === item.path ? "secondary" : "default"}
-                      className="ml-auto"
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </Button>
-              ))}
-            </nav>
+            {/* Scrollable Menu Items */}
+            <div className="flex-1 overflow-y-auto">
+              <nav className="space-y-1 px-3 py-3">
+                {menuItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant={location.pathname === item.path ? "default" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-2",
+                      location.pathname === item.path && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => navigate(item.path)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <Badge 
+                        variant={location.pathname === item.path ? "secondary" : "default"}
+                        className="ml-auto"
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </nav>
+            </div>
 
-            {/* Bottom Section */}
-            <div className="border-t p-3 space-y-2">
+            {/* Fixed Bottom Section */}
+            <div className="border-t p-3 space-y-2 shrink-0">
               {/* Profile Type Switcher */}
               <div className="px-3 py-2">
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-start gap-2">
                       <GraduationCap className="h-4 w-4" />
-                      {user?.account_type === "student" ? "Student" : user?.account_type === "business" ? "Business" : user?.account_type === "professional" ? "Professional" : "Professional"}
+                      {user?.account_type === "student" ? "Student" : user?.account_type === "business" ? "Business" : "Professional"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
