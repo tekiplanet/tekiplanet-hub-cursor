@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown } from "lucide-react"
+import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart } from "lucide-react"
 import { useNavigate, Routes, Route, useLocation, Outlet } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -45,6 +45,8 @@ import ThemeToggle from '@/components/ThemeToggle'
 import PaymentConfirmation from "@/pages/PaymentConfirmation";
 import TransactionDetails from "@/pages/TransactionDetails";
 import Store from "./Store";
+import Cart from "./Cart";
+import ProductDetails from "./ProductDetails";
 
 interface MenuItem {
   label: string;
@@ -63,6 +65,12 @@ const menuItems: MenuItem[] = [
     label: "Store",
     path: "/dashboard/store",
     icon: <ShoppingBag className="w-4 h-4" />
+  },
+  {
+    label: "Cart",
+    path: "/dashboard/cart",
+    icon: <ShoppingCart className="w-4 h-4" />,
+    badge: "2"
   },
   {
     label: "Wallet",
@@ -219,6 +227,8 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
           </>
         } />
         <Route path="store" element={<Store />} />
+        <Route path="store/product/:id" element={<ProductDetails />} />
+        <Route path="cart" element={<Cart />} />
         <Route path="academy" element={<Academy />} />
         <Route path="academy/my-courses" element={<MyCourses />} />
         <Route path="academy/:courseId" element={<CourseDetails />} />

@@ -32,6 +32,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from 'react-router-dom';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -154,6 +155,7 @@ const brands = [
 ];
 
 export default function Store() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useMediaQuery('(max-width: 768px)');
   
@@ -411,7 +413,8 @@ export default function Store() {
             <motion.div
               key={product.id}
               whileHover={{ y: -5 }}
-              className="bg-card rounded-lg overflow-hidden group"
+              className="bg-card rounded-lg overflow-hidden group cursor-pointer"
+              onClick={() => navigate(`/dashboard/store/product/${product.id}`)}
             >
               <div className="relative aspect-square">
                 <img
@@ -420,10 +423,24 @@ export default function Store() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 right-2 flex gap-2">
-                  <Button size="icon" variant="secondary" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
                     <Heart className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="secondary" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
                     <ShoppingCart className="h-4 w-4" />
                   </Button>
                 </div>
