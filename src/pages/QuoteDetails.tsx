@@ -152,47 +152,85 @@ function QuoteDetails() {
         </TabsContent>
 
         <TabsContent value="conversation">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col h-[500px]">
-                <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+          <Card className="h-[600px] flex flex-col">
+            <CardHeader className="border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Conversation</h3>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 p-4 overflow-hidden">
+              <div className="flex flex-col h-full">
+                {/* Messages Container */}
+                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
                   {quote.messages.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No messages yet. Start the conversation!
-                    </p>
+                    <div className="h-full flex flex-col items-center justify-center">
+                      <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground text-sm">
+                        No messages yet. Start the conversation!
+                      </p>
+                    </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 px-2">
                       {quote.messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${
+                          className={`flex items-start gap-2 ${
                             message.sender_type === 'user' ? 'justify-end' : 'justify-start'
                           }`}
                         >
+                          {message.sender_type === 'admin' && (
+                            <div className="flex-shrink-0">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-xs font-medium text-primary">
+                                  SA
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
+                            className={`group relative max-w-[80%] rounded-2xl px-4 py-2 ${
                               message.sender_type === 'user'
-                                ? 'bg-primary text-primary-foreground ml-4'
-                                : 'bg-muted mr-4'
+                                ? 'bg-primary text-primary-foreground rounded-tr-none'
+                                : 'bg-muted rounded-tl-none'
                             }`}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-medium">
-                                {message.user.first_name} {message.user.last_name}
-                              </span>
-                            </div>
+                            {message.sender_type === 'admin' && (
+                              <p className="text-xs font-medium mb-1 text-muted-foreground">
+                                Support Agent
+                              </p>
+                            )}
                             <p className="text-sm">{message.message}</p>
-                            <p className="text-xs mt-1 opacity-70">
+                            <span 
+                              className={`text-[10px] mt-1 opacity-0 group-hover:opacity-70 transition-opacity ${
+                                message.sender_type === 'user' 
+                                  ? 'text-primary-foreground' 
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
                               {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                            </p>
+                            </span>
                           </div>
+
+                          {message.sender_type === 'user' && (
+                            <div className="flex-shrink-0">
+                              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                                <span className="text-xs font-medium text-primary-foreground">
+                                  {message.user.first_name.charAt(0)}
+                                  {message.user.last_name.charAt(0)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-2 items-center">
+                {/* Message Input */}
+                <div className="relative mt-auto">
                   <Input
                     placeholder="Type your message..."
                     value={newMessage}
@@ -203,11 +241,12 @@ function QuoteDetails() {
                         handleSendMessage();
                       }
                     }}
-                    className="flex-1"
+                    className="pr-12 py-6 rounded-full border-muted-foreground/20"
                   />
                   <Button 
                     onClick={handleSendMessage}
                     size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full h-8 w-8"
                     disabled={!newMessage.trim()}
                   >
                     <Send className="h-4 w-4" />
