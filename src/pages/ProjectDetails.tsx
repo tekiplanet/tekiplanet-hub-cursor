@@ -31,7 +31,8 @@ import {
   FileSpreadsheet,
   Image,
   XCircle,
-  Loader2
+  Loader2,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,6 +79,17 @@ function getProgressColor(status: string) {
     case 'in_progress': return 'bg-yellow-500';
     default: return 'bg-blue-500';
   }
+}
+
+function formatCurrency(amount: string | number) {
+  const numericAmount = typeof amount === 'string' ? 
+    parseFloat(amount.replace(/[^0-9.-]+/g, "")) : 
+    amount;
+    
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN'
+  }).format(numericAmount);
 }
 
 // Components
@@ -610,33 +622,62 @@ function ProjectDetails() {
 
       {/* Payment Confirmation Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Payment</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-primary" />
+              </span>
+              Confirm Payment
+            </DialogTitle>
             <DialogDescription>
-              You are about to pay invoice #{selectedInvoice?.invoice_number}
+              Review the payment details below
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Amount:</span>
-              <span className="font-semibold">{selectedInvoice?.amount}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Wallet Balance:</span>
-              <span className="font-semibold">₦{user?.wallet_balance}</span>
-            </div>
-            
-            {selectedInvoice && user?.wallet_balance < parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) ? (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-                Insufficient wallet balance. Please fund your wallet to continue.
+          <div className="space-y-6 py-4">
+            {/* Invoice Details */}
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Invoice Number:</span>
+                  <span className="font-medium">#{selectedInvoice?.invoice_number}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Amount:</span>
+                  <span className="text-lg font-semibold text-primary">
+                    {selectedInvoice?.amount && formatCurrency(selectedInvoice.amount)}
+                  </span>
+                </div>
               </div>
-            ) : null}
+
+              {/* Wallet Section */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Wallet Balance:</span>
+                  <span className="font-medium">{formatCurrency(user?.wallet_balance || 0)}</span>
+                </div>
+                
+                {selectedInvoice && user?.wallet_balance < parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) && (
+                  <div className="flex items-start gap-2 bg-destructive/10 text-destructive p-3 rounded-md">
+                    <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium">Insufficient Balance</p>
+                      <p className="text-destructive/80 mt-1">
+                        Please fund your wallet with at least {
+                          formatCurrency(
+                            parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) - (user?.wallet_balance || 0)
+                          )
+                        } to complete this payment.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -650,11 +691,13 @@ function ProjectDetails() {
             {selectedInvoice && user?.wallet_balance < parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) ? (
               <Button
                 variant="default"
+                className="gap-2"
                 onClick={() => {
                   setIsPaymentModalOpen(false);
                   navigate('/dashboard/wallet');
                 }}
               >
+                <Wallet className="h-4 w-4" />
                 Fund Wallet
               </Button>
             ) : (
@@ -662,15 +705,16 @@ function ProjectDetails() {
                 variant="default"
                 disabled={isProcessing}
                 onClick={() => selectedInvoice && handlePayment(selectedInvoice)}
+                className="gap-2"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <DollarSign className="mr-2 h-4 w-4" />
+                    <CheckCircle className="h-4 w-4" />
                     Confirm Payment
                   </>
                 )}
