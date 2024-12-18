@@ -62,7 +62,7 @@ const featuredProducts = [
     name: 'Professional Powerstation',
     image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
     price: 3499.99,
-    category: 'Workstations',
+    category: 'Powerstation',
     rating: 4.7,
   },
   {
@@ -455,7 +455,7 @@ export default function Store() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/40 z-10" />
             <img
-              src="https://example.com/gaming-setup.jpg"
+              src="https://images.unsplash.com/photo-1616588589676-62b3bd4ff6d2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2064&q=80"
               alt="Gaming Setup"
               className="w-full h-full object-cover"
             />
@@ -472,12 +472,12 @@ export default function Store() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-secondary/80 to-secondary/40 z-10" />
             <img
-              src="https://example.com/workstation-setup.jpg"
-              alt="Workstation Setup"
+              src="https://images.unsplash.com/photo-1592833159155-c62df1b65634?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80"
+              alt="Powerstation Setup"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 z-20 flex flex-col justify-center p-6 text-white">
-              <h3 className="text-2xl font-bold mb-2">Professional Workstation</h3>
+              <h3 className="text-2xl font-bold mb-2">Unique Powerstation</h3>
               <p className="mb-4">Complete setup starting from $999</p>
               <Button variant="secondary" className="w-fit">Learn More</Button>
             </div>
