@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart } from "lucide-react"
+import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package } from "lucide-react"
 import { useNavigate, Routes, Route, useLocation, Outlet } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -48,6 +48,8 @@ import Store from "./Store";
 import Cart from "./Cart";
 import ProductDetails from "./ProductDetails";
 import Checkout from "./Checkout";
+import Orders from "./Orders";
+import OrderTracking from "./OrderTracking";
 
 interface MenuItem {
   label: string;
@@ -72,6 +74,11 @@ const menuItems: MenuItem[] = [
     path: "/dashboard/cart",
     icon: <ShoppingCart className="w-4 h-4" />,
     badge: "2"
+  },
+  {
+    label: "Orders",
+    path: "/dashboard/orders",
+    icon: <Package className="w-4 h-4" />
   },
   {
     label: "Wallet",
@@ -280,6 +287,8 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
             <PaymentConfirmation />
           </>
         } />
+        <Route path="orders" element={<Orders />} />
+        <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
         <Route path="*" element={<Outlet />} />
       </Routes>
     );
