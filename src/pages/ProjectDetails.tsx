@@ -399,10 +399,7 @@ function ProjectDetails() {
             <TabsContent value="invoices" className="p-4 space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Project Invoices</h2>
-                <Button size="sm">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Create Invoice
-                </Button>
+
               </div>
 
               <div className="grid gap-4">
@@ -478,13 +475,6 @@ function ProjectDetails() {
             </TabsContent>
           </div>
         </Tabs>
-
-        {/* Add a floating action button for mobile */}
-        <div className="fixed bottom-6 right-6 md:hidden">
-          <Button size="lg" className="rounded-full h-12 w-12 shadow-lg">
-            <PlusCircle className="h-6 w-6" />
-          </Button>
-        </div>
       </motion.div>
     </div>
   );
