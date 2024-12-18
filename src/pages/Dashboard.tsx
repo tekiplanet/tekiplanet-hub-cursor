@@ -465,8 +465,8 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0">
                   <div className="flex flex-col h-full">
-                    {/* Mobile Menu Content */}
-                    <div className="border-b p-4">
+                    {/* Fixed Header */}
+                    <div className="border-b p-4 shrink-0">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-10 w-10">
                           <AvatarImage 
@@ -495,89 +495,98 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                       </div>
                     </div>
 
-                    {/* Mobile Menu Items */}
-                    <nav className="flex-1 space-y-1 p-4">
-                      {menuItems.map((item) => (
-                        <Button
-                          key={item.path}
-                          variant={location.pathname === item.path ? "default" : "ghost"}
-                          className={cn(
-                            "w-full justify-start gap-2",
-                            location.pathname === item.path && "bg-primary text-primary-foreground"
-                          )}
-                          onClick={() => handleMenuItemClick(item.path)}
-                        >
-                          {item.icon}
-                          <span>{item.label}</span>
-                          {item.badge && (
-                            <Badge 
-                              variant={location.pathname === item.path ? "secondary" : "default"}
-                              className="ml-auto"
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </Button>
-                      ))}
-                    </nav>
+                    {/* Scrollable Content Area */}
+                    <div className="flex-1 overflow-y-auto">
+                      {/* Menu Items */}
+                      <nav className="space-y-1 p-4">
+                        {menuItems.map((item) => (
+                          <Button
+                            key={item.path}
+                            variant={location.pathname === item.path ? "default" : "ghost"}
+                            className={cn(
+                              "w-full justify-start gap-2",
+                              location.pathname === item.path && "bg-primary text-primary-foreground"
+                            )}
+                            onClick={() => handleMenuItemClick(item.path)}
+                          >
+                            {item.icon}
+                            <span>{item.label}</span>
+                            {item.badge && (
+                              <Badge 
+                                variant={location.pathname === item.path ? "secondary" : "default"}
+                                className="ml-auto"
+                              >
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </Button>
+                        ))}
+                      </nav>
+                    </div>
 
-                    {/* Mobile Bottom Section */}
-                    <div className="border-t p-4 space-y-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start gap-2">
-                            <GraduationCap className="h-4 w-4" />
-                            {user?.account_type === "student" ? "Student" : user?.account_type === "business" ? "Business" : user?.account_type === "professional" ? "Student" : "Professional"}
+                    {/* Fixed Footer */}
+                    <div className="border-t p-4 mt-auto shrink-0">
+                      <div className="space-y-2">
+                        {/* Profile Switcher */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start gap-2">
+                              <GraduationCap className="h-4 w-4" />
+                              {user?.account_type === "student" ? "Student" : user?.account_type === "business" ? "Business" : "Professional"}
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem 
-                            disabled={user?.account_type === "student"}
-                            onClick={() => {
-                              handleProfileSwitch("student");
-                              setIsSheetOpen(false);
-                            }}
-                          >
-                            Switch to Student
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            disabled={user?.account_type === "business"}
-                            onClick={() => {
-                              handleProfileSwitch("business");
-                              setIsSheetOpen(false);
-                            }}
-                          >
-                            Switch to Business
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            disabled={user?.account_type === "professional"}
-                            onClick={() => {
-                              handleProfileSwitch("professional");
-                              setIsSheetOpen(false);
-                            }}
-                          >
-                            Switch to Professional
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-              {/* Theme Toggle */}
-              <div className="flex items-center justify-between px-3 py-2">
-                <h4 className="text-xs font-medium text-muted-foreground">
-                  Theme
-                </h4>
-                <ThemeToggle />
-              </div>                      
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start gap-2 text-red-500"
-                        onClick={() => {
-                          handleLogout();
-                          setIsSheetOpen(false);
-                        }}
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem 
+                              disabled={user?.account_type === "student"}
+                              onClick={() => {
+                                handleProfileSwitch("student");
+                                setIsSheetOpen(false);
+                              }}
+                            >
+                              Switch to Student
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              disabled={user?.account_type === "business"}
+                              onClick={() => {
+                                handleProfileSwitch("business");
+                                setIsSheetOpen(false);
+                              }}
+                            >
+                              Switch to Business
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              disabled={user?.account_type === "professional"}
+                              onClick={() => {
+                                handleProfileSwitch("professional");
+                                setIsSheetOpen(false);
+                              }}
+                            >
+                              Switch to Professional
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Theme Toggle */}
+                        <div className="flex items-center justify-between px-3 py-2">
+                          <h4 className="text-xs font-medium text-muted-foreground">
+                            Theme
+                          </h4>
+                          <ThemeToggle />
+                        </div>
+
+                        {/* Logout Button */}
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start gap-2 text-red-500"
+                          onClick={() => {
+                            handleLogout();
+                            setIsSheetOpen(false);
+                          }}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Logout
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </SheetContent>
