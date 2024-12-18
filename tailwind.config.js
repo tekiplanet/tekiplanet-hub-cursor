@@ -58,11 +58,16 @@ module.exports = {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
+        },
+        'fade-pulse': {
+          '0%, 100%': { opacity: 0.2 },
+          '50%': { opacity: 1 },
         }
       },
       animation: {
         float: 'float 3s ease-in-out infinite',
         'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+        'fade-pulse': 'fade-pulse 2s ease-in-out infinite',
       }
     },
   },

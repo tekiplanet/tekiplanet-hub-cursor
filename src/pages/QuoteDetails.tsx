@@ -171,7 +171,7 @@ function QuoteDetails() {
             {quote.unread_messages_count > 0 && (
               <div className="absolute -top-2 -right-2">
                 <div className="relative flex items-center justify-center">
-                  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-ping-slow" />
+                  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-fade-pulse" />
                   <Badge 
                     variant="destructive" 
                     className="relative h-5 w-5 rounded-full p-0 flex items-center justify-center"

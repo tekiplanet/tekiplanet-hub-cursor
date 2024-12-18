@@ -38,7 +38,7 @@ interface Quote {
 }
 
 const NotificationBadge = () => (
-  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-ping-slow" />
+  <span className="absolute h-3 w-3 rounded-full bg-destructive animate-fade-pulse" />
 );
 
 const QuoteRequestsList: React.FC = () => {
