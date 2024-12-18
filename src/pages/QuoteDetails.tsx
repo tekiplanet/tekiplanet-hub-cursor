@@ -4,9 +4,12 @@ import { quoteService } from '@/services/quoteService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Info, FileText, MessageCircle } from 'lucide-react';
+import { Info, FileText, MessageCircle, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from 'react-hot-toast';
 
 interface Quote {
   id: string;
@@ -36,6 +39,7 @@ function QuoteDetails() {
   const { quoteId } = useParams<{ quoteId: string }>();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState('');
 
   useEffect(() => {
     const fetchQuoteDetails = async () => {
@@ -53,6 +57,24 @@ function QuoteDetails() {
       fetchQuoteDetails();
     }
   }, [quoteId]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    try {
+      const response = await quoteService.sendMessage(quoteId!, newMessage);
+      if (response.success) {
+        setQuote(prev => ({
+          ...prev!,
+          messages: [...prev!.messages, response.message]
+        }));
+        setNewMessage('');
+      }
+    } catch (error) {
+      toast.error('Failed to send message');
+      console.error('Error sending message:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -131,36 +153,67 @@ function QuoteDetails() {
 
         <TabsContent value="conversation">
           <Card>
-            <CardContent className="pt-6">
-              {quote.messages.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No messages yet
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {quote.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.sender_type === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender_type === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{message.message}</p>
-                        <p className="text-xs mt-1 opacity-70">
-                          {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
+            <CardContent className="p-4">
+              <div className="flex flex-col h-[500px]">
+                <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                  {quote.messages.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No messages yet. Start the conversation!
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {quote.messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${
+                            message.sender_type === 'user' ? 'justify-end' : 'justify-start'
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-lg p-3 ${
+                              message.sender_type === 'user'
+                                ? 'bg-primary text-primary-foreground ml-4'
+                                : 'bg-muted mr-4'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium">
+                                {message.user.first_name} {message.user.last_name}
+                              </span>
+                            </div>
+                            <p className="text-sm">{message.message}</p>
+                            <p className="text-xs mt-1 opacity-70">
+                              {format(new Date(message.created_at), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Type your message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    size="icon"
+                    disabled={!newMessage.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

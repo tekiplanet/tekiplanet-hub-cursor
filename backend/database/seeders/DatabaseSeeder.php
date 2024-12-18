@@ -20,6 +20,7 @@ use Database\Seeders\InstructorSeeder;
 use Database\Seeders\ServiceSeeder;
 use Database\Seeders\ServiceQuoteFieldSeeder;
 use Database\Seeders\ServiceCategorySeeder;
+use Database\Seeders\QuoteMessagesSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -45,6 +46,7 @@ class DatabaseSeeder extends Seeder
             ServiceCategorySeeder::class,
             ServiceSeeder::class,
             ServiceQuoteFieldSeeder::class,
+            QuoteMessagesSeeder::class,
         ]);
     }
 }
