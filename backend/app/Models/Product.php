@@ -20,12 +20,14 @@ class Product extends Model
         'brand_id',
         'stock',
         'rating',
-        'reviews_count'
+        'reviews_count',
+        'is_featured'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'rating' => 'decimal:2',
+        'is_featured' => 'boolean',
     ];
 
     public function category(): BelongsTo

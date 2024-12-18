@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('stock')->default(0);
             $table->decimal('rating', 3, 2)->default(0);
             $table->integer('reviews_count')->default(0);
+            $table->boolean('is_featured')->default(false);
             $table->timestamps();
         });
     }
