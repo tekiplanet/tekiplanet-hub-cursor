@@ -7,9 +7,9 @@ import {
   PlusCircle,
   Server,
   CheckCircle,
-  Clock,
-  Loader2
+  Clock
 } from 'lucide-react';
+import PagePreloader from '@/components/ui/PagePreloader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { projectService, type Project } from '@/services/projectService';
 import { toast } from 'sonner';
+import { EmptyPlaceholder } from "@/components/empty-placeholder"
 
 export default function ProjectsListPage() {
   return (
@@ -47,10 +48,17 @@ function ProjectsList() {
         if (data.success) {
           setProjects(data.projects);
           setFilteredProjects(data.projects);
+        } else if (data.message === 'Business profile not found') {
+          setProjects([]);
+          setFilteredProjects([]);
         }
       } catch (error) {
-        toast.error('Failed to fetch projects');
-        console.error(error);
+        if (error.response?.status !== 404) {
+          toast.error('Failed to fetch projects');
+          console.error(error);
+        }
+        setProjects([]);
+        setFilteredProjects([]);
       } finally {
         setIsLoading(false);
       }
@@ -86,11 +94,7 @@ function ProjectsList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PagePreloader />;
   }
 
   return (
@@ -150,9 +154,28 @@ function ProjectsList() {
         className="space-y-4"
       >
         {filteredProjects.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No projects found
-          </div>
+          <EmptyPlaceholder className="mx-auto max-w-[420px] mt-16">
+            <EmptyPlaceholder.Icon>
+              <div className="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10">
+                <PlusCircle className="h-6 w-6 text-primary" />
+              </div>
+            </EmptyPlaceholder.Icon>
+            <EmptyPlaceholder.Title>No projects found</EmptyPlaceholder.Title>
+            <EmptyPlaceholder.Description>
+              {projects.length === 0 
+                ? "You haven't created any projects yet. Get started by creating your first project."
+                : "No projects match your search criteria. Try adjusting your filters."}
+            </EmptyPlaceholder.Description>
+            {projects.length === 0 && (
+              <Button 
+                onClick={() => navigate('/dashboard/services')}
+                className="mt-4"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Start New Project
+              </Button>
+            )}
+          </EmptyPlaceholder>
         ) : (
           filteredProjects.map((project) => (
             <Card 

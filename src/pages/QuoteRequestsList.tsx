@@ -19,10 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Search, Filter, MoreVertical, PlusCircle } from 'lucide-react';
+import { Search, Filter, MoreVertical, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Dashboard from './Dashboard';
 import { motion } from 'framer-motion';
+import PagePreloader from '@/components/ui/PagePreloader';
 
 interface Quote {
   id: number;
@@ -111,11 +112,7 @@ const QuoteRequestsList: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
+    return <PagePreloader />;
   }
 
   return (
