@@ -6,8 +6,8 @@ import {
   MoreVertical, 
   PlusCircle,
   Server,
-  CheckCircle,
-  Clock
+  Calendar,
+  Wallet
 } from 'lucide-react';
 import PagePreloader from '@/components/ui/PagePreloader';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,21 +30,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { projectService, type Project } from '@/services/projectService';
 import { toast } from 'sonner';
-import { EmptyPlaceholder } from "@/components/empty-placeholder"
+import { EmptyPlaceholder } from "@/components/empty-placeholder";
 
 export default function ProjectsListPage() {
-  return (
-    // <Dashboard>
-      <ProjectsList />
-    // </Dashboard>
-  );
+  return <ProjectsList />;
 }
 
 function ProjectsList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -77,19 +80,19 @@ function ProjectsList() {
       );
     }
 
-    if (filterStatus) {
-      result = result.filter(project => project.status === filterStatus);
+    if (filterStatus && filterStatus !== 'all') {
+      result = result.filter(project => project.status.toLowerCase() === filterStatus.toLowerCase());
     }
 
     setFilteredProjects(result);
   }, [searchTerm, filterStatus, projects]);
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'Completed': return 'bg-green-100 text-green-800';
-      case 'In Progress': return 'bg-yellow-100 text-yellow-800';
-      case 'Pending': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed': return 'success';
+      case 'in_progress': return 'warning';
+      case 'pending': return 'secondary';
+      default: return 'secondary';
     }
   };
 
@@ -98,137 +101,156 @@ function ProjectsList() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 p-4 md:p-6 bg-background"
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => navigate('/dashboard/projects/new')}
-        >
-          <PlusCircle className="h-5 w-5" />
-        </Button>
-      </div>
-
-      <div className="flex space-x-2 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input 
-            placeholder="Search projects..." 
-            className="pl-10 w-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Filter className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setFilterStatus(null)}>
-              All Statuses
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterStatus('Pending')}>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterStatus('In Progress')}>
-              In Progress
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterStatus('Completed')}>
-              Completed
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="space-y-4"
+    <div className="container mx-auto p-4 max-w-5xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        {filteredProjects.length === 0 ? (
-          <EmptyPlaceholder className="mx-auto max-w-[420px] mt-16">
-            <EmptyPlaceholder.Icon>
-              <div className="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10">
-                <PlusCircle className="h-6 w-6 text-primary" />
-              </div>
-            </EmptyPlaceholder.Icon>
-            <EmptyPlaceholder.Title>No projects found</EmptyPlaceholder.Title>
-            <EmptyPlaceholder.Description>
-              {projects.length === 0 
-                ? "You haven't created any projects yet. Get started by creating your first project."
-                : "No projects match your search criteria. Try adjusting your filters."}
-            </EmptyPlaceholder.Description>
-            {projects.length === 0 && (
-              <Button 
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 -mx-4 px-4 py-3 mb-4 border-b">
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-bold tracking-tight">Projects</h1>
+              <Button
                 onClick={() => navigate('/dashboard/services')}
-                className="mt-4"
+                size="sm"
+                className="flex items-center gap-2"
               >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Start New Project
+                <PlusCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">New Project</span>
+                <span className="sm:hidden">New</span>
               </Button>
-            )}
-          </EmptyPlaceholder>
-        ) : (
-          filteredProjects.map((project) => (
-            <Card 
-              key={project.id} 
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardHeader 
-                className="flex flex-row items-center justify-between space-y-0 p-4 pb-0"
-                onClick={() => navigate(`/dashboard/projects/${project.id}`)}
+            </div>
+
+            {/* Search and Filter */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+              <Select
+                value={filterStatus}
+                onValueChange={setFilterStatus}
               >
-                <div className="space-y-1.5">
-                  <h3 className="font-semibold text-lg leading-none tracking-tight">
-                    {project.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {project.client_name}
-                  </p>
+                <SelectTrigger className="w-[100px] h-9">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Status</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Projects List */}
+        <div className="space-y-3">
+          {filteredProjects.length === 0 ? (
+            <EmptyPlaceholder className="mx-auto max-w-[420px] mt-8">
+              <EmptyPlaceholder.Icon>
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10">
+                  <PlusCircle className="h-6 w-6 text-primary" />
                 </div>
-                <Badge 
-                  variant="outline" 
-                  className={`${getStatusColor(project.status)} text-xs`}
+              </EmptyPlaceholder.Icon>
+              <EmptyPlaceholder.Title>No projects found</EmptyPlaceholder.Title>
+              <EmptyPlaceholder.Description>
+                {projects.length === 0 
+                  ? "You haven't created any projects yet. Get started by creating your first project."
+                  : "No projects match your search criteria. Try adjusting your filters."}
+              </EmptyPlaceholder.Description>
+              {projects.length === 0 && (
+                <Button 
+                  onClick={() => navigate('/dashboard/services')}
+                  className="mt-4"
                 >
-                  {project.status}
-                </Badge>
-              </CardHeader>
-              <CardContent 
-                className="p-4 pt-2 cursor-pointer"
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Start New Project
+                </Button>
+              )}
+            </EmptyPlaceholder>
+          ) : (
+            filteredProjects.map((project) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
                 onClick={() => navigate(`/dashboard/projects/${project.id}`)}
               >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                    <Server className="h-4 w-4" />
-                    <span>{project.start_date} - {project.end_date}</span>
-                  </div>
-                  <span className="font-bold text-primary">{project.budget}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                  <div 
-                    className={`h-2 rounded-full ${
-                      project.status === 'Completed' 
-                        ? 'bg-green-500' 
-                        : project.status === 'In Progress' 
-                        ? 'bg-yellow-500' 
-                        : 'bg-blue-500'
-                    }`} 
-                    style={{ width: `${project.progress}%` }}
-                  ></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <h3 className="text-base font-medium truncate">
+                          {project.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant={getStatusVariant(project.status)} className="rounded-full">
+                            {project.status}
+                          </Badge>
+                          <span>•</span>
+                          <span>{project.client_name}</span>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                          <DropdownMenuItem>Edit Project</DropdownMenuItem>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-2">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">{project.start_date} - {project.end_date}</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-end">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-primary">{project.budget}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium">{project.progress}%</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            project.status === 'completed' 
+                              ? 'bg-green-500' 
+                              : project.status === 'in_progress' 
+                              ? 'bg-yellow-500' 
+                              : 'bg-blue-500'
+                          }`} 
+                          style={{ width: `${project.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
