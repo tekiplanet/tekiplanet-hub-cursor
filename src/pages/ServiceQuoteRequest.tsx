@@ -374,7 +374,7 @@ const ServiceQuoteRequest: React.FC = () => {
         >
           {/* Header Section */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">{serviceDetails?.name} Quote Request</h1>
+            <h1 className="text-xl font-bold tracking-tight">{serviceDetails?.name} Request</h1>
             <p className="text-muted-foreground text-lg">{serviceDetails?.description}</p>
           </div>
 

@@ -109,49 +109,49 @@ const QuoteRequestsList: React.FC = () => {
   }
 
   return (
-      <div className="container mx-auto p-4 max-w-5xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Quote Requests</h1>
-              <p className="text-muted-foreground">Manage and track your service quote requests</p>
+    <div className="container mx-auto p-4 max-w-5xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Header Section - Mobile Optimized */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 -mx-4 px-4 py-3 mb-4 border-b">
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-bold tracking-tight">Quote Requests</h1>
+              <Button
+                onClick={() => navigate('/dashboard/services')}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">New Quote</span>
+                <span className="sm:hidden">New</span>
+              </Button>
             </div>
-            <Button
-              onClick={() => navigate('/service-quote-request')}
-              className="flex items-center gap-2"
-            >
-              <PlusCircle className="h-4 w-4" />
-              New Quote Request
-            </Button>
-          </div>
 
-          {/* Search and Filter Section */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-            <div className="relative md:col-span-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by service, industry or budget..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="md:col-span-4">
+            {/* Mobile Search Bar */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search quotes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
               <Select
                 value={statusFilter}
                 onValueChange={setStatusFilter}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-[100px] h-9">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <span className="hidden sm:inline">Status</span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
                   <SelectItem value="accepted">Accepted</SelectItem>
@@ -160,91 +160,99 @@ const QuoteRequestsList: React.FC = () => {
               </Select>
             </div>
           </div>
+        </div>
 
-          {/* Quotes List */}
-          {filteredQuotes.length === 0 ? (
-            <div className="text-center py-10 bg-muted/50 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2">No quote requests found</h3>
-              <p className="text-muted-foreground mb-4">
-                {quotes.length === 0 
-                  ? "Start by creating your first quote request"
-                  : "Try adjusting your search or filters"}
-              </p>
-              {quotes.length === 0 && (
+        {/* Quotes List - Mobile Optimized */}
+        {filteredQuotes.length === 0 ? (
+          <div className="text-center py-10 px-4 bg-muted/50 rounded-lg mt-4">
+            <h3 className="text-lg font-semibold mb-2">You have no quote requests</h3>
+            <p className="text-muted-foreground mb-4">
+              {quotes.length === 0 
+                ? "Start by creating your first quote request"
+                : "Try adjusting your search or filters"}
+            </p>
+            {quotes.length === 0 && (
+              <div className="flex justify-center">
                 <Button 
-                  onClick={() => navigate('/service-quote-request')}
+                  onClick={() => navigate('/dashboard/services')}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
                   <PlusCircle className="h-4 w-4" />
-                  Create New Quote Request
+                  Request New Quote
                 </Button>
-              )}
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {filteredQuotes.map((quote) => (
-                <motion.div
-                  key={quote.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{quote.service.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          Submitted {format(new Date(quote.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getStatusVariant(quote.status)}>
-                          {getStatusText(quote.status)}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                            {quote.status === 'pending' && (
-                              <DropdownMenuItem className="text-destructive">
-                                Cancel Request
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Industry</p>
-                          <p className="text-sm mt-1">{quote.industry}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Budget Range</p>
-                          <p className="text-sm mt-1">{quote.budget_range}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Project Deadline</p>
-                          <p className="text-sm mt-1">
-                            {format(new Date(quote.project_deadline), 'MMM d, yyyy')}
-                          </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredQuotes.map((quote) => (
+              <motion.div
+                key={quote.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <CardTitle className="text-base font-medium truncate">
+                          {quote.service.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant={getStatusVariant(quote.status)} className="rounded-full">
+                            {getStatusText(quote.status)}
+                          </Badge>
+                          <span>•</span>
+                          <span>{format(new Date(quote.created_at), 'MMM d, yyyy')}</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                          <DropdownMenuItem>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Download PDF
+                          </DropdownMenuItem>
+                          {quote.status === 'pending' && (
+                            <DropdownMenuItem className="text-destructive">
+                              Cancel Request
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-2">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground font-medium">Industry</p>
+                        <p className="truncate">{quote.industry}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground font-medium">Budget</p>
+                        <p className="truncate">{quote.budget_range}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground font-medium">Deadline</p>
+                        <p>{format(new Date(quote.project_deadline), 'MMM d, yyyy')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
 };
 
