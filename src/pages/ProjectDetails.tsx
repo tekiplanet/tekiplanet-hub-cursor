@@ -399,7 +399,6 @@ function ProjectDetails() {
             <TabsContent value="invoices" className="p-4 space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Project Invoices</h2>
-
               </div>
 
               <div className="grid gap-4">
@@ -408,63 +407,48 @@ function ProjectDetails() {
                     key={invoice.id} 
                     className="hover:shadow-md transition-all"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className="p-3 bg-primary/10 rounded-full">
-                            <CreditCard className="h-6 w-6 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-semibold">
-                              Invoice #{invoice.invoice_number}
-                            </h3>
-                            <div className="flex flex-wrap gap-2 text-sm">
-                              <Badge variant="outline" className={getStatusColor(invoice.status)}>
-                                {invoice.status}
-                              </Badge>
-                              <span className="text-muted-foreground">
-                                Due: {invoice.due_date}
-                              </span>
-                            </div>
-                          </div>
+                    <CardContent className="p-4">
+                      {/* Invoice Header */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="p-2 bg-primary/10 rounded-full shrink-0">
+                          <CreditCard className="h-5 w-5 text-primary" />
                         </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Amount</p>
-                            <p className="font-bold text-lg">{invoice.amount}</p>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold truncate">
+                            Invoice #{invoice.invoice_number}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            <Badge variant="outline" className={getStatusColor(invoice.status)}>
+                              {invoice.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              Due: {invoice.due_date}
+                            </span>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Download className="h-4 w-4 mr-2" />
-                                Download PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Share2 className="h-4 w-4 mr-2" />
-                                Share Invoice
-                              </DropdownMenuItem>
-                              {invoice.status !== 'paid' && (
-                                <DropdownMenuItem>
-                                  <DollarSign className="h-4 w-4 mr-2" />
-                                  Mark as Paid
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </div>
                       </div>
+
+                      {/* Invoice Amount */}
+                      <div className="mt-3 flex items-center justify-between border-t pt-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Amount</p>
+                          <p className="font-bold text-lg">{invoice.amount}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="shrink-0"
+                        >
+                          <Download className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
                       
+                      {/* Paid Status */}
                       {invoice.paid_at && (
-                        <div className="mt-4 pt-4 border-t">
+                        <div className="mt-3 pt-3 border-t">
                           <div className="flex items-center gap-2 text-sm text-green-600">
                             <CheckCircle className="h-4 w-4" />
-                            Paid on {invoice.paid_at}
+                            <span className="truncate">Paid on {invoice.paid_at}</span>
                           </div>
                         </div>
                       )}
