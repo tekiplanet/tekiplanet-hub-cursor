@@ -14,6 +14,7 @@ use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceQuoteController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\ProjectController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/quotes/{id}', [QuoteController::class, 'show']);
         Route::post('/quotes/{id}/messages', [QuoteController::class, 'sendMessage']);
         Route::post('/quotes/{id}/mark-messages-read', [QuoteController::class, 'markMessagesAsRead']);
+        Route::get('/projects', [ProjectController::class, 'index']);
     });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -7,7 +7,8 @@ import {
   PlusCircle,
   Server,
   CheckCircle,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,39 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-
-const mockProjects = [
-  {
-    id: 'PRJ-001',
-    name: 'Banking App Redesign',
-    client: 'FinTech Solutions',
-    status: 'In Progress',
-    startDate: '2024-01-15',
-    endDate: '2024-03-30',
-    progress: 65,
-    budget: '₦7,500,000'
-  },
-  {
-    id: 'PRJ-002',
-    name: 'E-commerce Platform',
-    client: 'Global Retail Inc.',
-    status: 'Completed',
-    startDate: '2023-11-01',
-    endDate: '2024-01-10',
-    progress: 100,
-    budget: '₦5,200,000'
-  },
-  {
-    id: 'PRJ-003',
-    name: 'Corporate Website',
-    client: 'Tech Innovations Ltd',
-    status: 'Pending',
-    startDate: '2024-02-01',
-    endDate: '2024-04-15',
-    progress: 20,
-    budget: '₦3,800,000'
-  }
-];
+import { projectService, type Project } from '@/services/projectService';
+import { toast } from 'sonner';
 
 export default function ProjectsListPage() {
   return (
@@ -63,9 +33,48 @@ export default function ProjectsListPage() {
 }
 
 function ProjectsList() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await projectService.getProjects();
+        if (data.success) {
+          setProjects(data.projects);
+          setFilteredProjects(data.projects);
+        }
+      } catch (error) {
+        toast.error('Failed to fetch projects');
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    let result = projects;
+
+    if (searchTerm) {
+      result = result.filter(project => 
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (filterStatus) {
+      result = result.filter(project => project.status === filterStatus);
+    }
+
+    setFilteredProjects(result);
+  }, [searchTerm, filterStatus, projects]);
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -76,11 +85,13 @@ function ProjectsList() {
     }
   };
 
-  const filteredProjects = mockProjects.filter(project => 
-    (filterStatus ? project.status === filterStatus : true) &&
-    (project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     project.client.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -157,7 +168,7 @@ function ProjectsList() {
                     {project.name}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {project.client}
+                    {project.client_name}
                   </p>
                 </div>
                 <Badge 
@@ -174,7 +185,7 @@ function ProjectsList() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Server className="h-4 w-4" />
-                    <span>{project.startDate} - {project.endDate}</span>
+                    <span>{project.start_date} - {project.end_date}</span>
                   </div>
                   <span className="font-bold text-primary">{project.budget}</span>
                 </div>
