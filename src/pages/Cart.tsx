@@ -191,7 +191,7 @@ export default function Cart() {
               <Button 
                 className="w-full gap-2" 
                 size="lg"
-                onClick={() => navigate('/checkout')}
+                onClick={() => navigate('/dashboard/checkout')}
               >
                 Proceed to Checkout
                 <ArrowRight className="h-4 w-4" />

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/components/ui/use-toast';
 import { CartItem, ShippingAddress } from '@/types/store';
+import { cn } from "@/lib/utils";
 
 // Mock cart data (you can get this from your cart state)
 const cartItems: CartItem[] = [
@@ -137,8 +138,49 @@ export default function Checkout() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
+          {/* Order Summary - Will appear first on mobile */}
+          <div className="lg:col-span-1 order-first lg:order-last">
+            <div className="bg-card p-6 rounded-lg space-y-4 sticky top-4">
+              <h2 className="text-lg font-semibold">Order Summary</h2>
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <div key={item.product.id} className="flex gap-4">
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product.name}
+                      className="w-20 h-20 object-cover rounded-md"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-medium">{item.product.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Quantity: {item.quantity}
+                      </p>
+                      <p className="font-medium">
+                        ${(item.product.price * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span>${shipping.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold pt-2">
+                    <span>Total</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content - Will appear second on mobile */}
+          <div className="lg:col-span-2 order-last lg:order-first">
             <AnimatePresence mode="wait">
               {currentStep === 'shipping' && (
                 <motion.div
@@ -230,7 +272,7 @@ export default function Checkout() {
                   <div className="flex justify-between">
                     <Button
                       variant="outline"
-                      onClick={() => navigate('/cart')}
+                      onClick={() => navigate('/dashboard/cart')}
                       className="gap-2"
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -322,47 +364,6 @@ export default function Checkout() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-card p-6 rounded-lg space-y-4 sticky top-4">
-              <h2 className="text-lg font-semibold">Order Summary</h2>
-              <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.product.id} className="flex gap-4">
-                    <img
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      className="w-20 h-20 object-cover rounded-md"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Quantity: {item.quantity}
-                      </p>
-                      <p className="font-medium">
-                        ${(item.product.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-2">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -206,7 +206,7 @@ export default function ProductDetails() {
                 <Button
                   variant="secondary"
                   className="flex-1"
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => navigate('/dashboard/checkout')}
                   disabled={product.stock === 0}
                 >
                   Buy Now

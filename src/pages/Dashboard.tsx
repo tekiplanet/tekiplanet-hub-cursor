@@ -47,6 +47,7 @@ import TransactionDetails from "@/pages/TransactionDetails";
 import Store from "./Store";
 import Cart from "./Cart";
 import ProductDetails from "./ProductDetails";
+import Checkout from "./Checkout";
 
 interface MenuItem {
   label: string;
@@ -229,6 +230,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
         <Route path="store" element={<Store />} />
         <Route path="store/product/:id" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<Checkout />} />
         <Route path="academy" element={<Academy />} />
         <Route path="academy/my-courses" element={<MyCourses />} />
         <Route path="academy/:courseId" element={<CourseDetails />} />
