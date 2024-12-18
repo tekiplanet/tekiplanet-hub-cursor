@@ -35,6 +35,7 @@ interface Quote {
   project_deadline: string;
   created_at: string;
   unread_messages_count: number;
+  source: string | null;
 }
 
 const NotificationBadge = () => (
@@ -239,12 +240,14 @@ const QuoteRequestsList: React.FC = () => {
                           <DropdownMenuItem onClick={() => handleQuoteClick(quote.id)}>
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Download PDF
-                          </DropdownMenuItem>
-                          {quote.status === 'pending' && (
-                            <DropdownMenuItem className="text-destructive">
-                              Cancel Request
+                          {quote.source && (
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent quote details from opening
+                                window.open(quote.source, '_blank');
+                              }}
+                            >
+                              Download Quote
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

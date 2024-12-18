@@ -79,6 +79,7 @@ class QuoteController extends Controller
     public function index()
     {
         $quotes = Quote::with(['service', 'user'])
+            ->select('quotes.*')
             ->where('user_id', Auth::id())
             ->latest()
             ->get()
