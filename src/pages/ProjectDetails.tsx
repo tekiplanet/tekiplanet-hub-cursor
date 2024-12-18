@@ -112,6 +112,7 @@ function ProjectDetails() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
 
   console.log('Full location:', location);
   console.log('All params:', useParams());
@@ -253,6 +254,7 @@ function ProjectDetails() {
   // Add this function to handle receipt download
   const handleDownloadReceipt = async (invoiceId: string) => {
     try {
+      setIsDownloadingReceipt(true);
       const response = await axios({
         url: `${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/receipt/download`,
         method: 'GET',
@@ -277,6 +279,8 @@ function ProjectDetails() {
     } catch (error: any) {
       console.error('Download error:', error);
       toast.error('Failed to download receipt');
+    } finally {
+      setIsDownloadingReceipt(false);
     }
   };
 
@@ -852,9 +856,19 @@ function ProjectDetails() {
                   variant="default"
                   onClick={() => handleDownloadReceipt(receiptData.invoice.id)}
                   className="gap-2"
+                  disabled={isDownloadingReceipt}
                 >
-                  <Download className="h-4 w-4" />
-                  Download Receipt
+                  {isDownloadingReceipt ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Download Receipt
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </>

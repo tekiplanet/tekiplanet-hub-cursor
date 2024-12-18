@@ -400,72 +400,101 @@ class InvoiceController extends Controller
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false);
 
-            // Set margins very small
-            $pdf->SetMargins(5, 5, 5);
-            $pdf->SetAutoPageBreak(true, 5);
-
-            // Add a page
+            // Set margins even smaller for better layout
+            $pdf->SetMargins(4, 4, 4);
+            $pdf->SetAutoPageBreak(true, 4);
             $pdf->AddPage();
 
-            // Set font
-            $pdf->SetFont('helvetica', '', 8);
+            // Add a subtle background color for the header
+            $pdf->Rect(0, 0, 80, 25, 'F', array(), array(245, 247, 250));
 
-            // Company name and receipt header
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 5, $settings->site_name ?? "TekiPlanet", 0, 1, 'C');
+            // Company name and receipt header with improved styling
+            $pdf->SetFont('helvetica', 'B', 14);
+            $pdf->Cell(0, 6, $settings->site_name ?? "TekiPlanet", 0, 1, 'C');
             $pdf->SetFont('helvetica', '', 8);
-            $pdf->Cell(0, 4, 'Payment Receipt', 0, 1, 'C');
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->Cell(0, 4, '#' . strtoupper(substr($invoice->id, 0, 8)), 0, 1, 'C');
+            $pdf->Cell(0, 4, 'PAYMENT RECEIPT', 0, 1, 'C');
             
-            // Add some spacing
+            // Receipt number with monospace font for better readability
+            $pdf->SetFont('courier', '', 7);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 4, '#RCP-' . strtoupper(substr($invoice->id, 0, 8)), 0, 1, 'C');
+            
+            // Reset text color
+            $pdf->SetTextColor(0, 0, 0);
+            
+            // Add a subtle line separator
+            $pdf->Ln(1);
+            $pdf->Line(4, $pdf->GetY(), 76, $pdf->GetY());
             $pdf->Ln(2);
 
-            // Payment Details
-            $pdf->SetFont('helvetica', 'B', 8);
-            $pdf->Cell(0, 4, 'PAYMENT DETAILS', 0, 1, 'L');
+            // Payment Details with improved layout
+            $pdf->SetFillColor(250, 250, 250);
+            $pdf->SetFont('helvetica', 'B', 7);
+            $pdf->Cell(0, 5, 'PAYMENT DETAILS', 0, 1, 'L', true);
             $pdf->SetFont('helvetica', '', 8);
-            $pdf->Cell(20, 4, 'Invoice:', 0, 0, 'L');
-            $pdf->Cell(0, 4, '#' . $invoice->invoice_number, 0, 1, 'L');
-            $pdf->Cell(20, 4, 'Date:', 0, 0, 'L');
-            $pdf->Cell(0, 4, $invoice->paid_at->format('d/m/Y H:i'), 0, 1, 'L');
-            $pdf->Cell(20, 4, 'Method:', 0, 0, 'L');
-            $pdf->Cell(0, 4, ucfirst($invoice->payment_method), 0, 1, 'L');
-            $pdf->Cell(20, 4, 'Ref:', 0, 0, 'L');
-            $pdf->Cell(0, 4, $transaction->reference_number, 0, 1, 'L');
+            
+            // Create a table-like structure for payment details
+            $pdf->SetFont('helvetica', '', 7);
+            $detailsData = array(
+                array('Invoice', '#' . $invoice->invoice_number),
+                array('Date', $invoice->paid_at->format('d M Y, H:i')),
+                array('Method', ucfirst($invoice->payment_method)),
+                array('Ref', $transaction->reference_number)
+            );
 
-            // Add some spacing
+            foreach($detailsData as $row) {
+                $pdf->SetFont('helvetica', '', 7);
+                $pdf->Cell(15, 4, $row[0].':', 0, 0, 'L');
+                $pdf->SetFont('helvetica', 'B', 7);
+                $pdf->Cell(0, 4, $row[1], 0, 1, 'L');
+            }
+
+            // Project Info with similar styling
             $pdf->Ln(2);
+            $pdf->SetFont('helvetica', 'B', 7);
+            $pdf->Cell(0, 5, 'PROJECT DETAILS', 0, 1, 'L', true);
+            $pdf->SetFont('helvetica', '', 7);
+            $pdf->MultiCell(0, 3.5, 
+                $invoice->project->name . "\n" . 
+                $invoice->project->businessProfile->business_name, 
+                0, 'L'
+            );
 
-            // Project Info
-            $pdf->SetFont('helvetica', 'B', 8);
-            $pdf->Cell(0, 4, 'PROJECT INFO', 0, 1, 'L');
-            $pdf->SetFont('helvetica', '', 8);
-            $pdf->MultiCell(0, 4, $invoice->project->name . "\n" . $invoice->project->businessProfile->business_name, 0, 'L');
-
-            // Add some spacing
-            $pdf->Ln(2);
-
-            // Amount
-            $pdf->SetFont('helvetica', '', 8);
+            // Amount section with enhanced visibility
+            $pdf->Ln(3);
+            $pdf->SetFillColor(240, 247, 250);
+            $pdf->Rect($pdf->GetX(), $pdf->GetY(), 72, 15, 'F');
+            
+            $pdf->SetFont('helvetica', '', 7);
             $pdf->Cell(0, 4, 'AMOUNT PAID', 0, 1, 'C');
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 6, $currency . number_format($invoice->amount, 2), 0, 1, 'C');
+            $pdf->SetFont('helvetica', 'B', 14);
+            $pdf->Cell(0, 8, $currency . number_format($invoice->amount, 2), 0, 1, 'C');
 
-            // Payment Status
-            $pdf->SetFont('helvetica', '', 8);
-            $pdf->Cell(0, 6, '✓ Payment Successful', 0, 1, 'C');
+            // Payment Status with green checkmark
+            $pdf->Ln(2);
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetTextColor(39, 174, 96);
+            $pdf->Cell(0, 5, '✓ Payment Successful', 0, 1, 'C');
+            $pdf->SetTextColor(0, 0, 0);
 
-            // Add a line
-            $pdf->Line(5, $pdf->GetY() + 2, 75, $pdf->GetY() + 2);
-            $pdf->Ln(4);
+            // Dotted line separator
+            $pdf->Ln(2);
+            $pdf->SetLineStyle(array('dash' => '2,2'));
+            $pdf->Line(4, $pdf->GetY(), 76, $pdf->GetY());
+            $pdf->Ln(3);
 
-            // Footer
+            // Footer with contact info
             $pdf->SetFont('helvetica', '', 6);
-            $pdf->MultiCell(0, 3, 
+            $pdf->SetTextColor(128, 128, 128);
+            $pdf->MultiCell(0, 2.5, 
                 ($settings->contact_address ?? "123 Business Avenue") . "\n" .
-                ($settings->support_email ?? "info@tekiplanet.com") . ' | ' .
+                ($settings->support_email ?? "info@tekiplanet.com") . "\n" .
                 ($settings->support_phone ?? "+234 123 456 7890"), 0, 'C');
+
+            // Add "Thank you for your business" message
+            $pdf->Ln(2);
+            $pdf->SetFont('helvetica', 'I', 7);
+            $pdf->Cell(0, 4, 'Thank you for your business!', 0, 1, 'C');
 
             // Return the PDF
             return response($pdf->Output('', 'S'))
