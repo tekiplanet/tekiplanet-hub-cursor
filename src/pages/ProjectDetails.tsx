@@ -109,6 +109,9 @@ function ProjectDetails() {
   const [selectedInvoice, setSelectedInvoice] = useState<ProjectInvoice | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuthStore();
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
 
   console.log('Full location:', location);
   console.log('All params:', useParams());
@@ -226,6 +229,54 @@ function ProjectDetails() {
       setIsProcessing(false);
       setIsPaymentModalOpen(false);
       setSelectedInvoice(null);
+    }
+  };
+
+  // Add this function to handle receipt viewing
+  const handleViewReceipt = async (invoiceId: string) => {
+    try {
+      setIsLoadingReceipt(true);
+      const response = await apiClient.get(`/invoices/${invoiceId}/receipt`);
+      
+      if (response.data.success) {
+        setReceiptData(response.data.data);
+        setIsReceiptModalOpen(true);
+      }
+    } catch (error: any) {
+      console.error('Receipt error:', error);
+      toast.error(error.response?.data?.message || 'Failed to load receipt');
+    } finally {
+      setIsLoadingReceipt(false);
+    }
+  };
+
+  // Add this function to handle receipt download
+  const handleDownloadReceipt = async (invoiceId: string) => {
+    try {
+      const response = await axios({
+        url: `${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/receipt/download`,
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/pdf'
+        }
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Receipt_${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Receipt downloaded successfully');
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast.error('Failed to download receipt');
     }
   };
 
@@ -583,7 +634,7 @@ function ProjectDetails() {
                               variant="ghost" 
                               size="sm"
                               className="shrink-0"
-                              onClick={() => window.open(invoice.receipt_path, '_blank')}
+                              onClick={() => handleViewReceipt(invoice.id)}
                             >
                               <FileText className="h-4 w-4 mr-2" />
                               View Receipt
@@ -721,6 +772,93 @@ function ProjectDetails() {
               </Button>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Modal */}
+      <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader className="text-left">
+            <DialogTitle className="flex items-center gap-2">
+              <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary" />
+              </span>
+              Payment Receipt
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              Receipt #{receiptData?.receipt_details.receipt_number}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingReceipt ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  {/* Payment Details */}
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold">Payment Details</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Invoice Number:</div>
+                      <div className="font-medium">#{receiptData?.invoice.invoice_number}</div>
+                      <div className="text-muted-foreground">Payment Date:</div>
+                      <div className="font-medium">
+                        {receiptData?.receipt_details.payment_date && 
+                          new Date(receiptData.receipt_details.payment_date).toLocaleString()}
+                      </div>
+                      <div className="text-muted-foreground">Payment Method:</div>
+                      <div className="font-medium capitalize">{receiptData?.receipt_details.payment_method}</div>
+                      <div className="text-muted-foreground">Transaction Ref:</div>
+                      <div className="font-medium">{receiptData?.receipt_details.transaction_ref}</div>
+                    </div>
+                  </div>
+
+                  {/* Project Details */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h3 className="font-semibold">Project Details</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Project:</div>
+                      <div className="font-medium">{receiptData?.invoice.project.name}</div>
+                      <div className="text-muted-foreground">Client:</div>
+                      <div className="font-medium">{receiptData?.invoice.project.business_profile.business_name}</div>
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h3 className="font-semibold">Amount Paid</h3>
+                    <div className="text-2xl font-bold text-primary">
+                      {receiptData?.invoice.amount && formatCurrency(receiptData.invoice.amount)}
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-green-100 text-green-800 text-sm">
+                      <CheckCircle className="h-4 w-4" />
+                      Payment Successful
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsReceiptModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => handleDownloadReceipt(receiptData.invoice.id)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Receipt
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

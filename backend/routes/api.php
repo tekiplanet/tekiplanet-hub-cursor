@@ -57,6 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/projects/{id}', [ProjectController::class, 'show']);
         Route::get('/invoices/{id}/download', [InvoiceController::class, 'downloadPDF']);
         Route::post('/invoices/{id}/process-payment', [InvoiceController::class, 'processPayment']);
+        Route::get('/invoices/{id}/receipt', [InvoiceController::class, 'viewReceipt']);
+        Route::get('/invoices/{id}/receipt/download', [InvoiceController::class, 'downloadReceipt']);
     });
 });
 

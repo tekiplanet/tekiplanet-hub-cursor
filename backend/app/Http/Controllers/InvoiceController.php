@@ -321,4 +321,103 @@ class InvoiceController extends Controller
             ], 500);
         }
     }
+
+    public function viewReceipt($id)
+    {
+        try {
+            $invoice = ProjectInvoice::with(['project.businessProfile', 'project'])
+                ->findOrFail($id);
+
+            // Check if invoice is paid
+            if ($invoice->status !== 'paid') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Receipt is only available for paid invoices'
+                ], 400);
+            }
+
+            // Get the transaction for this invoice payment
+            $transaction = Transaction::where([
+                'category' => 'invoice_payment',
+                'reference_number' => 'INV-' . $invoice->id
+            ])->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'invoice' => $invoice,
+                    'transaction' => $transaction,
+                    'receipt_details' => [
+                        'receipt_number' => 'RCP-' . strtoupper(substr($invoice->id, 0, 8)),
+                        'payment_date' => $invoice->paid_at,
+                        'payment_method' => $invoice->payment_method,
+                        'transaction_ref' => $transaction?->reference_number
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch receipt details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadReceipt($id)
+    {
+        try {
+            $invoice = ProjectInvoice::with(['project.businessProfile', 'project'])
+                ->findOrFail($id);
+
+            if ($invoice->status !== 'paid') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Receipt is only available for paid invoices'
+                ], 400);
+            }
+
+            $transaction = Transaction::where([
+                'category' => 'invoice_payment',
+                'reference_number' => 'INV-' . $invoice->id
+            ])->first();
+
+            // Create PDF
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator(PDF_CREATOR);
+            $pdf->SetAuthor('TekiPlanet');
+            $pdf->SetTitle('Payment Receipt - ' . $invoice->invoice_number);
+
+            // Remove default header/footer
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+
+            // Add a page
+            $pdf->AddPage();
+
+            // Set font
+            $pdf->SetFont('helvetica', '', 12);
+
+            // Add receipt content
+            $html = view('pdfs.receipt', [
+                'invoice' => $invoice,
+                'transaction' => $transaction,
+                'receipt_number' => 'RCP-' . strtoupper(substr($invoice->id, 0, 8))
+            ])->render();
+
+            $pdf->writeHTML($html, true, false, true, false, '');
+
+            // Return the PDF
+            return response($pdf->Output('receipt.pdf', 'S'))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="Receipt_' . $invoice->invoice_number . '.pdf"');
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 } 
