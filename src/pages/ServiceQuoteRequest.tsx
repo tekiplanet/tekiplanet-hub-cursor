@@ -680,7 +680,158 @@ const ServiceQuoteRequest: React.FC = () => {
                                       <Badge variant="outline" className="ml-2 font-normal">Required</Badge>
                                     )}
                                   </FormLabel>
-                                  {/* Rest of the field rendering logic remains the same */}
+
+                                  {/* Text, Email, Phone inputs */}
+                                  {(field.type === 'text' || field.type === 'email' || field.type === 'phone') && (
+                                    <FormControl>
+                                      <Input
+                                        type={field.type}
+                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        {...formField}
+                                      />
+                                    </FormControl>
+                                  )}
+
+                                  {/* Textarea */}
+                                  {field.type === 'textarea' && (
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        className="min-h-[100px]"
+                                        {...formField}
+                                      />
+                                    </FormControl>
+                                  )}
+
+                                  {/* Select */}
+                                  {field.type === 'select' && field.options && (
+                                    <Select
+                                      onValueChange={formField.onChange}
+                                      defaultValue={formField.value}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {field.options.map((option) => (
+                                          <SelectItem key={option} value={option}>
+                                            {option}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+
+                                  {/* Multi-select */}
+                                  {field.type === 'multi-select' && field.options && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                      {field.options.map((option) => (
+                                        <div key={option} className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`${field.id}-${option}`}
+                                            checked={(formField.value ?? []).includes(option)}
+                                            onCheckedChange={(checked) => {
+                                              const currentValue = formField.value ?? [];
+                                              const newValue = checked
+                                                ? [...currentValue, option]
+                                                : currentValue.filter(v => v !== option);
+                                              formField.onChange(newValue);
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`${field.id}-${option}`}
+                                            className="text-sm font-medium leading-none"
+                                          >
+                                            {option}
+                                          </label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Radio */}
+                                  {field.type === 'radio' && field.options && (
+                                    <RadioGroup
+                                      onValueChange={formField.onChange}
+                                      defaultValue={formField.value}
+                                      className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+                                    >
+                                      {field.options.map((option) => (
+                                        <div key={option} className="flex items-center space-x-2 rounded-lg border p-3">
+                                          <RadioGroupItem value={option} id={`${field.id}-${option}`} />
+                                          <label
+                                            htmlFor={`${field.id}-${option}`}
+                                            className="text-sm font-medium leading-none"
+                                          >
+                                            {option}
+                                          </label>
+                                        </div>
+                                      ))}
+                                    </RadioGroup>
+                                  )}
+
+                                  {/* Checkbox single */}
+                                  {field.type === 'checkbox' && (
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={field.id}
+                                        checked={formField.value}
+                                        onCheckedChange={formField.onChange}
+                                      />
+                                      <label
+                                        htmlFor={field.id}
+                                        className="text-sm font-medium leading-none"
+                                      >
+                                        {field.label}
+                                      </label>
+                                    </div>
+                                  )}
+
+                                  {/* Number input */}
+                                  {field.type === 'number' && (
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        {...formField}
+                                      />
+                                    </FormControl>
+                                  )}
+
+                                  {/* Date input */}
+                                  {field.type === 'date' && (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !formField.value && "text-muted-foreground"
+                                          )}
+                                        >
+                                          {formField.value ? (
+                                            format(new Date(formField.value), "PPP")
+                                          ) : (
+                                            <span>Pick a date</span>
+                                          )}
+                                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-full p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={formField.value ? new Date(formField.value) : undefined}
+                                          onSelect={(date) => {
+                                            formField.onChange(date);
+                                          }}
+                                          disabled={(date) => date < new Date()}
+                                          initialFocus
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                  )}
+
+                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
