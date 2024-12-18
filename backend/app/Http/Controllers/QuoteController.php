@@ -52,6 +52,15 @@ class QuoteController extends Controller
                 'submitted_ip' => $request->ip()
             ]);
 
+            // Create initial message with project description
+            QuoteMessage::create([
+                'quote_id' => $quote->id,
+                'user_id' => Auth::id(),
+                'message' => $request->project_description,
+                'sender_type' => 'user',
+                'is_read' => false
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Quote submitted successfully',
