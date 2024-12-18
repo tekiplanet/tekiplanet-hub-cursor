@@ -622,15 +622,15 @@ function ProjectDetails() {
 
       {/* Payment Confirmation Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader className="text-left">
             <DialogTitle className="flex items-center gap-2">
               <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <DollarSign className="h-4 w-4 text-primary" />
               </span>
               Confirm Payment
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-left">
               Review the payment details below
             </DialogDescription>
           </DialogHeader>
