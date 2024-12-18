@@ -236,46 +236,61 @@ const ServiceQuoteRequest: React.FC = () => {
     }
   }, [quoteFields, form.reset]);
 
-  const nextStep = () => {
-    const validateCurrentStep = () => {
-      switch(currentStep) {
-        case 0: {
-          const requiredFields = ['industry', 'budgetRange', 'contactMethod', 'projectDescription', 'projectDeadline'];
-          const hasErrors = requiredFields.some(field => 
-            form.formState.errors[field] || !form.getValues(field)
-          );
-          
-          if (hasErrors) {
-            toast.error("Please fill all required fields");
-            return false;
-          }
-          return true;
-        }
-        case 1: {
-          if (quoteFields.length > 0) {
-            const requiredDynamicFields = quoteFields.filter(field => field.required);
-            const hasEmptyRequiredFields = requiredDynamicFields.some(field => {
-              const value = form.getValues(`dynamicFields.${field.id}`);
-              return value === undefined || value === null || value === '' || 
-                     (Array.isArray(value) && value.length === 0);
-            });
-            
-            if (hasEmptyRequiredFields) {
-              toast.error("Please fill all required fields");
-              return false;
-            }
-          }
-          return true;
-        }
-        default:
-          return true;
-      }
-    };
+  const nextStep = async () => {
+    if (currentStep === 0) {
+      // Validate Quote Details
+      const quoteDetailsFields = ['industry', 'budgetRange', 'contactMethod', 'projectDescription', 'projectDeadline'];
+      
+      // Check if all required fields are filled
+      const hasEmptyFields = quoteDetailsFields.some(fieldName => {
+        const value = form.getValues(fieldName);
+        return !value || (typeof value === 'string' && value.trim() === '');
+      });
 
-  if (validateCurrentStep()) {
+      if (hasEmptyFields) {
+        toast.error("Please fill all required fields");
+        return;
+      }
+
+      // Trigger validation
+      const isValid = await form.trigger(quoteDetailsFields);
+      if (!isValid) {
+        toast.error("Please correct the errors before proceeding");
+        return;
+      }
+    }
+
+    if (currentStep === 1) {
+      // Validate Project Details
+      if (quoteFields.length > 0) {
+        const requiredFields = quoteFields
+          .filter(field => field.required)
+          .map(field => `dynamicFields.${field.id}`);
+
+        // Check if required fields are filled
+        const hasEmptyFields = requiredFields.some(fieldName => {
+          const value = form.getValues(fieldName);
+          return value === undefined || value === null || value === '' || 
+                 (Array.isArray(value) && value.length === 0);
+        });
+
+        if (hasEmptyFields) {
+          toast.error("Please fill all required fields");
+          return;
+        }
+
+        // Trigger validation
+        const isValid = await form.trigger(requiredFields);
+        if (!isValid) {
+          toast.error("Please correct the errors before proceeding");
+          return;
+        }
+      }
+    }
+
+    // If validation passes, move to next step
     setCurrentStep(prev => Math.min(prev + 1, 2));
-  }
-};
+  };
 
   const prevStep = () => {
     setCurrentStep(prev => Math.max(prev - 1, 0));
@@ -407,7 +422,17 @@ const ServiceQuoteRequest: React.FC = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault(); // Always prevent default form submission
+                    
+                    // Only process submission in Review step with Submit Quote Request button
+                    if (currentStep === 2) {
+                      form.handleSubmit(onSubmit)(e);
+                    }
+                  }} 
+                  className="space-y-6"
+                >
                   <AnimatePresence mode="wait">
                     {currentStep === 0 && (
                       <motion.div
@@ -852,8 +877,75 @@ const ServiceQuoteRequest: React.FC = () => {
                       >
                         <div className="rounded-lg border bg-card p-6">
                           <h2 className="text-xl font-semibold mb-4">Review Your Quote Request</h2>
-                          <div className="space-y-4">
-                            {/* Add review content here */}
+                          
+                          {/* Quote Details Review */}
+                          <div className="space-y-6">
+                            <div>
+                              <h3 className="text-lg font-medium mb-4">Quote Details</h3>
+                              <div className="grid gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Industry/Sector</p>
+                                    <p className="text-sm mt-1">{form.getValues("industry")}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Budget Range</p>
+                                    <p className="text-sm mt-1">{form.getValues("budgetRange")}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Contact Method</p>
+                                    <p className="text-sm mt-1">{form.getValues("contactMethod")}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Project Deadline</p>
+                                    <p className="text-sm mt-1">
+                                      {form.getValues("projectDeadline") 
+                                        ? format(new Date(form.getValues("projectDeadline")), "PPP")
+                                        : "Not specified"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground">Project Description</p>
+                                  <p className="text-sm mt-1 whitespace-pre-wrap">{form.getValues("projectDescription")}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Project Details Review */}
+                            {quoteFields.length > 0 && (
+                              <div>
+                                <Separator className="my-6" />
+                                <h3 className="text-lg font-medium mb-4">Project Details</h3>
+                                <div className="grid gap-4">
+                                  {quoteFields.map((field) => {
+                                    const value = form.getValues(`dynamicFields.${field.id}`);
+                                    return (
+                                      <div key={field.id}>
+                                        <p className="text-sm font-medium text-muted-foreground">{field.label}</p>
+                                        <p className="text-sm mt-1">
+                                          {field.type === 'multi-select' 
+                                            ? (Array.isArray(value) ? value.join(', ') : value)
+                                            : field.type === 'date' 
+                                            ? (value ? format(new Date(value), "PPP") : "Not specified")
+                                            : field.type === 'checkbox'
+                                            ? (value ? "Yes" : "No")
+                                            : value || "Not specified"}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Review Notice */}
+                            <div className="mt-6 p-4 bg-muted rounded-lg">
+                              <p className="text-sm text-muted-foreground">
+                                Please review all the information above carefully before submitting your quote request. 
+                                You can go back to make changes if needed.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
@@ -877,7 +969,10 @@ const ServiceQuoteRequest: React.FC = () => {
                     {currentStep < 2 ? (
                       <Button
                         type="button"
-                        onClick={nextStep}
+                        onClick={(e) => {
+                          e.preventDefault(); // Prevent any form submission
+                          nextStep();
+                        }}
                         className="flex items-center gap-2 ml-auto"
                       >
                         Next Step
