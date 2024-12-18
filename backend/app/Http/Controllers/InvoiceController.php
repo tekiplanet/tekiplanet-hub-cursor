@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProjectInvoice;
 use App\Models\Setting;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use TCPDF;
 
@@ -246,6 +247,77 @@ class InvoiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate invoice PDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function processPayment($id)
+    {
+        try {
+            $invoice = ProjectInvoice::findOrFail($id);
+            $user = auth()->user();
+
+            // Check if invoice is already paid
+            if ($invoice->status === 'paid') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invoice has already been paid'
+                ], 400);
+            }
+
+            // Check wallet balance
+            if ($user->wallet_balance < $invoice->amount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient wallet balance',
+                    'wallet_balance' => $user->wallet_balance,
+                    'required_amount' => $invoice->amount
+                ], 400);
+            }
+
+            // Begin transaction
+            \DB::beginTransaction();
+
+            try {
+                // Deduct from wallet
+                $user->wallet_balance -= $invoice->amount;
+                $user->save();
+
+                // Update invoice
+                $invoice->status = 'paid';
+                $invoice->paid_at = now();
+                $invoice->payment_method = 'wallet';
+                $invoice->save();
+
+                // Create transaction record
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'amount' => $invoice->amount,
+                    'type' => 'debit',
+                    'description' => "Payment for invoice #{$invoice->invoice_number}",
+                    'category' => 'invoice_payment',
+                    'status' => 'completed',
+                    'payment_method' => 'wallet',
+                    'reference_number' => 'INV-' . uniqid(),
+                ]);
+
+                \DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment processed successfully',
+                    'invoice' => $invoice,
+                    'wallet_balance' => $user->wallet_balance
+                ]);
+
+            } catch (\Exception $e) {
+                \DB::rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process payment: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -38,8 +38,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import axios from 'axios';
+import { useAuthStore } from '@/store/useAuthStore';
+import { apiClient } from '@/lib/api-client';
 
 // Helper functions
 function getFileIcon(fileType: string) {
@@ -91,6 +93,10 @@ function ProjectDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ProjectInvoice | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useAuthStore();
 
   console.log('Full location:', location);
   console.log('All params:', useParams());
@@ -173,6 +179,41 @@ function ProjectDetails() {
         toast.error(error.response?.data?.message || 'Failed to download invoice');
     } finally {
         setIsDownloading(null);
+    }
+  };
+
+  const handlePayment = async (invoice: ProjectInvoice) => {
+    try {
+      setIsProcessing(true);
+      const response = await apiClient.post(`/invoices/${invoice.id}/process-payment`);
+      
+      if (response.data.success) {
+        toast.success('Payment processed successfully');
+        // Update the project data to reflect the new invoice status
+        const updatedProject = await projectService.getProject(projectId!);
+        setProject(updatedProject.project);
+        
+        // Update user's wallet balance in auth store
+        if (user) {
+          useAuthStore.setState({
+            user: {
+              ...user,
+              wallet_balance: response.data.wallet_balance
+            }
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to process payment');
+      }
+    } finally {
+      setIsProcessing(false);
+      setIsPaymentModalOpen(false);
+      setSelectedInvoice(null);
     }
   };
 
@@ -515,6 +556,10 @@ function ProjectDetails() {
                                 variant="default" 
                                 size="sm"
                                 className="shrink-0"
+                                onClick={() => {
+                                  setSelectedInvoice(invoice);
+                                  setIsPaymentModalOpen(true);
+                                }}
                               >
                                 <DollarSign className="h-4 w-4 mr-2" />
                                 Pay Now
@@ -562,6 +607,78 @@ function ProjectDetails() {
           </div>
         </Tabs>
       </motion.div>
+
+      {/* Payment Confirmation Modal */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Payment</DialogTitle>
+            <DialogDescription>
+              You are about to pay invoice #{selectedInvoice?.invoice_number}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Amount:</span>
+              <span className="font-semibold">{selectedInvoice?.amount}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Wallet Balance:</span>
+              <span className="font-semibold">₦{user?.wallet_balance}</span>
+            </div>
+            
+            {selectedInvoice && user?.wallet_balance < parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) ? (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+                Insufficient wallet balance. Please fund your wallet to continue.
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPaymentModalOpen(false);
+                setSelectedInvoice(null);
+              }}
+            >
+              Cancel
+            </Button>
+            
+            {selectedInvoice && user?.wallet_balance < parseFloat(selectedInvoice.amount.replace(/[^0-9.-]+/g, "")) ? (
+              <Button
+                variant="default"
+                onClick={() => {
+                  setIsPaymentModalOpen(false);
+                  navigate('/dashboard/wallet');
+                }}
+              >
+                Fund Wallet
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                disabled={isProcessing}
+                onClick={() => selectedInvoice && handlePayment(selectedInvoice)}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Confirm Payment
+                  </>
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
