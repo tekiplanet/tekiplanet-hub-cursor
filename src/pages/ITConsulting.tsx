@@ -32,40 +32,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import PagePreloader from '@/components/ui/PagePreloader';
-
-const HOURLY_RATE = 10000; // ₦10,000 per hour
-
-// Mock available time slots (in a real app, this would come from an API)
-const AVAILABLE_SLOTS = [
-  {
-    date: "2024-03-20",
-    slots: ["09:00", "11:00", "14:00", "16:00"]
-  },
-  {
-    date: "2024-03-21",
-    slots: ["10:00", "13:00", "15:00"]
-  },
-  {
-    date: "2024-03-22",
-    slots: ["09:00", "12:00", "14:00", "16:00"]
-  },
-  {
-    date: "2024-03-23",
-    slots: ["11:00", "13:00", "15:00"]
-  },
-  {
-    date: "2024-03-24",
-    slots: ["10:00", "14:00", "16:00"]
-  }
-];
-
-interface PriceContentProps {
-  hours: number;
-  totalCost: number;
-  balance: number;
-  loading: boolean;
-  onBook: () => void;
-}
+import { consultingService } from '@/services/consultingService';
+import type { TimeSlot, ConsultingSettings } from '@/services/consultingService';
 
 export default function ITConsulting() {
   const navigate = useNavigate();
@@ -85,18 +53,36 @@ export default function ITConsulting() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [settings, setSettings] = useState<ConsultingSettings | null>(null);
 
   const balance = getBalance(user?.id || '');
-  const totalCost = hours * HOURLY_RATE;
+  const hourlyRate = settings?.hourly_rate ?? 10000;
+  const totalCost = hours * hourlyRate;
 
+  // Fetch available slots
   useEffect(() => {
-    // Simulate loading state
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchSlots = async () => {
+      try {
+        setLoadingSlots(true);
+        const { slots, settings: consultingSettings } = await consultingService.getAvailableSlots();
+        setAvailableSlots(slots);
+        setSettings(consultingSettings);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch available time slots",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingSlots(false);
+        setIsLoading(false);
+      }
+    };
+
+    fetchSlots();
+  }, [toast]);
 
   const handleBookSession = async () => {
     if (!selectedDate || !selectedTime) {
@@ -115,32 +101,24 @@ export default function ITConsulting() {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Process payment
-      deductBalance(user.id, totalCost);
-      
-      // Add transaction record
-      addTransaction(user.id, {
-        id: `CONS-${Date.now()}`,
-        type: 'debit',
-        amount: totalCost,
-        description: `Consulting Session Booking (${hours} hours) - ${selectedDate} ${selectedTime}`,
-        date: new Date().toISOString()
+      const response = await consultingService.createBooking({
+        hours,
+        selected_date: selectedDate,
+        selected_time: selectedTime,
+        requirements: '', // Add a text area for requirements if needed
+        payment_method: 'wallet'
       });
 
       toast({
-        title: "Session Booked Successfully",
-        description: `Your ${hours}-hour consulting session has been scheduled for ${selectedDate} at ${selectedTime}.`,
+        title: "Booking Successful",
+        description: `Your ${hours}-hour consulting session has been scheduled.`,
       });
 
-      // Navigate to confirmation or dashboard
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Booking Failed",
-        description: "Unable to process your booking. Please try again.",
+        description: error.response?.data?.message || "Unable to process your booking",
         variant: "destructive"
       });
     } finally {
@@ -161,54 +139,60 @@ export default function ITConsulting() {
             <DialogTitle>Select Appointment Time</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] mt-4">
-            <div className="space-y-6 pr-4">
-              {AVAILABLE_SLOTS.map((day) => {
-                const date = new Date(day.date);
-                const isSelected = selectedDate === day.date;
-                
-                return (
-                  <div key={day.date} className="space-y-3">
-                    <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2">
-                      <h3 className="font-medium">
-                        {date.toLocaleDateString('en-US', { 
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric'
+            {loadingSlots ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-6 pr-4">
+                {Object.entries(availableSlots).map(([date, slots]) => {
+                  const parsedDate = new Date(date);
+                  const isSelected = selectedDate === date;
+                  
+                  return (
+                    <div key={date} className="space-y-3">
+                      <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2">
+                        <h3 className="font-medium">
+                          {parsedDate.toLocaleDateString('en-US', { 
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {slots.map((time) => {
+                          const isTimeSelected = selectedDate === date && selectedTime === time;
+                          
+                          return (
+                            <Button
+                              key={`${date}-${time}`}
+                              variant={isTimeSelected ? "default" : "outline"}
+                              className={cn(
+                                "h-auto py-3",
+                                isTimeSelected && "border-primary"
+                              )}
+                              onClick={() => {
+                                setSelectedDate(date);
+                                setSelectedTime(time);
+                                setShowScheduleModal(false);
+                              }}
+                            >
+                              <div className="text-sm">
+                                <p className="font-medium">{time}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {parseInt(time) < 12 ? 'AM' : 'PM'}
+                                </p>
+                              </div>
+                            </Button>
+                          );
                         })}
-                      </h3>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {day.slots.map((time) => {
-                        const isTimeSelected = selectedDate === day.date && selectedTime === time;
-                        
-                        return (
-                          <Button
-                            key={`${day.date}-${time}`}
-                            variant={isTimeSelected ? "default" : "outline"}
-                            className={cn(
-                              "h-auto py-3",
-                              isTimeSelected && "border-primary"
-                            )}
-                            onClick={() => {
-                              setSelectedDate(day.date);
-                              setSelectedTime(time);
-                              setShowScheduleModal(false);
-                            }}
-                          >
-                            <div className="text-sm">
-                              <p className="font-medium">{time}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {parseInt(time) < 12 ? 'AM' : 'PM'}
-                              </p>
-                            </div>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
@@ -347,6 +331,7 @@ export default function ITConsulting() {
                 balance={balance}
                 loading={loading}
                 onBook={handleBookSession}
+                hourlyRate={hourlyRate}
               />
             </CardContent>
           </Card>
@@ -362,6 +347,7 @@ export default function ITConsulting() {
                 balance={balance}
                 loading={loading}
                 onBook={handleBookSession}
+                hourlyRate={hourlyRate}
               />
             </CardContent>
           </Card>
@@ -381,7 +367,16 @@ export default function ITConsulting() {
   );
 }
 
-function PriceContent({ hours, totalCost, balance, loading, onBook }: PriceContentProps) {
+interface PriceContentProps {
+  hours: number;
+  totalCost: number;
+  balance: number;
+  loading: boolean;
+  onBook: () => void;
+  hourlyRate: number;
+}
+
+function PriceContent({ hours, totalCost, balance, loading, onBook, hourlyRate }: PriceContentProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -392,7 +387,7 @@ function PriceContent({ hours, totalCost, balance, loading, onBook }: PriceConte
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span>Rate per Hour:</span>
-          <span>{formatCurrency(HOURLY_RATE)}</span>
+          <span>{formatCurrency(hourlyRate)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span>Duration:</span>

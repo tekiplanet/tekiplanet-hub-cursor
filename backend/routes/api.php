@@ -22,6 +22,8 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\ShippingMethodController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ConsultingController;
+use App\Http\Controllers\ConsultingReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -178,4 +180,15 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+});
+
+// Consulting Routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('consulting')->group(function () {
+        Route::get('slots', [ConsultingController::class, 'getAvailableSlots']);
+        Route::post('bookings', [ConsultingController::class, 'createBooking']);
+        Route::get('bookings', [ConsultingController::class, 'getUserBookings']);
+        Route::post('bookings/{booking}/cancel', [ConsultingController::class, 'cancelBooking']);
+        Route::post('bookings/{booking}/review', [ConsultingReviewController::class, 'store']);
+    });
 });
