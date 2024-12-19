@@ -20,6 +20,7 @@ import { consultingService } from '@/services/consultingService';
 import PagePreloader from '@/components/ui/PagePreloader';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -50,6 +51,50 @@ const formatTime = (time: string) => {
   const formattedHour = hour % 12 || 12;
   return `${formattedHour}:${minutes} ${ampm}`;
 };
+
+const StatsCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  trend = 0,  // Optional trend percentage
+  trendLabel = '', // Optional trend label
+  className = '' 
+}: { 
+  title: string;
+  value: number;
+  icon: any;
+  trend?: number;
+  trendLabel?: string;
+  className?: string;
+}) => (
+  <Card className={cn("relative overflow-hidden group", className)}>
+    {/* Gradient background effect */}
+    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/0" />
+    
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-2xl font-bold">{value}</h2>
+            {trend !== 0 && (
+              <span className={cn(
+                "text-xs font-medium",
+                trend > 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
+                {trendLabel && <span className="text-muted-foreground ml-1">{trendLabel}</span>}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-full p-2.5 bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default function ConsultingBookings() {
   const navigate = useNavigate();
@@ -150,36 +195,28 @@ export default function ConsultingBookings() {
       className="space-y-6"
     >
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{bookings.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Sessions</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {(groupedBookings.pending?.length || 0) + (groupedBookings.confirmed?.length || 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed Sessions</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{groupedBookings.completed?.length || 0}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total Bookings"
+          value={bookings.length}
+          icon={Calendar}
+          trend={15}
+          trendLabel="vs last month"
+        />
+        <StatsCard
+          title="Upcoming Sessions"
+          value={(groupedBookings.pending?.length || 0) + (groupedBookings.confirmed?.length || 0)}
+          icon={Clock}
+          className="bg-primary/5"
+        />
+        <StatsCard
+          title="Completed Sessions"
+          value={groupedBookings.completed?.length || 0}
+          icon={CheckCircle2}
+          trend={5}
+          trendLabel="completion rate"
+          className="col-span-2 md:col-span-1"
+        />
       </div>
 
       {/* Bookings List */}
