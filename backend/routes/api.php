@@ -16,6 +16,7 @@ use App\Http\Controllers\ServiceQuoteController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -120,4 +121,12 @@ Route::get('/services/{serviceId}/quote-details', [ServiceQuoteController::class
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/quotes', [QuoteController::class, 'store']);
     Route::get('/quotes', [QuoteController::class, 'index']);
+});
+
+Route::prefix('products')->group(function () {
+    Route::get('/featured', [ProductController::class, 'getFeaturedProducts']);
+    Route::get('/categories', [ProductController::class, 'getCategories']);
+    Route::get('/', [ProductController::class, 'getProducts']);
+    Route::get('/promotions', [ProductController::class, 'getPromotions']);
+    Route::get('/brands', [ProductController::class, 'getBrands']);
 });

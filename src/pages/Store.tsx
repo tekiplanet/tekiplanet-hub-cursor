@@ -33,6 +33,9 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from 'react-router-dom';
+import { storeService } from '@/services/storeService';
+import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from '@/hooks/use-debounce';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -40,129 +43,50 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
-// Mock data for featured products
-const featuredProducts = [
-  {
-    id: 1,
-    name: 'MacBook Pro M2',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2026&q=80',
-    price: 1299.99,
-    category: 'Laptops',
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    name: 'Gaming PC RTX 4090',
-    image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2187&q=80',
-    price: 2499.99,
-    category: 'Desktop PCs',
-    rating: 4.9,
-  },
-  {
-    id: 3,
-    name: 'Professional Powerstation',
-    image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
-    price: 3499.99,
-    category: 'Powerstation',
-    rating: 4.7,
-  },
-  {
-    id: 4,
-    name: 'Mechanical Keyboard',
-    image: 'https://images.unsplash.com/photo-1601445638532-3c6f6c3aa1d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80',
-    price: 159.99,
-    category: 'Accessories',
-    rating: 4.6,
-  },
-  {
-    id: 5,
-    name: 'Gaming Monitor 32"',
-    image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    price: 499.99,
-    category: 'Gaming',
-    rating: 4.8,
-  },
-  {
-    id: 6,
-    name: 'Wireless Mouse',
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1767&q=80',
-    price: 79.99,
-    category: 'Accessories',
-    rating: 4.5,
-  },
-  {
-    id: 7,
-    name: 'Cyber Security Kit',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    price: 299.99,
-    category: 'Security',
-    rating: 4.7,
-  },
-  {
-    id: 8,
-    name: 'Power Station 1000W',
-    image: 'https://images.unsplash.com/photo-1623126908029-58cb08a2b272?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    price: 899.99,
-    category: 'Power',
-    rating: 4.9,
-  }
-];
-
-// Categories with icons
-const categories = [
-  { id: 'laptops', name: 'Laptops', count: 124 },
-  { id: 'desktops', name: 'Desktop PCs', count: 89 },
-  { id: 'powerstation', name: 'Powerstation', count: 45 },
-  { id: 'gaming', name: 'Gaming', count: 78 },
-  { id: 'accessories', name: 'Accessories', count: 234 },
-];
-
-// Hero slider data
-const heroSlides = [
-  {
-    id: 1,
-    title: 'Unique Powerstation',
-    subtitle: 'Built for Performance',
-    image: 'https://www.motortrend.com/uploads/2023/02/001-kelin-tools-blackfire-pac-1000-1500-watt-portable-power-station-review.jpg',
-    cta: 'Shop Now',
-  },
-  {
-    id: 2,
-    title: 'Gaming Desktops',
-    subtitle: 'Ultimate Gaming Experience',
-    image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2942&q=80',
-    cta: 'Explore Gaming PCs',
-  },
-  {
-    id: 3,
-    title: 'Premium Laptops',
-    subtitle: 'Powerful & Portable',
-    image: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
-    cta: 'View Collection',
-  },
-  {
-    id: 4,
-    title: 'Cyber Security Tools',
-    subtitle: 'Professional Grade Equipment',
-    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
-    cta: 'Shop Security',
-  },
-];
-
-// Add this mock data
-const brands = [
-  "Apple", "Dell", "HP", "Lenovo", "ASUS", "Acer", "MSI", "Samsung"
-];
-
 export default function Store() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const isMobile = useMediaQuery('(max-width: 768px)');
   
-  // Move the state declarations here
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  // State for filters
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [priceRange, setPriceRange] = useState([0, 5000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+
+  // Fetch data using React Query
+  const { data: featuredData } = useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: storeService.getFeaturedProducts
+  });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: storeService.getCategories
+  });
+
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands'],
+    queryFn: storeService.getBrands
+  });
+
+  const { data: promotionsData } = useQuery({
+    queryKey: ['promotions'],
+    queryFn: storeService.getPromotions
+  });
+
+  const { data: productsData } = useQuery({
+    queryKey: ['products', debouncedSearch, selectedCategory, selectedBrands, priceRange],
+    queryFn: () => storeService.getProducts({
+      search: debouncedSearch,
+      category: selectedCategory,
+      brands: selectedBrands,
+      min_price: priceRange[0],
+      max_price: priceRange[1]
+    })
+  });
+
+  const currency = featuredData?.currency || '₦';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +97,7 @@ export default function Store() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
+      {/* Hero Section - Update image sources from promotionsData */}
       <section className="relative w-full h-[50vh] md:h-[60vh] min-h-[300px] md:min-h-[400px] px-4 md:px-6">
         <Swiper
           modules={[Autoplay, Pagination, Navigation, EffectFade]}
@@ -189,12 +113,12 @@ export default function Store() {
             "swiper-custom",
           )}
         >
-          {heroSlides.map((slide) => (
-            <SwiperSlide key={slide.id} className="relative">
+          {promotionsData?.map((promotion) => (
+            <SwiperSlide key={promotion.id} className="relative">
               <div className="absolute inset-0 bg-black/40 z-10 rounded-2xl" />
               <img
-                src={slide.image}
-                alt={slide.title}
+                src={promotion.image_url}
+                alt={promotion.title}
                 className="w-full h-full object-cover rounded-2xl"
               />
               <div className="absolute inset-0 z-20 flex items-center justify-center text-white text-center p-4">
@@ -204,7 +128,7 @@ export default function Store() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-3xl md:text-6xl font-bold mb-2 md:mb-4"
                   >
-                    {slide.title}
+                    {promotion.title}
                   </motion.h1>
                   <motion.p
                     initial={{ opacity: 0, y: 20 }}
@@ -212,7 +136,7 @@ export default function Store() {
                     transition={{ delay: 0.2 }}
                     className="text-base md:text-xl mb-4 md:mb-8"
                   >
-                    {slide.subtitle}
+                    {promotion.description}
                   </motion.p>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -223,7 +147,7 @@ export default function Store() {
                       size={isMobile ? "default" : "lg"} 
                       className="bg-primary hover:bg-primary/90"
                     >
-                      {slide.cta}
+                      {promotion.button_text}
                     </Button>
                   </motion.div>
                 </div>
@@ -270,7 +194,7 @@ export default function Store() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
+                      {categoriesData?.map((category) => (
                         <SelectItem 
                           key={category.id} 
                           value={category.name.toLowerCase().replace(/\s+/g, '-')}
@@ -305,24 +229,24 @@ export default function Store() {
                 <div className="space-y-2">
                   <Label>Brands</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {brands.map((brand) => (
-                      <div key={brand} className="flex items-center space-x-2">
+                    {brandsData?.map((brand) => (
+                      <div key={brand.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={brand}
-                          checked={selectedBrands.includes(brand)}
+                          id={brand.name}
+                          checked={selectedBrands.includes(brand.name)}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedBrands([...selectedBrands, brand]);
+                              setSelectedBrands([...selectedBrands, brand.name]);
                             } else {
-                              setSelectedBrands(selectedBrands.filter(b => b !== brand));
+                              setSelectedBrands(selectedBrands.filter(b => b !== brand.name));
                             }
                           }}
                         />
                         <label
-                          htmlFor={brand}
+                          htmlFor={brand.name}
                           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                          {brand}
+                          {brand.name}
                         </label>
                       </div>
                     ))}
@@ -394,7 +318,7 @@ export default function Store() {
       <section className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold mb-6">Browse Categories</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {categories.map((category) => (
+          {categoriesData?.map((category) => (
             <motion.div
               key={category.id}
               whileHover={{ scale: 1.02 }}
@@ -417,7 +341,7 @@ export default function Store() {
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
+          {featuredData?.products.map((product) => (
             <motion.div
               key={product.id}
               whileHover={{ y: -5 }}
@@ -426,7 +350,7 @@ export default function Store() {
             >
               <div className="relative aspect-square">
                 <img
-                  src={product.image}
+                  src={product.images[0]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -459,7 +383,7 @@ export default function Store() {
                 </Badge>
                 <h3 className="font-semibold mb-2">{product.name}</h3>
                 <div className="flex justify-between items-center">
-                  <p className="text-lg font-bold">${product.price}</p>
+                  <p className="text-lg font-bold">{currency}{product.price}</p>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm">{product.rating}</span>
