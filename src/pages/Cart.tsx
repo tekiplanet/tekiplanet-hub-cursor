@@ -13,69 +13,57 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { CartItem } from '@/types/store';
 import { EmptyPlaceholder } from '@/components/empty-placeholder';
-
-// Mock cart data
-const cartItems: CartItem[] = [
-  {
-    product: {
-      id: '1',
-      name: 'Professional Powerstation X1',
-      description: 'High-capacity portable power station...',
-      price: 999.99,
-      images: ['https://images.unsplash.com/photo-1592833159155-c62df1b65634?ixlib=rb-4.0.3...'],
-      category: 'Powerstation',
-      rating: 4.8,
-      reviews: 124,
-      stock: 15,
-      specifications: {},
-      features: []
-    },
-    quantity: 1
-  },
-  {
-    product: {
-      id: '2',
-      name: 'Gaming PC RTX 4090',
-      description: 'High-end gaming desktop...',
-      price: 2499.99,
-      images: ['https://images.unsplash.com/photo-1587202372775-e229f172b9d7?ixlib=rb-4.0.3...'],
-      category: 'Desktop PCs',
-      rating: 4.9,
-      reviews: 89,
-      stock: 5,
-      specifications: {},
-      features: []
-    },
-    quantity: 1
-  },
-];
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { storeService } from '@/services/storeService';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [items, setItems] = useState<CartItem[]>(cartItems);
+  const queryClient = useQueryClient();
 
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    setItems(items.map(item => 
-      item.product.id === itemId 
-        ? { ...item, quantity: Math.max(1, Math.min(newQuantity, item.product.stock)) }
-        : item
-    ));
+  // Fetch cart data
+  const { data: cartData, isLoading } = useQuery({
+    queryKey: ['cart'],
+    queryFn: storeService.getCart
+  });
+
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    try {
+      await storeService.updateCartItemQuantity(itemId, newQuantity);
+      queryClient.invalidateQueries(['cart']);
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        toast({
+          title: "Cannot update quantity",
+          description: error.response.data.message,
+          variant: "destructive"
+        });
+      }
+    }
   };
 
-  const removeItem = (itemId: string) => {
-    setItems(items.filter(item => item.product.id !== itemId));
-    toast({
-      title: "Item removed",
-      description: "The item has been removed from your cart",
-    });
+  const removeItem = async (itemId: string) => {
+    try {
+      await storeService.removeCartItem(itemId);
+      queryClient.invalidateQueries(['cart']);
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your cart",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove item",
+        variant: "destructive"
+      });
+    }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const shipping = 29.99;
-  const total = subtotal + shipping;
+  if (isLoading) {
+    return <PagePreloader />;
+  }
 
-  if (items.length === 0) {
+  if (!cartData || cartData.items.length === 0) {
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="container mx-auto px-4">
@@ -87,7 +75,7 @@ export default function Cart() {
             <EmptyPlaceholder.Description>
               Start shopping to add items to your cart
             </EmptyPlaceholder.Description>
-            <Button onClick={() => navigate('/store')}>
+            <Button onClick={() => navigate('/dashboard/store')}>
               Continue Shopping
             </Button>
           </EmptyPlaceholder>
@@ -96,19 +84,23 @@ export default function Cart() {
     );
   }
 
+  const subtotal = cartData.totals.current;
+  const shipping = 2999.99; // We can make this dynamic later
+  const total = subtotal + shipping;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Shopping Cart ({items.length})</h1>
+          <h1 className="text-2xl font-bold">Shopping Cart ({cartData.items.length})</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence>
-              {items.map((item) => (
+              {cartData.items.map((item) => (
                 <motion.div
                   key={item.product.id}
                   layout

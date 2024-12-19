@@ -17,6 +17,7 @@ use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/invoices/{id}/process-payment', [InvoiceController::class, 'processPayment']);
         Route::get('/invoices/{id}/receipt', [InvoiceController::class, 'viewReceipt']);
         Route::get('/invoices/{id}/receipt/download', [InvoiceController::class, 'downloadReceipt']);
+        
+        // Cart Routes
+        Route::prefix('cart')->group(function () {
+            Route::get('/', [CartController::class, 'getCart']);
+            Route::post('/add', [CartController::class, 'addToCart']);
+            Route::put('/items/{itemId}', [CartController::class, 'updateQuantity']);
+            Route::delete('/items/{itemId}', [CartController::class, 'removeItem']);
+        });
     });
 });
 

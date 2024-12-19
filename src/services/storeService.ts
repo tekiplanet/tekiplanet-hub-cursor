@@ -3,6 +3,24 @@ import { Product } from '@/types/store';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Create axios instance with default config
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Add interceptor to include auth token
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export interface ProductsResponse {
   products: {
     data: Product[];
@@ -33,14 +51,30 @@ export interface Promotion {
   link: string;
 }
 
+export interface CartItem {
+  id: string;
+  product: Product;
+  quantity: number;
+  price_changed: boolean;
+}
+
+export interface CartResponse {
+  items: CartItem[];
+  totals: {
+    original: number;
+    current: number;
+  };
+  currency: string;
+}
+
 export const storeService = {
   getFeaturedProducts: async (): Promise<ProductsResponse> => {
-    const response = await axios.get(`${API_URL}/products/featured`);
+    const response = await axiosInstance.get('/products/featured');
     return response.data;
   },
 
   getCategories: async (): Promise<Category[]> => {
-    const response = await axios.get(`${API_URL}/products/categories`);
+    const response = await axiosInstance.get('/products/categories');
     return response.data;
   },
 
@@ -59,19 +93,19 @@ export const storeService = {
       cleanParams.brands = cleanParams.brands.join(',');
     }
 
-    const response = await axios.get(`${API_URL}/products`, { 
+    const response = await axiosInstance.get('/products', { 
       params: cleanParams
     });
     return response.data;
   },
 
   getPromotions: async (): Promise<Promotion[]> => {
-    const response = await axios.get(`${API_URL}/products/promotions`);
+    const response = await axiosInstance.get('/products/promotions');
     return response.data;
   },
 
   getBrands: async (): Promise<{ id: string; name: string; }[]> => {
-    const response = await axios.get(`${API_URL}/products/brands`);
+    const response = await axiosInstance.get('/products/brands');
     return response.data;
   },
 
@@ -79,7 +113,32 @@ export const storeService = {
     product: Product;
     currency: string;
   }> => {
-    const response = await axios.get(`${API_URL}/products/${id}`);
+    const response = await axiosInstance.get(`/products/${id}`);
+    return response.data;
+  },
+
+  getCart: async (): Promise<CartResponse> => {
+    const response = await axiosInstance.get('/cart');
+    return response.data;
+  },
+
+  addToCart: async (productId: string, quantity: number): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/cart/add', {
+      product_id: productId,
+      quantity
+    });
+    return response.data;
+  },
+
+  updateCartItemQuantity: async (itemId: string, quantity: number): Promise<{ message: string }> => {
+    const response = await axiosInstance.put(`/cart/items/${itemId}`, {
+      quantity
+    });
+    return response.data;
+  },
+
+  removeCartItem: async (itemId: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.delete(`/cart/items/${itemId}`);
     return response.data;
   }
 }; 

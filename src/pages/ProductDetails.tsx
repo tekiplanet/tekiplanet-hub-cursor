@@ -12,15 +12,16 @@ import {
   Plus,
   Share2,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { storeService } from '@/services/storeService';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/formatters';
 import PagePreloader from '@/components/ui/PagePreloader';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,11 +31,12 @@ import { Progress } from "@/components/ui/progress";
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const queryClient = useQueryClient();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Fetch product details
   const { data: productData, isLoading } = useQuery({
@@ -46,14 +48,32 @@ export default function ProductDetails() {
   const product = productData?.product;
   const currency = productData?.currency || '₦';
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     
-    toast({
-      title: "Added to cart",
-      description: `${product.name} x ${quantity} added to your cart`,
-    });
-    // Add to cart logic here
+    setIsAddingToCart(true);
+    try {
+      await storeService.addToCart(product.id, quantity);
+      
+      // Invalidate cart query to refresh cart data
+      queryClient.invalidateQueries(['cart']);
+      
+      toast.success('Added to cart', {
+        description: `${product.name} x ${quantity} added to your cart`
+      });
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        toast.error('Cannot add to cart', {
+          description: error.response.data.message
+        });
+      } else {
+        toast.error('Error', {
+          description: 'Failed to add item to cart'
+        });
+      }
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   if (isLoading) {
@@ -214,11 +234,22 @@ export default function ProductDetails() {
 
               <div className="flex gap-4">
                 <Button
-                  className="flex-1"
+                  size="lg"
+                  className="w-full"
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={product.stock === 0 || isAddingToCart}
                 >
-                  Add to Cart
+                  {isAddingToCart ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding to Cart...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Cart
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="secondary"
