@@ -53,6 +53,8 @@ import Products from "./Products";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storeService } from '@/services/storeService';
 import ITConsulting from "./ITConsulting";
+import ConsultingBookings from "./ConsultingBookings";
+import ConsultingBookingDetails from "./ConsultingBookingDetails";
 
 interface MenuItem {
   label: string;
@@ -225,6 +227,20 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
         <Route path="projects" element={<ProjectsListPage />} />
         <Route path="projects/:projectId" element={<ProjectDetailsPage />} />        
         <Route path="it-consulting" element={<ITConsulting />} />
+        <Route path="consulting">
+          <Route path="bookings" element={
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold">Consulting Sessions</h1>
+                <p className="text-muted-foreground">
+                  Manage your IT consulting sessions and appointments
+                </p>
+              </div>
+              <ConsultingBookings />
+            </>
+          } />
+          <Route path="bookings/:id" element={<ConsultingBookingDetails />} />
+        </Route>
         <Route path="payment-confirmation" element={
           <>
             <div className="mb-8">
