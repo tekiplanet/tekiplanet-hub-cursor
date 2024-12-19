@@ -18,6 +18,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\WishlistController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +70,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/items/{itemId}', [CartController::class, 'updateQuantity']);
             Route::delete('/items/{itemId}', [CartController::class, 'removeItem']);
             Route::get('/count', [CartController::class, 'getCartCount']);
+        });
+        
+        // Wishlist Routes
+        Route::prefix('wishlist')->group(function () {
+            Route::get('/', [WishlistController::class, 'getWishlist']);
+            Route::get('/count', [WishlistController::class, 'getWishlistCount']);
+            Route::post('/toggle/{productId}', [WishlistController::class, 'toggleWishlistItem']);
+            Route::get('/check/{productId}', [WishlistController::class, 'checkWishlistStatus']);
         });
     });
 });
