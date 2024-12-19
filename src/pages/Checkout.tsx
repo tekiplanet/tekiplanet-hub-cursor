@@ -121,6 +121,12 @@ export default function Checkout() {
   };
 
   const handlePaymentSubmit = async () => {
+    console.log('Order Data:', {
+      shipping_address_id: selectedAddressId,
+      shipping_method_id: selectedShippingMethodId,
+      payment_method: paymentMethod
+    });
+
     if (!user?.wallet_balance || user.wallet_balance < total) {
       toast({
         title: "Insufficient Balance",
