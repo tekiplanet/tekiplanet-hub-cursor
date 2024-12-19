@@ -8,6 +8,8 @@ use App\Models\OrderItem;
 use App\Models\ShippingMethod;
 use App\Models\Transaction;
 use App\Models\OrderTracking;
+use App\Models\ShippingAddress;
+use App\Models\ZoneShippingRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -32,8 +34,15 @@ class OrderController extends Controller
         try {
             // Get cart total and shipping cost
             $cart = Cart::where('user_id', auth()->id())->first();
-            $shippingMethod = ShippingMethod::findOrFail($request->shipping_method_id);
-            $total = $cart->current_total + $shippingMethod->rate;
+            
+            // Get shipping address and zone rate
+            $shippingAddress = ShippingAddress::with('state')->findOrFail($request->shipping_address_id);
+            $zoneRate = ZoneShippingRate::where('zone_id', $shippingAddress->state_id)
+                ->where('shipping_method_id', $request->shipping_method_id)
+                ->firstOrFail();
+
+            $shippingCost = $zoneRate->rate;
+            $total = $cart->current_total + $shippingCost;
 
             // Check wallet balance
             $user = auth()->user();
@@ -47,7 +56,7 @@ class OrderController extends Controller
                 'shipping_address_id' => $request->shipping_address_id,
                 'shipping_method_id' => $request->shipping_method_id,
                 'subtotal' => $cart->current_total,
-                'shipping_cost' => $shippingMethod->rate,
+                'shipping_cost' => $shippingCost,
                 'total' => $total,
                 'status' => 'pending',
                 'payment_method' => $request->payment_method,
