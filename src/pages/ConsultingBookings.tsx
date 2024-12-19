@@ -96,6 +96,37 @@ const StatsCard = ({
   </Card>
 );
 
+const calculateMonthlyGrowth = (bookings: any[]) => {
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1);
+  
+  const thisMonthBookings = bookings.filter(b => {
+    const bookingDate = new Date(b.created_at);
+    return bookingDate >= lastMonth && bookingDate <= now;
+  }).length;
+
+  const lastMonthBookings = bookings.filter(b => {
+    const bookingDate = new Date(b.created_at);
+    return bookingDate >= new Date(lastMonth.getFullYear(), lastMonth.getMonth() - 1) 
+      && bookingDate < lastMonth;
+  }).length;
+
+  if (lastMonthBookings === 0) return thisMonthBookings > 0 ? 100 : 0;
+  return Math.round(((thisMonthBookings - lastMonthBookings) / lastMonthBookings) * 100);
+};
+
+const calculateCompletionRate = (bookings: any[]) => {
+  const totalFinishedBookings = bookings.filter(b => 
+    ['completed', 'cancelled'].includes(b.status)
+  ).length;
+  
+  const completedBookings = bookings.filter(b => b.status === 'completed').length;
+  
+  return totalFinishedBookings > 0 
+    ? Math.round((completedBookings / totalFinishedBookings) * 100)
+    : 0;
+};
+
 export default function ConsultingBookings() {
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useQuery({
@@ -200,7 +231,7 @@ export default function ConsultingBookings() {
           title="Total Bookings"
           value={bookings.length}
           icon={Calendar}
-          trend={15}
+          trend={calculateMonthlyGrowth(bookings)}
           trendLabel="vs last month"
         />
         <StatsCard
@@ -213,7 +244,7 @@ export default function ConsultingBookings() {
           title="Completed Sessions"
           value={groupedBookings.completed?.length || 0}
           icon={CheckCircle2}
-          trend={5}
+          trend={calculateCompletionRate(bookings)}
           trendLabel="completion rate"
           className="col-span-2 md:col-span-1"
         />
