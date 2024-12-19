@@ -147,4 +147,15 @@ class CartController extends Controller
             'message' => 'Item removed from cart'
         ]);
     }
+
+    public function getCartCount()
+    {
+        $cart = ShoppingCart::where('user_id', Auth::id())
+            ->with('items')
+            ->first();
+
+        return response()->json([
+            'count' => $cart ? $cart->items->count() : 0
+        ]);
+    }
 } 

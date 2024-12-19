@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/add', [CartController::class, 'addToCart']);
             Route::put('/items/{itemId}', [CartController::class, 'updateQuantity']);
             Route::delete('/items/{itemId}', [CartController::class, 'removeItem']);
+            Route::get('/count', [CartController::class, 'getCartCount']);
         });
     });
 });

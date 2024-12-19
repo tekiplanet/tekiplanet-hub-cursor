@@ -140,5 +140,10 @@ export const storeService = {
   removeCartItem: async (itemId: string): Promise<{ message: string }> => {
     const response = await axiosInstance.delete(`/cart/items/${itemId}`);
     return response.data;
+  },
+
+  getCartCount: async (): Promise<number> => {
+    const response = await axiosInstance.get('/cart/count');
+    return response.data.count;
   }
 }; 

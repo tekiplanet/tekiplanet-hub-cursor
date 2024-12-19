@@ -51,6 +51,8 @@ import Checkout from "./Checkout";
 import Orders from "./Orders";
 import OrderTracking from "./OrderTracking";
 import Products from "./Products";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { storeService } from '@/services/storeService';
 
 interface MenuItem {
   label: string;
@@ -59,73 +61,18 @@ interface MenuItem {
   badge?: string;
 }
 
-const menuItems: MenuItem[] = [
-  {
-    label: "Home",
-    path: "/dashboard",
-    icon: <Home className="w-4 h-4" />
-  },
-  {
-    label: "Store",
-    path: "/dashboard/store",
-    icon: <ShoppingBag className="w-4 h-4" />
-  },
-  {
-    label: "Cart",
-    path: "/dashboard/cart",
-    icon: <ShoppingCart className="w-4 h-4" />,
-    badge: "2"
-  },
-  {
-    label: "Orders",
-    path: "/dashboard/orders",
-    icon: <Package className="w-4 h-4" />
-  },
-  {
-    label: "Wallet",
-    path: "/dashboard/wallet",
-    icon: <Wallet className="w-4 h-4" />
-  },  
-  {
-    label: "Academy",
-    path: "/dashboard/academy",
-    icon: <BookOpen className="w-4 h-4" />
-  },
-  {
-    label: "My Courses",
-    path: "/dashboard/academy/my-courses",
-    icon: <GraduationCap className="w-4 h-4" />
-  }, 
-  {
-    label: "Services",
-    path: "/dashboard/services",
-    icon: <Briefcase className="w-4 h-4" />
-  },
-  {
-    label: "Quotes",
-    path: "/dashboard/quotes",
-    icon: <FileText className="w-4 h-4" />
-  },
-  {
-    label: "Projects",
-    path: "/dashboard/projects",
-    icon: <Server className="w-4 h-4" />
-  },
-
-  {
-    label: "Settings",
-    path: "/dashboard/settings",
-    icon: <Settings className="w-4 h-4" />
-  }
-
-];
-
 const Dashboard = ({ children }: { children?: React.ReactNode }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, updateUserType } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const { data: cartCount = 0 } = useQuery({
+    queryKey: ['cartCount'],
+    queryFn: storeService.getCartCount,
+    initialData: 0
+  });
 
   useEffect(() => {
     console.group('User Data Debug');
@@ -318,6 +265,65 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       toast.error('Failed to process wallet funding');
     }
   };
+
+  const menuItems: MenuItem[] = [
+    {
+      label: "Home",
+      path: "/dashboard",
+      icon: <Home className="w-4 h-4" />
+    },
+    {
+      label: "Store",
+      path: "/dashboard/store",
+      icon: <ShoppingBag className="w-4 h-4" />
+    },
+    {
+      label: "Cart",
+      path: "/dashboard/cart",
+      icon: <ShoppingCart className="w-4 h-4" />,
+      badge: cartCount > 0 ? cartCount.toString() : undefined
+    },
+    {
+      label: "Orders",
+      path: "/dashboard/orders",
+      icon: <Package className="w-4 h-4" />
+    },
+    {
+      label: "Wallet",
+      path: "/dashboard/wallet",
+      icon: <Wallet className="w-4 h-4" />
+    },  
+    {
+      label: "Academy",
+      path: "/dashboard/academy",
+      icon: <BookOpen className="w-4 h-4" />
+    },
+    {
+      label: "My Courses",
+      path: "/dashboard/academy/my-courses",
+      icon: <GraduationCap className="w-4 h-4" />
+    }, 
+    {
+      label: "Services",
+      path: "/dashboard/services",
+      icon: <Briefcase className="w-4 h-4" />
+    },
+    {
+      label: "Quotes",
+      path: "/dashboard/quotes",
+      icon: <FileText className="w-4 h-4" />
+    },
+    {
+      label: "Projects",
+      path: "/dashboard/projects",
+      icon: <Server className="w-4 h-4" />
+    },
+    {
+      label: "Settings",
+      path: "/dashboard/settings",
+      icon: <Settings className="w-4 h-4" />
+    }
+  ];
 
   return (
     <>
@@ -659,6 +665,21 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                   </div>
                 </HoverCardContent>
               </HoverCard>
+
+              {/* Add Cart Icon */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative"
+                onClick={() => navigate('/dashboard/cart')}
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Button>
 
               {/* Profile Menu */}
               <DropdownMenu>
