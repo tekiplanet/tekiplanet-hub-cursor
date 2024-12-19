@@ -315,7 +315,7 @@ const ServicesPage: React.FC = () => {
                           <Button 
                             key={service.id}
                             variant="ghost" 
-                            className="w-full justify-between hover:bg-primary/5 group"
+                            className="w-full justify-between hover:text-destructive hover:bg-primary/5 group"
                             onClick={() => handleServiceSelect(category.id, service.id)}
                           >
                             <span>{service.title}</span>
