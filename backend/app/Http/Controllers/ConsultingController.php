@@ -24,7 +24,10 @@ class ConsultingController extends Controller
                 ->get()
                 ->groupBy('date')
                 ->map(function ($dateSlots) {
-                    return $dateSlots->pluck('time');
+                    return $dateSlots->map(function ($slot) {
+                        // Format time to 12-hour format
+                        return Carbon::parse($slot->time)->format('h:i A');
+                    });
                 });
 
             return response()->json([

@@ -35,6 +35,18 @@ import PagePreloader from '@/components/ui/PagePreloader';
 import { consultingService } from '@/services/consultingService';
 import type { TimeSlot, ConsultingSettings } from '@/services/consultingService';
 
+const formatTime = (time: string) => {
+  if (time.includes('AM') || time.includes('PM')) {
+    return time;
+  }
+  
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const formattedHour = hour % 12 || 12;
+  return `${formattedHour}:${minutes} ${ampm}`;
+};
+
 export default function ITConsulting() {
   const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
@@ -163,6 +175,7 @@ export default function ITConsulting() {
                       <div className="grid grid-cols-2 gap-2">
                         {slots.map((time) => {
                           const isTimeSelected = selectedDate === date && selectedTime === time;
+                          const formattedTime = formatTime(time);
                           
                           return (
                             <Button
@@ -179,10 +192,7 @@ export default function ITConsulting() {
                               }}
                             >
                               <div className="text-sm">
-                                <p className="font-medium">{time}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {parseInt(time) < 12 ? 'AM' : 'PM'}
-                                </p>
+                                <p className="font-medium">{formattedTime}</p>
                               </div>
                             </Button>
                           );
