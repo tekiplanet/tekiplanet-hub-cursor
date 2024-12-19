@@ -17,12 +17,12 @@ return new class extends Migration
             $table->string('site_logo')->nullable();
             $table->string('site_favicon')->nullable();
 
-            $table->decimal('enrollment_fee', 10, 2);
+            $table->decimal('enrollment_fee', 10, 2)->default(3000);
 
             
             // Currency and Financial Settings
-            $table->string('default_currency')->default('USD');
-            $table->string('currency_symbol')->default('$');
+            $table->string('default_currency')->default('NGN');
+            $table->string('currency_symbol')->default('₦');
             $table->boolean('multi_currency_enabled')->default(false);
             $table->json('supported_currencies')->nullable();
             
