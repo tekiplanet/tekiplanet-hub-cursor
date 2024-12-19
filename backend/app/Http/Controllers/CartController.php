@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ShoppingCart;
+use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -11,9 +11,21 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
+    private function updateCartTotals(Cart $cart)
+    {
+        $cart->update([
+            'original_total' => $cart->items->sum(function ($item) {
+                return $item->original_price * $item->quantity;
+            }),
+            'current_total' => $cart->items->sum(function ($item) {
+                return $item->current_price * $item->quantity;
+            })
+        ]);
+    }
+
     public function getCart()
     {
-        $cart = ShoppingCart::with(['items.product.images'])
+        $cart = Cart::with(['items.product.images'])
             ->firstOrCreate(['user_id' => Auth::id()]);
 
         $cartItems = $cart->items->map(function ($item) {
@@ -61,7 +73,7 @@ class CartController extends Controller
             ], 422);
         }
 
-        $cart = ShoppingCart::firstOrCreate(['user_id' => Auth::id()]);
+        $cart = Cart::firstOrCreate(['user_id' => Auth::id()]);
 
         // Check if product already exists in cart
         $cartItem = $cart->items()->where('product_id', $product->id)->first();
@@ -92,6 +104,9 @@ class CartController extends Controller
                 'price_changed' => false
             ]);
         }
+
+        // Update cart totals
+        $this->updateCartTotals($cart);
 
         return response()->json([
             'message' => 'Product added to cart',
@@ -126,6 +141,9 @@ class CartController extends Controller
             'price_changed' => $cartItem->original_price != $cartItem->product->price
         ]);
 
+        // Update cart totals
+        $this->updateCartTotals($cartItem->cart);
+
         return response()->json([
             'message' => 'Quantity updated',
             'cart_item' => $cartItem
@@ -141,7 +159,11 @@ class CartController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $cart = $cartItem->cart;
         $cartItem->delete();
+
+        // Update cart totals
+        $this->updateCartTotals($cart);
 
         return response()->json([
             'message' => 'Item removed from cart'
@@ -150,7 +172,7 @@ class CartController extends Controller
 
     public function getCartCount()
     {
-        $cart = ShoppingCart::where('user_id', Auth::id())
+        $cart = Cart::where('user_id', Auth::id())
             ->with('items')
             ->first();
 

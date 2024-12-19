@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('order_tracking', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
+            $table->foreignUuid('order_id')->constrained()->onDelete('cascade');
             $table->string('status');
             $table->string('description');
             $table->string('location')->nullable();
