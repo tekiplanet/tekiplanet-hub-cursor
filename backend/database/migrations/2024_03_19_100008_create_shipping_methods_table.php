@@ -15,6 +15,7 @@ return new class extends Migration
             $table->decimal('base_cost', 10, 2);
             $table->integer('estimated_days_min');
             $table->integer('estimated_days_max');
+            $table->integer('priority')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

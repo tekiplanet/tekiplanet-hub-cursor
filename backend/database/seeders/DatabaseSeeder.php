@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
             ProductReviewSeeder::class,
             ShippingMethodSeeder::class,
             PromotionSeeder::class,
+            ShippingZoneSeeder::class,
+            ShippingMethodSeeder::class,
+            ZoneShippingRateSeeder::class,
+            CouponSeeder::class,
         ]);
     }
 }
