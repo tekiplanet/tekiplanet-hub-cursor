@@ -254,8 +254,11 @@ export default function OrderTracking() {
               <div className="bg-card rounded-lg p-6">
                 <h3 className="font-semibold mb-4">Order Summary</h3>
                 <div className="space-y-4">
-                  {tracking.order_summary.items.map((item) => (
-                    <div key={item.id} className="flex gap-4">
+                  {tracking.order_summary.items.map((item, index) => (
+                    <div 
+                      key={item.id || `item-${index}`}
+                      className="flex gap-4"
+                    >
                       <img
                         src={item.image}
                         alt={item.name}
