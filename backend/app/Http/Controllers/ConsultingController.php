@@ -46,15 +46,41 @@ class ConsultingController extends Controller
 
     public function createBooking(Request $request)
     {
-        $request->validate([
-            'hours' => 'required|integer|min:1|max:10',
-            'selected_date' => 'required|date|after:today',
-            'selected_time' => 'required',
-            'requirements' => 'nullable|string',
-            'payment_method' => 'required|in:wallet'
-        ]);
-
         try {
+            // Log incoming request for debugging
+            \Log::info('Raw Booking Request:', [
+                'user_id' => auth()->id(),
+                'data' => $request->all()
+            ]);
+
+            // Get today's date at start of day for comparison
+            $today = now()->startOfDay();
+
+            $validated = $request->validate([
+                'hours' => 'required|integer|min:1|max:10',
+                'selected_date' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) use ($today) {
+                        $selectedDate = Carbon::parse($value)->startOfDay();
+                        if ($selectedDate->lt($today)) {
+                            $fail('Selected date must be today or in the future.');
+                        }
+                    },
+                ],
+                'selected_time' => 'required|string',
+                'requirements' => 'nullable|string',
+                'payment_method' => 'required|in:wallet'
+            ], [
+                'hours.required' => 'Please specify the number of hours',
+                'hours.min' => 'Minimum booking duration is 1 hour',
+                'hours.max' => 'Maximum booking duration is 10 hours',
+                'selected_date.required' => 'Please select a date',
+                'selected_time.required' => 'Please select a time',
+                'payment_method.required' => 'Payment method is required',
+                'payment_method.in' => 'Invalid payment method'
+            ]);
+
             DB::beginTransaction();
 
             // Check if slot is available
@@ -62,7 +88,13 @@ class ConsultingController extends Controller
                 ->where('time', $request->selected_time)
                 ->where('is_available', true)
                 ->where('is_booked', false)
-                ->firstOrFail();
+                ->first();
+
+            if (!$slot) {
+                return response()->json([
+                    'message' => 'Selected time slot is no longer available'
+                ], 422);
+            }
 
             // Get settings for pricing
             $settings = ConsultingSetting::firstOrFail();
@@ -117,8 +149,19 @@ class ConsultingController extends Controller
                 'booking' => $booking
             ], 201);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::warning('Booking Validation Error:', [
+                'user_id' => auth()->id(),
+                'errors' => $e->errors()
+            ]);
+            throw $e;
         } catch (\Exception $e) {
-            DB::rollBack();
+            \Log::error('Booking Error:', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'message' => 'Failed to create booking',
                 'error' => $e->getMessage()

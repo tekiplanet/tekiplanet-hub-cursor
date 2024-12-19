@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useWalletStore } from '@/store/useWalletStore';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { InsufficientFundsModal } from "@/components/wallet/InsufficientFundsModal";
@@ -55,7 +55,6 @@ export default function ITConsulting() {
     deductBalance, 
     addTransaction 
   } = useWalletStore();
-  const { toast } = useToast();
 
   // State
   const [hours, setHours] = useState(1);
@@ -69,7 +68,7 @@ export default function ITConsulting() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [settings, setSettings] = useState<ConsultingSettings | null>(null);
 
-  const balance = getBalance(user?.id || '');
+  const balance = user?.wallet_balance ?? 0;
   const hourlyRate = settings?.hourly_rate ?? 10000;
   const totalCost = hours * hourlyRate;
 
@@ -82,10 +81,8 @@ export default function ITConsulting() {
         setAvailableSlots(slots);
         setSettings(consultingSettings);
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch available time slots",
-          variant: "destructive"
+        toast.error("Error", {
+          description: "Failed to fetch available time slots"
         });
       } finally {
         setLoadingSlots(false);
@@ -94,45 +91,89 @@ export default function ITConsulting() {
     };
 
     fetchSlots();
-  }, [toast]);
+  }, []);
 
   const handleBookSession = async () => {
     if (!selectedDate || !selectedTime) {
-      toast({
-        title: "Select Appointment Time",
-        description: "Please select your preferred appointment date and time.",
-        variant: "destructive"
+      toast.error("Select Appointment Time", {
+        description: "Please select your preferred appointment date and time."
       });
-      return;
-    }
-
-    if (balance < totalCost) {
-      setShowInsufficientFundsModal(true);
       return;
     }
 
     setLoading(true);
     try {
-      const response = await consultingService.createBooking({
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const selectedDateTime = new Date(selectedDate);
+      selectedDateTime.setHours(0, 0, 0, 0);
+
+      if (selectedDateTime < today) {
+        toast.error("Invalid Date", {
+          description: "Please select today or a future date"
+        });
+        return;
+      }
+
+      const formattedDate = selectedDateTime.toISOString().split('T')[0];
+
+      console.log('Booking Request:', {
         hours,
-        selected_date: selectedDate,
+        selected_date: formattedDate,
         selected_time: selectedTime,
-        requirements: '', // Add a text area for requirements if needed
         payment_method: 'wallet'
       });
 
-      toast({
-        title: "Booking Successful",
-        description: `Your ${hours}-hour consulting session has been scheduled.`,
+      const response = await consultingService.createBooking({
+        hours,
+        selected_date: formattedDate,
+        selected_time: selectedTime,
+        requirements: '', 
+        payment_method: 'wallet'
       });
 
+      console.log('Booking Response:', response);
+
+      toast.success("Booking Successful", {
+        description: `Your ${hours}-hour consulting session has been scheduled.`
+      });
+
+      await useAuthStore.getState().refreshToken();
       navigate('/dashboard');
     } catch (error: any) {
-      toast({
-        title: "Booking Failed",
-        description: error.response?.data?.message || "Unable to process your booking",
-        variant: "destructive"
+      console.error('Booking Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        data: error.response?.data
       });
+
+      if (error.response?.status === 422) {
+        const validationErrors = error.response.data.errors;
+        if (validationErrors) {
+          const firstError = Object.values(validationErrors)[0];
+          toast.error("Validation Error", {
+            description: Array.isArray(firstError) ? firstError[0] : firstError
+          });
+        } else {
+          toast.error("Validation Error", {
+            description: error.response.data.message || "Please check your input"
+          });
+        }
+      } else if (error.response?.status === 403) {
+        toast.error("Access Denied", {
+          description: "You don't have permission to make this booking"
+        });
+      } else if (error.response?.status === 404) {
+        toast.error("Not Found", {
+          description: "The requested time slot is no longer available"
+        });
+      } else {
+        toast.error("Booking Failed", {
+          description: error.response?.data?.message || "Unable to process your booking. Please try again."
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -144,6 +185,22 @@ export default function ITConsulting() {
   };
 
   const ScheduleModal = () => {
+    const isDateTimeDisabled = (date: string, time: string) => {
+      const now = new Date();
+      const selectedDate = new Date(date);
+      const [hours, minutes] = time.replace(/\s?[AP]M/, '').split(':');
+      const isPM = time.includes('PM');
+      
+      // Convert to 24-hour format
+      let hour = parseInt(hours);
+      if (isPM && hour !== 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+      
+      selectedDate.setHours(hour, parseInt(minutes), 0, 0);
+      
+      return selectedDate < now;
+    };
+
     return (
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent className="sm:max-w-[425px]">
@@ -159,6 +216,13 @@ export default function ITConsulting() {
               <div className="space-y-6 pr-4">
                 {Object.entries(availableSlots).map(([date, slots]) => {
                   const parsedDate = new Date(date);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  parsedDate.setHours(0, 0, 0, 0);
+                  
+                  // Skip past dates entirely
+                  if (parsedDate < today) return null;
+                  
                   const isSelected = selectedDate === date;
                   
                   return (
@@ -176,6 +240,7 @@ export default function ITConsulting() {
                         {slots.map((time) => {
                           const isTimeSelected = selectedDate === date && selectedTime === time;
                           const formattedTime = formatTime(time);
+                          const isDisabled = isDateTimeDisabled(date, time);
                           
                           return (
                             <Button
@@ -183,8 +248,10 @@ export default function ITConsulting() {
                               variant={isTimeSelected ? "default" : "outline"}
                               className={cn(
                                 "h-auto py-3",
-                                isTimeSelected && "border-primary"
+                                isTimeSelected && "border-primary",
+                                isDisabled && "opacity-50 cursor-not-allowed"
                               )}
+                              disabled={isDisabled}
                               onClick={() => {
                                 setSelectedDate(date);
                                 setSelectedTime(time);
@@ -193,6 +260,11 @@ export default function ITConsulting() {
                             >
                               <div className="text-sm">
                                 <p className="font-medium">{formattedTime}</p>
+                                {isDisabled && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Not available
+                                  </p>
+                                )}
                               </div>
                             </Button>
                           );
@@ -342,6 +414,8 @@ export default function ITConsulting() {
                 loading={loading}
                 onBook={handleBookSession}
                 hourlyRate={hourlyRate}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
               />
             </CardContent>
           </Card>
@@ -358,6 +432,8 @@ export default function ITConsulting() {
                 loading={loading}
                 onBook={handleBookSession}
                 hourlyRate={hourlyRate}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
               />
             </CardContent>
           </Card>
@@ -370,8 +446,8 @@ export default function ITConsulting() {
         onClose={() => setShowInsufficientFundsModal(false)}
         onFundWallet={handleFundWallet}
         requiredAmount={totalCost}
-        currentBalance={balance}
-        type="enrollment"
+        currentBalance={user?.wallet_balance ?? 0}
+        type="consultation"
       />
     </motion.div>
   );
@@ -384,9 +460,23 @@ interface PriceContentProps {
   loading: boolean;
   onBook: () => void;
   hourlyRate: number;
+  selectedDate: string | null;
+  selectedTime: string | null;
 }
 
-function PriceContent({ hours, totalCost, balance, loading, onBook, hourlyRate }: PriceContentProps) {
+function PriceContent({ 
+  hours, 
+  totalCost, 
+  balance, 
+  loading, 
+  onBook, 
+  hourlyRate,
+  selectedDate,
+  selectedTime 
+}: PriceContentProps) {
+  const navigate = useNavigate();
+  const isTimeSlotSelected = selectedDate && selectedTime;
+
   return (
     <div className="space-y-6">
       <div>
@@ -414,7 +504,7 @@ function PriceContent({ hours, totalCost, balance, loading, onBook, hourlyRate }
         <Button 
           className="w-full text-white" 
           onClick={onBook}
-          disabled={loading}
+          disabled={loading || balance < totalCost || !isTimeSlotSelected}
         >
           {loading ? (
             <div className="flex items-center gap-2">
@@ -423,7 +513,7 @@ function PriceContent({ hours, totalCost, balance, loading, onBook, hourlyRate }
             </div>
           ) : (
             <span className="flex items-center">
-              Book Session
+              {!isTimeSlotSelected ? 'Select Time Slot' : 'Book Session'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </span>
           )}
@@ -433,6 +523,27 @@ function PriceContent({ hours, totalCost, balance, loading, onBook, hourlyRate }
           <Wallet className="h-4 w-4" />
           <span>Wallet Balance: {formatCurrency(balance)}</span>
         </div>
+
+        {balance < totalCost && (
+          <div className="rounded-lg bg-destructive/10 p-3 space-y-3">
+            <div className="flex items-start gap-2 text-sm">
+              <div>
+                <p className="font-medium text-destructive">Insufficient Balance</p>
+                <p className="text-muted-foreground">
+                  You need {formatCurrency(totalCost - balance)} more to book this session
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => navigate('/dashboard/wallet')}
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Fund Wallet
+            </Button>
+          </div>
+        )}
 
         <div className="rounded-lg bg-muted p-3">
           <div className="flex items-start gap-2 text-sm">
