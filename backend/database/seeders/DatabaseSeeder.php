@@ -42,6 +42,8 @@ class DatabaseSeeder extends Seeder
             ShippingMethodSeeder::class,
             ZoneShippingRateSeeder::class,
             CouponSeeder::class,
+            ConsultingSettingsSeeder::class,
+            ConsultingTimeSlotsSeeder::class,
         ]);
     }
 }
