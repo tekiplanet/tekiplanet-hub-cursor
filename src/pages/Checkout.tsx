@@ -42,6 +42,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState('wallet');
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuthStore();
+  const [orderData, setOrderData] = useState<any>(null);
 
   // Fetch cart data
   const { data: cartData, isLoading } = useQuery({
@@ -131,17 +132,13 @@ export default function Checkout() {
 
     setIsProcessing(true);
     try {
-      await storeService.createOrder({
+      const response = await storeService.createOrder({
         shipping_address_id: selectedAddressId!,
         shipping_method_id: selectedShippingMethodId!,
         payment_method: 'wallet',
       });
 
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['cart']);
-      queryClient.invalidateQueries(['wallet']);
-      queryClient.invalidateQueries(['orders']);
-
+      setOrderData(response.order);
       setCurrentStep('confirmation');
       
       toast.success("Order Placed Successfully", {
@@ -550,28 +547,69 @@ export default function Checkout() {
                 </motion.div>
               )}
 
-              {currentStep === 'confirmation' && (
+              {currentStep === 'confirmation' && orderData && (
                 <motion.div
-                  key="confirmation"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-12"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-2xl mx-auto"
                 >
-                  <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-green-100 mb-8">
-                    <CheckCircle className="h-12 w-12 text-green-600" />
+                  <div className="text-center mb-8">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-semibold mb-2">Order Confirmed!</h2>
+                    <p className="text-muted-foreground">
+                      Your order #{orderData.id} has been placed successfully
+                    </p>
                   </div>
-                  <h2 className="text-2xl font-bold mb-4">Order Confirmed!</h2>
-                  <p className="text-muted-foreground mb-8">
-                    Your order has been placed successfully.
-                    We'll send you an email with your order details.
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/dashboard/orders')} 
-                    className="gap-2"
-                  >
-                    View Orders
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+
+                  <div className="bg-card p-6 rounded-lg space-y-4">
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold mb-2">Shipping Details</h3>
+                      <p>{orderData.shipping_address.first_name} {orderData.shipping_address.last_name}</p>
+                      <p>{orderData.shipping_address.address}</p>
+                      <p>{orderData.shipping_address.city}, {orderData.shipping_address.state.name}</p>
+                      <p>Phone: {orderData.shipping_address.phone}</p>
+                    </div>
+
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold mb-2">Order Summary</h3>
+                      {orderData.items.map((item: any) => (
+                        <div key={item.id} className="flex justify-between py-2">
+                          <div>
+                            <p>{item.product.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Qty: {item.quantity}
+                            </p>
+                          </div>
+                          <p>{formatPrice(item.total)}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <p>Subtotal</p>
+                        <p>{formatPrice(orderData.subtotal)}</p>
+                      </div>
+                      <div className="flex justify-between">
+                        <p>Shipping</p>
+                        <p>{formatPrice(orderData.shipping_cost)}</p>
+                      </div>
+                      <div className="flex justify-between font-semibold">
+                        <p>Total</p>
+                        <p>{formatPrice(orderData.total)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 text-center">
+                    <Button 
+                      onClick={() => navigate('/dashboard/orders')} 
+                      className="gap-2"
+                    >
+                      View Orders
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

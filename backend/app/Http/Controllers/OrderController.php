@@ -112,11 +112,17 @@ class OrderController extends Controller
             $cart->items()->delete();
             $cart->delete();
 
+            $orderDetails = $order->load([
+                'items.product', 
+                'shippingAddress.state', 
+                'shippingMethod'
+            ]);
+
             DB::commit();
 
             return response()->json([
                 'message' => 'Order placed successfully',
-                'order' => $order
+                'order' => $orderDetails
             ]);
 
         } catch (\Exception $e) {
