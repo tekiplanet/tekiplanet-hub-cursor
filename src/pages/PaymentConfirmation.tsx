@@ -186,7 +186,7 @@ export default function PaymentConfirmation(): React.JSX.Element {
     switch (finalPaymentMethod) {
       case 'bank_transfer':
         return (
-          <Dashboard>
+          // <Dashboard>
             <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-center">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -451,12 +451,12 @@ export default function PaymentConfirmation(): React.JSX.Element {
                 </div>
               </motion.div>
             </div>
-          </Dashboard>
+          // </Dashboard>
         );
       
       case 'paystack':
         return (
-          <Dashboard>
+          // <Dashboard>
             <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-center">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -589,7 +589,7 @@ export default function PaymentConfirmation(): React.JSX.Element {
                 </div>
               </motion.div>
             </div>
-          </Dashboard>
+          // </Dashboard>
         );
       
       default:

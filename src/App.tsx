@@ -34,6 +34,26 @@ const PaystackCallback = React.lazy(() => import('@/pages/PaystackCallback'));
 const CourseDetails = React.lazy(() => import('@/components/academy/CourseDetails'));
 const Academy = React.lazy(() => import('@/pages/Academy'));
 const OrderTracking = React.lazy(() => import('@/pages/OrderTracking'));
+const Orders = React.lazy(() => import('@/pages/Orders'));
+const MyCourses = React.lazy(() => import('@/pages/MyCourses'));
+
+// Add these new imports
+const Store = React.lazy(() => import('@/pages/Store'));
+const Products = React.lazy(() => import('@/pages/Products'));
+const ProductDetails = React.lazy(() => import('@/pages/ProductDetails'));
+const Cart = React.lazy(() => import('@/pages/Cart'));
+const Checkout = React.lazy(() => import('@/pages/Checkout'));
+const WalletDashboard = React.lazy(() => import('@/components/wallet/WalletDashboard'));
+const SettingsPage = React.lazy(() => import('@/pages/Settings'));
+const ServicesPage = React.lazy(() => import('@/pages/Services'));
+const SoftwareEngineeringQuote = React.lazy(() => import('@/pages/SoftwareEngineeringQuote'));
+const CyberSecurityQuote = React.lazy(() => import('@/pages/CyberSecurityQuote'));
+const ServiceQuoteRequestPage = React.lazy(() => import('@/pages/ServiceQuoteRequest'));
+const QuoteRequestsListPage = React.lazy(() => import('@/pages/QuoteRequestsList'));
+const QuoteDetailsPage = React.lazy(() => import('@/pages/QuoteDetails'));
+const ProjectsListPage = React.lazy(() => import('@/pages/ProjectsList'));
+const ProjectDetailsPage = React.lazy(() => import('@/pages/ProjectDetails'));
+const ITConsultingPage = React.lazy(() => import('@/pages/ITConsulting'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -55,45 +75,40 @@ const AppContent = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/dashboard/*"
-            element={
-              <ProtectedRoute>
-                <Routes>
-                  <Route index element={<Dashboard />} />
-                  <Route path="*" element={<Dashboard />} />
-                  <Route path="payment-confirmation" element={<PaymentConfirmation />} />
-                  <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
-                  <Route 
-                    path="services/quote/:categoryId/:serviceId" 
-                    element={
-                      <ProtectedRoute>
-                        <ServiceQuoteRequest />
-                      </ProtectedRoute>
-                    } 
-                  />
-                </Routes>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
+            <Route index element={<Dashboard />} />
+            <Route path="store" element={<Store />} />
+            <Route path="products" element={<Products />} />
+            <Route path="store/product/:id" element={<ProductDetails />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="academy" element={<Academy />} />
+            <Route path="academy/my-courses" element={<MyCourses />} />
+            <Route path="academy/:courseId" element={<CourseDetails />} />
+            <Route path="academy/:courseId/manage" element={<CourseManagement />} />
+            <Route path="wallet" element={<WalletDashboard />} />
+            <Route path="wallet/transactions/:transactionId" element={<TransactionDetails />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="services/quote/software-engineering/:serviceId" element={<SoftwareEngineeringQuote />} />
+            <Route path="services/quote/cyber-security/:serviceId" element={<CyberSecurityQuote />} />
+            <Route path="services/quote/:categoryId/:serviceId" element={<ServiceQuoteRequestPage />} />
+            <Route path="quotes" element={<QuoteRequestsListPage />} />
+            <Route path="quotes/:quoteId" element={<QuoteDetailsPage />} />
+            <Route path="projects" element={<ProjectsListPage />} />
+            <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
+            <Route path="services/consulting" element={<ITConsultingPage />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
+            <Route path="payment-confirmation" element={<PaymentConfirmation />} />
+          </Route>
+
+          <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
+          
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/courses/:courseId/manage" element={<CourseManagement />} />
           <Route path="/services" element={<Services />} />
-          <Route 
-            path="/services/quote/:category/:serviceId" 
-            element={<ServiceQuoteRequest />} 
-          />
-          <Route path="/services/consulting" element={<ITConsulting />} />
-          <Route path="/paystack-callback" element={<PaystackCallback />} />
-          <Route path="/academy" element={<Academy />} />
-          <Route path="/academy/course/:courseId" element={<CourseDetails />} />
+          <Route path="/services/quote/:category/:serviceId" element={<ServiceQuoteRequest />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/*" element={
@@ -109,12 +124,9 @@ const AppContent = () => {
               </AdminLayout>
             </AdminGuard>
           } />
+          <Route path="/paystack-callback" element={<ProtectedRoute><PaystackCallback /></ProtectedRoute>} />
         </Routes>
       </Suspense>
-      <Toaster 
-        position="top-right"
-        reverseOrder={false}
-      />
       <Toaster />
       <Sonner />
     </Router>

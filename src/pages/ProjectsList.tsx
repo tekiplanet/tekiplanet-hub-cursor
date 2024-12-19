@@ -76,7 +76,7 @@ function ProjectsList() {
     if (searchTerm) {
       result = result.filter(project => 
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (project.business_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
       );
     }
 

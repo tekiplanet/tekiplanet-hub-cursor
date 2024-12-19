@@ -3,12 +3,141 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Cart;
+use App\Models\ShippingAddress;
+use App\Models\ZoneShippingRate;
+use App\Models\OrderItem;
+use App\Models\Transaction;
+use App\Models\OrderTracking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+
+
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'shipping_address_id' => 'required|exists:shipping_addresses,id',
+            'shipping_method_id' => 'required|exists:shipping_methods,id',
+            'payment_method' => 'required|in:wallet'
+        ], [
+            'shipping_address_id.required' => 'Shipping address is required',
+            'shipping_address_id.exists' => 'Invalid shipping address',
+            'shipping_method_id.required' => 'Shipping method is required',
+            'shipping_method_id.exists' => 'Invalid shipping method',
+            'payment_method.required' => 'Payment method is required',
+            'payment_method.in' => 'Invalid payment method'
+        ]);
+    
+        DB::beginTransaction();
+        try {
+            // Get cart total and shipping cost
+            $cart = Cart::where('user_id', auth()->id())->first();
+            
+            // Get shipping address and zone rate
+            $shippingAddress = ShippingAddress::with('state')->findOrFail($request->shipping_address_id);
+            $zoneRate = ZoneShippingRate::where('zone_id', $shippingAddress->state_id)
+                ->where('shipping_method_id', $request->shipping_method_id)
+                ->firstOrFail();
+    
+            $shippingCost = $zoneRate->rate;
+            $total = $cart->current_total + $shippingCost;
+    
+            // Check wallet balance
+            $user = auth()->user();
+            if ($user->wallet_balance < $total) {
+                throw new \Exception('Insufficient wallet balance');
+            }
+    
+            // Create order
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'shipping_address_id' => $request->shipping_address_id,
+                'shipping_method_id' => $request->shipping_method_id,
+                'subtotal' => $cart->current_total,
+                'shipping_cost' => $shippingCost,
+                'total' => $total,
+                'status' => 'pending',
+                'payment_method' => $request->payment_method,
+                'payment_status' => 'pending'
+            ]);
+    
+            // Create initial order tracking
+            OrderTracking::create([
+                'order_id' => $order->id,
+                'status' => 'pending',
+                'description' => 'Order has been placed and is pending processing',
+                'location' => 'System'
+            ]);
+    
+            // Create order items from cart
+            foreach ($cart->items as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->product->price,
+                    'total' => $item->product->price * $item->quantity
+                ]);
+            }
+    
+            // Deduct from wallet
+            $user->decrement('wallet_balance', $total);
+    
+            // Create wallet transaction
+            Transaction::create([
+                'user_id' => auth()->id(),
+                'amount' => $total,
+                'type' => 'debit',
+                'description' => "Payment for order #{$order->id}",
+                'status' => 'completed'
+            ]);
+    
+            // Update order status
+            $order->update([
+                'payment_status' => 'paid',
+                'status' => 'processing'
+            ]);
+    
+            // After payment is confirmed, add another tracking entry
+            OrderTracking::create([
+                'order_id' => $order->id,
+                'status' => 'processing',
+                'description' => 'Payment confirmed. Order is being processed',
+                'location' => 'System'
+            ]);
+    
+            // Clear cart
+            $cart->items()->delete();
+            $cart->delete();
+    
+            $orderDetails = $order->load([
+                'items.product', 
+                'shippingAddress.state', 
+                'shippingMethod'
+            ]);
+    
+            DB::commit();
+    
+            return response()->json([
+                'message' => 'Order placed successfully',
+                'order' => $orderDetails
+            ]);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+
+
     public function index(Request $request)
     {
         try {
@@ -19,19 +148,19 @@ class OrderController extends Controller
             if ($request->has('search')) {
                 $search = $request->search;
                 
-                \Log::info('Search Debug', [
-                    'original_search' => $search,
-                    'original_length' => strlen($search)
-                ]);
+                // \Log::info('Search Debug', [
+                //     'original_search' => $search,
+                //     'original_length' => strlen($search)
+                // ]);
 
                 $query->where(function($q) use ($search) {
                     // Clean up search term (remove dashes and convert to uppercase)
                     $cleanSearch = strtoupper(str_replace(['-', ' '], '', $search));
                     
-                    \Log::info('Clean Search Debug', [
-                        'cleanSearch' => $cleanSearch,
-                        'cleanLength' => strlen($cleanSearch)
-                    ]);
+                    // \Log::info('Clean Search Debug', [
+                    //     'cleanSearch' => $cleanSearch,
+                    //     'cleanLength' => strlen($cleanSearch)
+                    // ]);
 
                     $q->where(function($subQ) use ($cleanSearch) {
                         // If search is 8 characters or more, search by prefix
@@ -128,7 +257,7 @@ class OrderController extends Controller
                         return [
                             'id' => $item->product->id,
                             'name' => $item->product->name,
-                            'quantity' => $item->quantity,
+                    'quantity' => $item->quantity,
                             'price' => (float) $item->price,
                             'image' => $item->product->images->first()?->image_url ?? null,
                         ];
@@ -229,7 +358,7 @@ class OrderController extends Controller
     public function tracking($id)
     {
         try {
-            \Log::info('Tracking Request', ['order_id' => $id]);
+            // \Log::info('Tracking Request', ['order_id' => $id]);
 
             $order = Order::with([
                 'items.product.images',  // Make sure we're loading images
@@ -238,10 +367,10 @@ class OrderController extends Controller
                 'tracking'
             ])->findOrFail($id);
 
-            \Log::info('Order Found', [
-                'order' => $order->toArray(),
-                'user_id' => auth()->id()
-            ]);
+            // \Log::info('Order Found', [
+            //     'order' => $order->toArray(),
+            //     'user_id' => auth()->id()
+            // ]);
 
             // Verify order belongs to authenticated user
             if ($order->user_id !== auth()->id()) {
@@ -321,11 +450,11 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Tracking Error', [
-                'order_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // \Log::error('Tracking Error', [
+            //     'order_id' => $id,
+            //     'error' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString()
+            // ]);
 
             return response()->json([
                 'message' => 'Error fetching tracking details',
@@ -333,4 +462,92 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    // public function store(Request $request)
+    // {
+    //     try {
+    //         $validated = $request->validate([
+    //             'shipping_address_id' => 'required|exists:shipping_addresses,id',
+    //             'shipping_method_id' => 'required|exists:shipping_methods,id',
+    //             'payment_method' => 'required|in:wallet',
+    //         ]);
+
+    //         DB::beginTransaction();
+
+    //         // Get cart items
+    //         $cart = Cart::where('user_id', auth()->id())->with('items.product')->first();
+    //         if (!$cart || $cart->items->isEmpty()) {
+    //             throw new \Exception('Cart is empty');
+    //         }
+
+    //         // Calculate totals
+    //         $subtotal = $cart->items->sum(function ($item) {
+    //             return $item->quantity * $item->product->price;
+    //         });
+
+    //         // Get shipping cost
+    //         $shippingMethod = ShippingMethod::findOrFail($validated['shipping_method_id']);
+    //         $shippingCost = $shippingMethod->rate;
+
+    //         $total = $subtotal + $shippingCost;
+
+    //         // Check wallet balance
+    //         $user = auth()->user();
+    //         if ($user->wallet_balance < $total) {
+    //             throw new \Exception('Insufficient wallet balance');
+    //         }
+
+    //         // Create order
+    //         $order = Order::create([
+    //             'user_id' => auth()->id(),
+    //             'shipping_address_id' => $validated['shipping_address_id'],
+    //             'shipping_method_id' => $validated['shipping_method_id'],
+    //             'subtotal' => $subtotal,
+    //             'shipping_cost' => $shippingCost,
+    //             'total' => $total,
+    //             'status' => 'pending',
+    //             'payment_method' => $validated['payment_method'],
+    //             'payment_status' => 'paid'
+    //         ]);
+
+    //         // Create order items
+    //         foreach ($cart->items as $cartItem) {
+    //             $order->items()->create([
+    //                 'product_id' => $cartItem->product_id,
+    //                 'quantity' => $cartItem->quantity,
+    //                 'price' => $cartItem->product->price,
+    //                 'total' => $cartItem->quantity * $cartItem->product->price,
+    //             ]);
+    //         }
+
+    //         // Create initial tracking
+    //         $order->tracking()->create([
+    //             'status' => 'pending',
+    //             'description' => 'Order has been placed and is pending processing',
+    //             'location' => 'System'
+    //         ]);
+
+    //         // Deduct from wallet
+    //         $user->decrement('wallet_balance', $total);
+
+    //         // Clear cart
+    //         $cart->items()->delete();
+    //         $cart->delete();
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Order created successfully',
+    //             'order' => $order->load(['items.product', 'shippingAddress.state', 'shippingMethod'])
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $e->getMessage()
+    //         ], 400);
+    //     }
+    // }
 } 
