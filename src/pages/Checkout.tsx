@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useToast } from '@/components/ui/use-toast';
 import { CartItem, ShippingAddress } from '@/types/store';
 import { cn } from "@/lib/utils";
 import { useAuthStore } from '@/store/useAuthStore';
@@ -26,6 +25,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { settingsService } from '@/services/settingsService';
 import { storeService } from '@/services/storeService';
 import { formatPrice } from '@/lib/formatters';
+import { toast } from "sonner";
 
 const steps = [
   { id: 'shipping', title: 'Shipping' },
@@ -36,7 +36,6 @@ const steps = [
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState('shipping');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string | null>(null);
@@ -100,19 +99,15 @@ export default function Checkout() {
 
   const handleShippingSubmit = () => {
     if (!selectedAddress) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a shipping address",
-        variant: "destructive"
+      toast.error("Missing Information", {
+        description: "Please select a shipping address"
       });
       return;
     }
 
     if (!selectedShippingMethod) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a shipping method",
-        variant: "destructive"
+      toast.error("Missing Information", {
+        description: "Please select a shipping method"
       });
       return;
     }
@@ -128,10 +123,8 @@ export default function Checkout() {
     });
 
     if (!user?.wallet_balance || user.wallet_balance < total) {
-      toast({
-        title: "Insufficient Balance",
-        description: "Your wallet balance is insufficient for this purchase.",
-        variant: "destructive"
+      toast.error("Insufficient Balance", {
+        description: "Your wallet balance is insufficient for this purchase."
       });
       return;
     }
@@ -151,18 +144,26 @@ export default function Checkout() {
 
       setCurrentStep('confirmation');
       
-      toast({
-        title: "Order Placed Successfully",
-        description: "Your order has been confirmed and is being processed.",
+      toast.success("Order Placed Successfully", {
+        description: "Your order has been confirmed and is being processed."
       });
 
     } catch (error: any) {
-      console.error('Payment Error:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.response?.data?.message || "Failed to process payment. Please try again.",
-        variant: "destructive"
+      console.error('Payment Error:', error.response?.data);
+      
+      // Show detailed error with sonner
+      toast.error("Payment Failed", {
+        description: error.response?.data?.message || "Failed to process payment. Please try again."
       });
+
+      // If there are validation errors, show them
+      if (error.response?.data?.errors) {
+        Object.values(error.response.data.errors).forEach((errorMessages: any) => {
+          errorMessages.forEach((message: string) => {
+            toast.error(message);
+          });
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
