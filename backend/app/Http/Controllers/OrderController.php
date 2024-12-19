@@ -121,7 +121,7 @@ class OrderController extends Controller
 
                 return [
                     'id' => $order->id,
-                    'date' => $order->created_at->format('Y-m-d'),
+                    'date' => $order->created_at->format('D, M d, Y'),
                     'total' => (float) $order->total,
                     'status' => $statusMap[$order->status] ?? $order->status,
                     'items' => $order->items->map(function ($item) {
@@ -191,7 +191,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'id' => $order->id,
-                'date' => $order->created_at->format('Y-m-d'),
+                'date' => $order->created_at->format('D, M d, Y'),
                 'total' => (float) $order->total,
                 'status' => $statusMap[$order->status] ?? $order->status,
                 'items' => $order->items->map(function ($item) {

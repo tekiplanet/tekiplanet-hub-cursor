@@ -55,6 +55,17 @@ const statusIcons = {
   cancelled: XCircle,
 };
 
+// Add a helper function for date formatting
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short', // Mon, Tue, etc.
+    month: 'short',   // Jan, Feb, etc.
+    day: 'numeric',   // 1, 2, etc.
+    year: 'numeric'   // 2024
+  });
+};
+
 export default function Orders() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,7 +264,7 @@ export default function Orders() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Placed on {new Date(order.date).toLocaleDateString()}
+                          Placed on {formatDate(order.date)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -318,7 +329,7 @@ export default function Orders() {
                           </span>
                         </div>
                         <div className="mt-2 text-sm text-muted-foreground">
-                          Estimated Delivery: {new Date(order.tracking.estimatedDelivery).toLocaleDateString()}
+                          Estimated Delivery: {formatDate(order.tracking.estimatedDelivery)}
                         </div>
                       </div>
                     )}
