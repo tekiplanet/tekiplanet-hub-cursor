@@ -34,15 +34,30 @@ class OrderController extends Controller
                     ]);
 
                     $q->where(function($subQ) use ($cleanSearch) {
-                        // Try to match just the beginning and end
-                        $searchStart = substr($cleanSearch, 0, 8); // Match first 8 chars
-                        $searchEnd = substr($cleanSearch, -4);     // Match last 4 chars
-                        
-                        $subQ->whereRaw("
-                            UPPER(SUBSTRING(REPLACE(id, '-', ''), 1, 8)) = ? 
-                            AND 
-                            UPPER(SUBSTRING(REPLACE(id, '-', ''), -4)) = ?
-                        ", [$searchStart, $searchEnd]);
+                        // If search is 8 characters or more, search by prefix
+                        if (strlen($cleanSearch) >= 8) {
+                            $searchStart = substr($cleanSearch, 0, 8);
+                            
+                            if (strlen($cleanSearch) >= 12) {
+                                // If full tracking number, also match the last 4
+                                $searchEnd = substr($cleanSearch, -4);
+                                $subQ->whereRaw("
+                                    UPPER(SUBSTRING(REPLACE(id, '-', ''), 1, 8)) = ? 
+                                    AND 
+                                    UPPER(SUBSTRING(REPLACE(id, '-', ''), -4)) = ?
+                                ", [$searchStart, $searchEnd]);
+                            } else {
+                                // If just the prefix, only match the beginning
+                                $subQ->whereRaw("
+                                    UPPER(SUBSTRING(REPLACE(id, '-', ''), 1, 8)) = ?
+                                ", [$searchStart]);
+                            }
+                        } else {
+                            // If search term is too short, do a general search
+                            $subQ->whereRaw("
+                                UPPER(REPLACE(id, '-', '')) LIKE ?
+                            ", ['%' . $cleanSearch . '%']);
+                        }
                     })
                     // Search in related products
                     ->orWhereHas('items.product', function($q) use ($search) {
