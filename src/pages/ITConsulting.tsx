@@ -117,18 +117,19 @@ export default function ITConsulting() {
       }
 
       const formattedDate = selectedDateTime.toISOString().split('T')[0];
+      const formattedTime = selectedTime;
 
       console.log('Booking Request:', {
         hours,
         selected_date: formattedDate,
-        selected_time: selectedTime,
+        selected_time: formattedTime,
         payment_method: 'wallet'
       });
 
       const response = await consultingService.createBooking({
         hours,
         selected_date: formattedDate,
-        selected_time: selectedTime,
+        selected_time: formattedTime,
         requirements: '', 
         payment_method: 'wallet'
       });

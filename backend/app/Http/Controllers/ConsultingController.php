@@ -53,42 +53,38 @@ class ConsultingController extends Controller
                 'data' => $request->all()
             ]);
 
-            // Get today's date at start of day for comparison
-            $today = now()->startOfDay();
-
             $validated = $request->validate([
                 'hours' => 'required|integer|min:1|max:10',
-                'selected_date' => [
-                    'required',
-                    'date',
-                    function ($attribute, $value, $fail) use ($today) {
-                        $selectedDate = Carbon::parse($value)->startOfDay();
-                        if ($selectedDate->lt($today)) {
-                            $fail('Selected date must be today or in the future.');
-                        }
-                    },
-                ],
+                'selected_date' => 'required|date|after_or_equal:today',
                 'selected_time' => 'required|string',
                 'requirements' => 'nullable|string',
                 'payment_method' => 'required|in:wallet'
-            ], [
-                'hours.required' => 'Please specify the number of hours',
-                'hours.min' => 'Minimum booking duration is 1 hour',
-                'hours.max' => 'Maximum booking duration is 10 hours',
-                'selected_date.required' => 'Please select a date',
-                'selected_time.required' => 'Please select a time',
-                'payment_method.required' => 'Payment method is required',
-                'payment_method.in' => 'Invalid payment method'
             ]);
 
             DB::beginTransaction();
 
+            // Parse the incoming time to remove AM/PM and convert to 24-hour format
+            $timeFormat = Carbon::createFromFormat('h:i A', $request->selected_time)->format('H:i:s');
+
+            // Log the time comparison
+            \Log::info('Time Comparison:', [
+                'requested_date' => $request->selected_date,
+                'requested_time' => $request->selected_time,
+                'formatted_time' => $timeFormat,
+            ]);
+
             // Check if slot is available
             $slot = ConsultingTimeSlot::where('date', $request->selected_date)
-                ->where('time', $request->selected_time)
+                ->whereRaw("TIME(time) = ?", [$timeFormat])
                 ->where('is_available', true)
                 ->where('is_booked', false)
                 ->first();
+
+            // Log slot query results
+            \Log::info('Slot Query Result:', [
+                'slot_found' => $slot ? true : false,
+                'slot_details' => $slot
+            ]);
 
             if (!$slot) {
                 return response()->json([
