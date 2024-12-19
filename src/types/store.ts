@@ -6,12 +6,12 @@ export interface Product {
   images: string[];
   category: string;
   rating: number;
-  reviews: number;
+  reviews_count: number;
   stock: number;
-  specifications: {
+  specifications?: {
     [key: string]: string;
   };
-  features: string[];
+  features?: string[];
 }
 
 export interface CartItem {

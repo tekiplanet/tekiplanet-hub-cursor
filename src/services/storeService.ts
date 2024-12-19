@@ -51,13 +51,16 @@ export const storeService = {
     min_price?: number;
     max_price?: number;
   }): Promise<ProductsResponse> => {
-    const queryParams = {
-      ...params,
-      brands: params.brands?.join(',')
-    };
-    
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== undefined)
+    );
+
+    if (cleanParams.brands) {
+      cleanParams.brands = cleanParams.brands.join(',');
+    }
+
     const response = await axios.get(`${API_URL}/products`, { 
-      params: queryParams 
+      params: cleanParams
     });
     return response.data;
   },

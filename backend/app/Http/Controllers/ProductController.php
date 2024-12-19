@@ -22,10 +22,10 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'name' => $product->name,
                     'description' => $product->short_description,
-                    'price' => $product->price,
+                    'price' => (float) $product->price,
                     'images' => $product->images->map(fn($image) => $image->image_url),
                     'category' => $product->category->name,
-                    'rating' => $product->rating,
+                    'rating' => (float) $product->rating,
                     'reviews_count' => $product->reviews_count,
                     'stock' => $product->stock
                 ];
@@ -53,7 +53,7 @@ class ProductController extends Controller
         $query = Product::with(['images', 'category', 'brand']);
 
         // Search
-        if ($request->has('search')) {
+        if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -63,9 +63,9 @@ class ProductController extends Controller
         }
 
         // Category filter
-        if ($request->has('category')) {
+        if ($request->has('category') && !empty($request->category)) {
             $query->whereHas('category', function ($q) use ($request) {
-                $q->where('name', $request->category);
+                $q->where('name', 'like', "%{$request->category}%");
             });
         }
 
@@ -75,20 +75,33 @@ class ProductController extends Controller
                 ? $request->brands 
                 : explode(',', $request->brands);
             
-            $query->whereIn('brand_id', function($query) use ($brands) {
-                $query->select('id')
-                    ->from('brands')
-                    ->whereIn('name', $brands);
-            });
+            if (!empty($brands)) {
+                $query->whereIn('brand_id', function($query) use ($brands) {
+                    $query->select('id')
+                        ->from('brands')
+                        ->whereIn('name', $brands);
+                });
+            }
         }
 
         // Price range filter
-        if ($request->has('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+        if ($request->has('min_price') && is_numeric($request->min_price)) {
+            $query->where('price', '>=', (float) $request->min_price);
         }
-        if ($request->has('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+        if ($request->has('max_price') && is_numeric($request->max_price)) {
+            $query->where('price', '<=', (float) $request->max_price);
         }
+
+        // Add some logging to debug
+        \Log::info('Product Query Parameters:', [
+            'search' => $request->search,
+            'category' => $request->category,
+            'brands' => $request->brands,
+            'min_price' => $request->min_price,
+            'max_price' => $request->max_price,
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings()
+        ]);
 
         // Get paginated results
         $products = $query->paginate(12)->through(function ($product) {
@@ -96,14 +109,20 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'description' => $product->short_description,
-                'price' => $product->price,
+                'price' => (float) $product->price,
                 'images' => $product->images->map(fn($image) => $image->image_url),
                 'category' => $product->category->name,
-                'rating' => $product->rating,
+                'rating' => (float) $product->rating,
                 'reviews_count' => $product->reviews_count,
                 'stock' => $product->stock
             ];
         });
+
+        \Log::info('Products Found:', [
+            'total' => $products->total(),
+            'current_page' => $products->currentPage(),
+            'per_page' => $products->perPage()
+        ]);
 
         return response()->json([
             'products' => $products,

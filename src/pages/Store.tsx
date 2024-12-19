@@ -36,6 +36,7 @@ import { useNavigate } from 'react-router-dom';
 import { storeService } from '@/services/storeService';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
+import { formatPrice } from '@/lib/formatters';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -80,14 +81,15 @@ export default function Store() {
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', debouncedSearch, selectedCategory, selectedBrands, priceRange],
     queryFn: () => storeService.getProducts({
-      search: debouncedSearch,
+      search: debouncedSearch || undefined,
       category: selectedCategory || undefined,
       brands: selectedBrands.length > 0 ? selectedBrands : undefined,
-      min_price: priceRange[0],
-      max_price: priceRange[1]
+      min_price: priceRange[0] !== 10000 ? priceRange[0] : undefined,
+      max_price: priceRange[1] !== 10000000 ? priceRange[1] : undefined
     }),
-    // Only fetch if we have filters active
-    enabled: !!(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 10000 || priceRange[1] !== 10000000)
+    // Only fetch if we have active filters
+    enabled: !!(debouncedSearch || selectedCategory || selectedBrands.length > 0 || 
+      priceRange[0] !== 10000 || priceRange[1] !== 10000000)
   });
 
   const currency = featuredData?.currency || '₦';
@@ -250,8 +252,8 @@ export default function Store() {
                       className="mb-2"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{currency}{priceRange[0].toLocaleString()}</span>
-                      <span>{currency}{priceRange[1].toLocaleString()}</span>
+                      <span>{formatPrice(priceRange[0], currency)}</span>
+                      <span>{formatPrice(priceRange[1], currency)}</span>
                     </div>
                   </div>
                 </div>
@@ -313,7 +315,7 @@ export default function Store() {
                       ))}
                       {(priceRange[0] !== 10000 || priceRange[1] !== 10000000) && (
                         <Badge variant="secondary">
-                          {currency}{priceRange[0].toLocaleString()} - {currency}{priceRange[1].toLocaleString()}
+                          {formatPrice(priceRange[0], currency)} - {formatPrice(priceRange[1], currency)}
                         </Badge>
                       )}
                     </div>
@@ -437,7 +439,7 @@ export default function Store() {
                 <h3 className="font-semibold mb-2">{product.name}</h3>
                 <div className="flex justify-between items-center">
                   <p className="text-lg font-bold">
-                    {currency}{product.price.toLocaleString()}
+                    {formatPrice(product.price, currency)}
                   </p>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -544,7 +546,7 @@ function ProductCard({
         <h3 className="font-semibold mb-2">{product.name}</h3>
         <div className="flex justify-between items-center">
           <p className="text-lg font-bold">
-            {currency}{product.price.toLocaleString()}
+            {formatPrice(product.price, currency)}
           </p>
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
