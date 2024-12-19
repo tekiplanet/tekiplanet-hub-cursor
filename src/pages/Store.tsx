@@ -45,6 +45,7 @@ import 'swiper/css/effect-fade';
 
 export default function Store() {
   const navigate = useNavigate();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -75,24 +76,53 @@ export default function Store() {
     queryFn: storeService.getPromotions
   });
 
-  const { data: productsData } = useQuery({
+  // Products query with filters
+  const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', debouncedSearch, selectedCategory, selectedBrands, priceRange],
     queryFn: () => storeService.getProducts({
       search: debouncedSearch,
-      category: selectedCategory,
-      brands: selectedBrands,
+      category: selectedCategory || undefined,
+      brands: selectedBrands.length > 0 ? selectedBrands : undefined,
       min_price: priceRange[0],
       max_price: priceRange[1]
-    })
+    }),
+    // Only fetch if we have filters active
+    enabled: !!(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000)
   });
 
   const currency = featuredData?.currency || '₦';
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/dashboard/products?q=${encodeURIComponent(searchQuery)}`);
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle category selection
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value === 'all' ? '' : value);
+  };
+
+  // Handle brand selection
+  const handleBrandToggle = (brandName: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBrands(prev => [...prev, brandName]);
+    } else {
+      setSelectedBrands(prev => prev.filter(b => b !== brandName));
     }
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSelectedCategory("");
+    setSelectedBrands([]);
+    setPriceRange([0, 5000]);
+    setSearchQuery('');
+    setIsSheetOpen(false);
+  };
+
+  // Apply filters
+  const handleApplyFilters = () => {
+    setIsSheetOpen(false);
   };
 
   return (
@@ -167,10 +197,10 @@ export default function Store() {
               placeholder="Search products..."
               className="pl-10 w-full"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="gap-2 whitespace-nowrap">
                 <Filter className="h-4 w-4" />
@@ -187,7 +217,7 @@ export default function Store() {
                   <Label>Category</Label>
                   <Select
                     value={selectedCategory}
-                    onValueChange={setSelectedCategory}
+                    onValueChange={handleCategoryChange}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -197,7 +227,7 @@ export default function Store() {
                       {categoriesData?.map((category) => (
                         <SelectItem 
                           key={category.id} 
-                          value={category.name.toLowerCase().replace(/\s+/g, '-')}
+                          value={category.name.toLowerCase()}
                         >
                           {category.name}
                         </SelectItem>
@@ -219,8 +249,8 @@ export default function Store() {
                       className="mb-2"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>${priceRange[0]}</span>
-                      <span>${priceRange[1]}</span>
+                      <span>{currency}{priceRange[0]}</span>
+                      <span>{currency}{priceRange[1]}</span>
                     </div>
                   </div>
                 </div>
@@ -234,13 +264,9 @@ export default function Store() {
                         <Checkbox
                           id={brand.name}
                           checked={selectedBrands.includes(brand.name)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedBrands([...selectedBrands, brand.name]);
-                            } else {
-                              setSelectedBrands(selectedBrands.filter(b => b !== brand.name));
-                            }
-                          }}
+                          onCheckedChange={(checked) => 
+                            handleBrandToggle(brand.name, checked as boolean)
+                          }
                         />
                         <label
                           htmlFor={brand.name}
@@ -286,7 +312,7 @@ export default function Store() {
                       ))}
                       {(priceRange[0] !== 0 || priceRange[1] !== 5000) && (
                         <Badge variant="secondary">
-                          ${priceRange[0]} - ${priceRange[1]}
+                          {currency}{priceRange[0]} - {currency}{priceRange[1]}
                         </Badge>
                       )}
                     </div>
@@ -298,20 +324,45 @@ export default function Store() {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => {
-                      setSelectedCategory("");
-                      setSelectedBrands([]);
-                      setPriceRange([0, 5000]);
-                    }}
+                    onClick={handleResetFilters}
                   >
                     Reset
                   </Button>
-                  <Button className="flex-1">Apply Filters</Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={handleApplyFilters}
+                  >
+                    Apply Filters
+                  </Button>
                 </div>
               </div>
             </SheetContent>
           </Sheet>
         </div>
+
+        {/* Show filtered results if any filters are active */}
+        {(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {isLoading ? (
+                // Add loading skeleton here
+                <div>Loading...</div>
+              ) : !productsData?.products.data || productsData.products.data.length === 0 ? (
+                <div>No products found</div>
+              ) : (
+                productsData.products.data.map((product) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    currency={currency}
+                    onNavigate={() => navigate(`/dashboard/store/product/${product.id}`)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Categories Section */}
@@ -434,5 +485,67 @@ export default function Store() {
         </div>
       </section>
     </div>
+  );
+}
+
+// Extract ProductCard to a separate component for reuse
+function ProductCard({ 
+  product, 
+  currency, 
+  onNavigate 
+}: { 
+  product: Product; 
+  currency: string; 
+  onNavigate: () => void;
+}) {
+  return (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className="bg-card rounded-lg overflow-hidden group cursor-pointer"
+      onClick={onNavigate}
+    >
+      <div className="relative aspect-square">
+        <img
+          src={product.images[0]}
+          alt={product.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-2 right-2 flex gap-2">
+          <Button 
+            size="icon" 
+            variant="secondary" 
+            className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
+          <Button 
+            size="icon" 
+            variant="secondary" 
+            className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <ShoppingCart className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="p-4">
+        <Badge variant="secondary" className="mb-2">
+          {product.category}
+        </Badge>
+        <h3 className="font-semibold mb-2">{product.name}</h3>
+        <div className="flex justify-between items-center">
+          <p className="text-lg font-bold">{currency}{product.price}</p>
+          <div className="flex items-center gap-1">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm">{product.rating}</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 } 

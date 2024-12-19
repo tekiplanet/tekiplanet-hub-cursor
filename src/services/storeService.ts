@@ -4,7 +4,13 @@ import { Product } from '@/types/store';
 const API_URL = import.meta.env.VITE_API_URL;
 
 export interface ProductsResponse {
-  products: Product[];
+  products: {
+    data: Product[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
   currency: string;
 }
 
