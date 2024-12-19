@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode, Navigation, Thumbs, Pagination } from 'swiper/modules';
 import {
@@ -19,35 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
-
-// Import mock data
-const product = {
-  id: '1',
-  name: 'Professional Powerstation X1',
-  description: 'High-capacity portable power station with advanced features...',
-  price: 999.99,
-  images: [
-    'https://www.motortrend.com/uploads/2023/02/001-kelin-tools-blackfire-pac-1000-1500-watt-portable-power-station-review.jpg',
-    'https://www.motortrend.com/uploads/2023/02/001-kelin-tools-blackfire-pac-1000-1500-watt-portable-power-station-review.jpg',
-    // Add more images
-  ],
-  category: 'Powerstation',
-  rating: 4.8,
-  reviews: 124,
-  stock: 15,
-  specifications: {
-    'Battery Capacity': '1000Wh',
-    'Output Ports': 'AC, USB-C, USB-A',
-    'Weight': '12.5 kg',
-    'Dimensions': '38 x 26 x 25 cm',
-  },
-  features: [
-    'Pure Sine Wave Output',
-    'Fast Charging Support',
-    'LCD Display',
-    'Wireless Charging Pad',
-  ],
-};
+import { storeService } from '@/services/storeService';
+import { useQuery } from '@tanstack/react-query';
+import { formatPrice } from '@/lib/formatters';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -58,13 +32,33 @@ export default function ProductDetails() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  // Fetch product details
+  const { data: productData, isLoading } = useQuery({
+    queryKey: ['product', id],
+    queryFn: () => storeService.getProductDetails(id!),
+    enabled: !!id
+  });
+
+  const product = productData?.product;
+  const currency = productData?.currency || '₦';
+
   const handleAddToCart = () => {
+    if (!product) return;
+    
     toast({
       title: "Added to cart",
       description: `${product.name} x ${quantity} added to your cart`,
     });
     // Add to cart logic here
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!product) {
+    return <div>Product not found</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,20 +135,27 @@ export default function ProductDetails() {
                     />
                   ))}
                   <span className="text-sm text-muted-foreground ml-2">
-                    ({product.reviews} reviews)
+                    ({product.reviews_count} reviews)
                   </span>
                 </div>
-                <Badge variant="secondary">
-                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                <Badge variant={product.stock > 0 ? "secondary" : "destructive"}>
+                  {product.stock > 0 ? "In Stock" : "Out of Stock"}
                 </Badge>
               </div>
             </div>
 
-            <p className="text-2xl font-bold text-primary">
-              ${product.price.toFixed(2)}
-            </p>
+            <div className="space-y-2">
+              <p className="text-3xl font-bold">
+                {formatPrice(product.price, currency)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Inclusive of all taxes
+              </p>
+            </div>
 
-            <p className="text-muted-foreground">{product.description}</p>
+            <div className="prose max-w-none">
+              <p>{product.description}</p>
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -256,7 +257,7 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Add these styles */}
+      {/* Keep existing styles */}
       <style>
         {`
           .mobile-swiper .swiper-button-next,

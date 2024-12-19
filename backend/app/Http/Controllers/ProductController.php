@@ -157,4 +157,40 @@ class ProductController extends Controller
             })
         );
     }
+
+    public function getProductDetails($id)
+    {
+        try {
+            $product = Product::with([
+                'images',
+                'category',
+                'brand',
+                'features',
+                'specifications'
+            ])->findOrFail($id);
+
+            return response()->json([
+                'product' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'short_description' => $product->short_description,
+                    'price' => (float) $product->price,
+                    'images' => $product->images->map(fn($image) => $image->image_url),
+                    'category' => $product->category->name,
+                    'brand' => $product->brand?->name,
+                    'rating' => (float) $product->rating,
+                    'reviews_count' => $product->reviews_count,
+                    'stock' => $product->stock,
+                    'features' => $product->features->pluck('feature'),
+                    'specifications' => $product->specifications->pluck('value', 'key')->toArray()
+                ],
+                'currency' => Setting::getSetting('default_currency', '₦')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
+    }
 } 

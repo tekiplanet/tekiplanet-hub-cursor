@@ -73,5 +73,13 @@ export const storeService = {
   getBrands: async (): Promise<{ id: string; name: string; }[]> => {
     const response = await axios.get(`${API_URL}/products/brands`);
     return response.data;
+  },
+
+  getProductDetails: async (id: string): Promise<{
+    product: Product;
+    currency: string;
+  }> => {
+    const response = await axios.get(`${API_URL}/products/${id}`);
+    return response.data;
   }
 }; 

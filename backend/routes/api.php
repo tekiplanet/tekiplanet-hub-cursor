@@ -129,4 +129,5 @@ Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'getProducts']);
     Route::get('/promotions', [ProductController::class, 'getPromotions']);
     Route::get('/brands', [ProductController::class, 'getBrands']);
+    Route::get('/{id}', [ProductController::class, 'getProductDetails']);
 });
