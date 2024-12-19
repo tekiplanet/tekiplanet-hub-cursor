@@ -217,4 +217,46 @@ class ConsultingController extends Controller
             ], 500);
         }
     }
+
+    public function getBookingDetails($id)
+    {
+        try {
+            $booking = ConsultingBooking::with(['review'])
+                ->where('user_id', auth()->id())
+                ->findOrFail($id);
+
+            return response()->json([
+                'booking' => $booking
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch booking details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getBookingReview($id)
+    {
+        try {
+            $booking = ConsultingBooking::with(['review'])
+                ->where('user_id', auth()->id())
+                ->findOrFail($id);
+
+            if (!$booking->review) {
+                return response()->json([
+                    'message' => 'No review found for this booking'
+                ], 404);
+            }
+
+            return response()->json([
+                'review' => $booking->review
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch review',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 

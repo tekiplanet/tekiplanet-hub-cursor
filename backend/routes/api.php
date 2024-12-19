@@ -190,5 +190,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('bookings', [ConsultingController::class, 'getUserBookings']);
         Route::post('bookings/{booking}/cancel', [ConsultingController::class, 'cancelBooking']);
         Route::post('bookings/{booking}/review', [ConsultingReviewController::class, 'store']);
+        Route::get('bookings/{id}', [ConsultingController::class, 'getBookingDetails']);
+        Route::get('bookings/{id}/review', [ConsultingController::class, 'getBookingReview']);
     });
 });

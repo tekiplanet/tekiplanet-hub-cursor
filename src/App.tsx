@@ -19,6 +19,8 @@ import AdminTransactions from "@/pages/admin/Transactions";
 import AdminSettings from "@/pages/admin/Settings";
 import { queryClient } from '@/lib/queryClient';
 import ITConsulting from '@/pages/ITConsulting';
+import ConsultingBookings from "@/pages/ConsultingBookings";
+import ConsultingBookingDetails from "@/pages/ConsultingBookingDetails";
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -103,6 +105,8 @@ const AppContent = () => {
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
             <Route path="payment-confirmation" element={<PaymentConfirmation />} />
+            <Route path="consulting/bookings" element={<ConsultingBookings />} />
+            <Route path="consulting/bookings/:id" element={<ConsultingBookingDetails />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package } from "lucide-react"
+import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package, BrainCircuit, Calendar } from "lucide-react"
 import { useNavigate, Routes, Route, useLocation, Outlet } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -322,7 +322,17 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       label: "Settings",
       path: "/dashboard/settings",
       icon: <Settings className="w-4 h-4" />
-    }
+    },
+    {
+      label: 'IT Consulting',
+      path: '/dashboard/it-consulting',
+      icon: <BrainCircuit className="h-5 w-5" />
+    },
+    {
+      label: 'My Bookings',
+      path: '/dashboard/consulting/bookings',
+      icon: <Calendar className="h-5 w-5" />
+    },
   ];
 
   return (
