@@ -121,7 +121,9 @@ export default function ITConsulting() {
       });
 
       await useAuthStore.getState().refreshToken();
-      navigate('/dashboard');
+      
+      navigate('/dashboard/consulting/bookings');
+      
     } catch (error: any) {
       console.error('Booking Error:', {
         message: error.message,
@@ -162,7 +164,7 @@ export default function ITConsulting() {
 
   const handleFundWallet = () => {
     setShowInsufficientFundsModal(false);
-    navigate('/dashboard/wallet');
+    navigate('/dashboard');
   };
 
   const ScheduleModal = () => {
