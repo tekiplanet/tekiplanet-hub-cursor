@@ -129,9 +129,21 @@ const calculateCompletionRate = (bookings: any[]) => {
 
 const formatBookingTime = (date: string, time: string) => {
   try {
-    const [hours, minutes] = time.split(':');
-    const bookingDate = new Date(date);
-    bookingDate.setHours(parseInt(hours), parseInt(minutes));
+    // Log incoming values
+    console.log('Formatting DateTime:', { date, time });
+
+    // Parse the date and time, removing the timezone part
+    const cleanDate = date.split('T')[0];  // Get just the date part "2024-12-20"
+    const cleanTime = time.split('T')[1]?.split('.')[0] || time.split('.')[0];  // Get just the time part "09:00:00"
+    
+    // Create a date object
+    const bookingDate = new Date(cleanDate);
+    const [hours, minutes] = cleanTime.split(':').map(Number);
+    
+    // Set the time
+    bookingDate.setHours(hours, minutes, 0, 0);
+
+    console.log('Parsed DateTime:', bookingDate);
 
     return {
       date: format(bookingDate, 'EEEE, MMMM d, yyyy', {
@@ -145,8 +157,17 @@ const formatBookingTime = (date: string, time: string) => {
       }).format(bookingDate)
     };
   } catch (error) {
-    console.error('Error formatting booking time:', error);
-    return { date: date, time: time };
+    console.error('Error formatting booking time:', {
+      error,
+      date,
+      time,
+      cleanDate: date.split('T')[0],
+      cleanTime: time.split('T')[1]?.split('.')[0] || time.split('.')[0]
+    });
+    return { 
+      date: format(new Date(date), 'MMMM d, yyyy'),
+      time: time.split('T')[1]?.split('.')[0] || time 
+    };
   }
 };
 
@@ -171,8 +192,19 @@ export default function ConsultingBookings() {
   const renderBookingCard = (booking: any) => {
     const StatusIcon = statusIcons[booking.status];
     const isUpcoming = ['pending', 'confirmed'].includes(booking.status);
-    const formattedDateTime = formatBookingTime(booking.selected_date, booking.selected_time);
     
+    // Log the incoming date and time for debugging
+    console.log('Booking Data:', {
+      date: booking.selected_date,
+      time: booking.selected_time,
+      raw: booking
+    });
+
+    const formattedDateTime = formatBookingTime(
+      booking.selected_date,
+      booking.selected_time
+    );
+
     return (
       <Card
         key={booking.id}
@@ -203,7 +235,9 @@ export default function ConsultingBookings() {
                 </div>
                 <div className="flex items-center text-sm">
                   <Clock className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">{formattedDateTime.time}</span>
+                  <span className="font-medium">
+                    {formattedDateTime.time}
+                  </span>
                 </div>
               </div>
 
