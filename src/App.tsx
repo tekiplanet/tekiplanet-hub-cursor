@@ -27,7 +27,6 @@ const Register = React.lazy(() => import('@/pages/Register'));
 const CourseManagement = React.lazy(() => import('@/pages/CourseManagement'));
 const Services = React.lazy(() => import('@/pages/Services'));
 const ServiceQuoteRequest = React.lazy(() => import('@/pages/ServiceQuoteRequest'));
-const ITConsulting = React.lazy(() => import('@/pages/ITConsulting'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
 const PaymentConfirmation = React.lazy(() => import('@/pages/PaymentConfirmation'));
 const PaystackCallback = React.lazy(() => import('@/pages/PaystackCallback'));
@@ -53,7 +52,7 @@ const QuoteRequestsListPage = React.lazy(() => import('@/pages/QuoteRequestsList
 const QuoteDetailsPage = React.lazy(() => import('@/pages/QuoteDetails'));
 const ProjectsListPage = React.lazy(() => import('@/pages/ProjectsList'));
 const ProjectDetailsPage = React.lazy(() => import('@/pages/ProjectDetails'));
-const ITConsultingPage = React.lazy(() => import('@/pages/ITConsulting'));
+const ITConsulting = React.lazy(() => import('@/pages/ITConsulting'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -97,10 +96,11 @@ const AppContent = () => {
             <Route path="quotes/:quoteId" element={<QuoteDetailsPage />} />
             <Route path="projects" element={<ProjectsListPage />} />
             <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
-            <Route path="services/consulting" element={<ITConsultingPage />} />
+            <Route path="services/consulting" element={<ITConsulting />} />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
             <Route path="payment-confirmation" element={<PaymentConfirmation />} />
+            <Route path="it-consulting" element={<ITConsulting />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />

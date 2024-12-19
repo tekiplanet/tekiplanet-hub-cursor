@@ -9,7 +9,11 @@ import {
   Smartphone, 
   Palette,
   Search,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Users,
+  Clock,
+  MessagesSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +54,8 @@ const servicesImages = [
   'https://images.unsplash.com/photo-1522252234503-e356532cafd5',
   'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4'
 ];
+
+const consultingImage = "https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=2070";
 
 const MobileCategoryPicker: React.FC<{
   categories: ServiceCategory[];
@@ -346,6 +352,111 @@ const ServicesPage: React.FC = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Move IT Consultation Section here, after Services Grid */}
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 text-white mt-16"
+        >
+          <div className="absolute inset-0">
+            <img 
+              src={consultingImage} 
+              alt="IT Consultation" 
+              className="w-full h-full object-cover mix-blend-overlay opacity-50"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-transparent" />
+          </div>
+
+          <div className="relative grid md:grid-cols-2 gap-8 p-8 md:p-12">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Expert Consultation</span>
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+                Get Professional IT Consultation
+                <span className="block text-primary">From Industry Experts</span>
+              </h2>
+
+              <p className="text-zinc-200 text-lg">
+                Transform your business with expert guidance. Our consultants provide strategic insights 
+                and practical solutions tailored to your needs.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 backdrop-blur-sm">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">1-on-1 Session</p>
+                    <p className="text-sm text-zinc-300">Personalized Guidance</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 backdrop-blur-sm">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Flexible Hours</p>
+                    <p className="text-sm text-zinc-300">Book Any Time</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white"
+                  onClick={() => navigate('/dashboard/it-consulting')}
+                >
+                  <MessagesSquare className="mr-2 h-5 w-5" />
+                  Consult an Expert
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-zinc-700 hover:bg-white/5 text-white"
+                  onClick={() => navigate('/dashboard/services/quote/consultation/rates')}
+                >
+                  View Pricing
+                </Button>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center justify-center">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.5, type: "spring" }}
+                className="relative"
+              >
+                <div className="absolute -inset-4 rounded-full bg-primary/20 blur-2xl" />
+                <div className="relative grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md">
+                      <h3 className="font-bold text-xl">500+</h3>
+                      <p className="text-sm text-zinc-300">Projects Completed</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md">
+                      <h3 className="font-bold text-xl">24/7</h3>
+                      <p className="text-sm text-zinc-300">Support Available</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4 mt-8">
+                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md">
+                      <h3 className="font-bold text-xl">98%</h3>
+                      <p className="text-sm text-zinc-300">Client Satisfaction</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md">
+                      <h3 className="font-bold text-xl">15+</h3>
+                      <p className="text-sm text-zinc-300">Years Experience</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.section>
       </div>
     </div>
   );
