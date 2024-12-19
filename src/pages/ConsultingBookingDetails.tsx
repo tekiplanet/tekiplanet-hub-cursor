@@ -56,12 +56,31 @@ const statusIcons = {
 };
 
 const formatTime = (time: string) => {
-  if (time.includes('AM') || time.includes('PM')) return time;
-  const [hours, minutes] = time.split(':');
-  const hour = parseInt(hours, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const formattedHour = hour % 12 || 12;
-  return `${formattedHour}:${minutes} ${ampm}`;
+  try {
+    if (time.includes('T')) {
+      const date = new Date(time);
+      return new Intl.DateTimeFormat('en-NG', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+        timeZone: 'Africa/Lagos'
+      }).format(date);
+    }
+
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes));
+
+    return new Intl.DateTimeFormat('en-NG', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+      timeZone: 'Africa/Lagos'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return time;
+  }
 };
 
 const TimelineItem = ({ 
@@ -107,6 +126,10 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   React.useEffect(() => {
     const calculateTimeLeft = () => {
       try {
+        if (isNaN(targetDate.getTime())) {
+          throw new Error('Invalid target date');
+        }
+
         const now = new Date();
         const difference = targetDate.getTime() - now.getTime();
 
@@ -119,15 +142,14 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
         const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
 
-        if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-        } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m`);
-        } else {
-          setTimeLeft(`${minutes}m`);
-        }
+        let timeString = '';
+        if (days > 0) timeString += `${days}d `;
+        if (hours > 0 || days > 0) timeString += `${hours}h `;
+        timeString += `${minutes}m`;
+
+        setTimeLeft(timeString.trim());
       } catch (error) {
-        console.error('Error calculating time left:', error);
+        console.error('Error in CountdownTimer:', error);
         setTimeLeft('Time not available');
       }
     };
@@ -159,6 +181,68 @@ export default function ConsultingBookingDetails() {
     queryKey: ['consulting-booking', id],
     queryFn: () => consultingService.getBookingDetails(id!)
   });
+
+  const sessionDate = React.useMemo(() => {
+    if (!booking) return new Date();
+    
+    try {
+      const [hours, minutes] = booking.selected_time.split(':');
+      const date = new Date(booking.selected_date);
+      date.setHours(parseInt(hours), parseInt(minutes));
+
+      const nigerianDate = new Date(date.toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+      }));
+
+      return nigerianDate;
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return new Date();
+    }
+  }, [booking]);
+
+  const timelineSteps = React.useMemo(() => {
+    if (!booking) return [];
+    
+    return [
+      {
+        title: 'Booking Placed',
+        description: format(new Date(booking.created_at), 'MMM d, yyyy h:mm a', {
+          timeZone: 'Africa/Lagos'
+        }),
+        icon: CircleDot,
+        isCompleted: true
+      },
+      {
+        title: 'Booking Confirmed',
+        description: booking.status === 'pending' ? 'Awaiting confirmation' : 'Payment confirmed',
+        icon: CheckCircle2,
+        isCompleted: booking.status !== 'pending',
+        isActive: booking.status === 'pending'
+      },
+      {
+        title: 'Session Time',
+        description: booking.status === 'ongoing' ? 'Currently in session' : 
+          booking.status === 'completed' ? 'Session completed' :
+          `${format(new Date(booking.selected_date), 'MMM d, yyyy', {
+            timeZone: 'Africa/Lagos'
+          })} at ${formatTime(booking.selected_time)}`,
+        icon: Timer,
+        isCompleted: ['completed', 'cancelled'].includes(booking.status),
+        isActive: booking.status === 'ongoing'
+      },
+      {
+        title: 'Session Completed',
+        description: booking.status === 'completed' ? 
+          'Session successfully completed' : 
+          booking.status === 'cancelled' ? 'Session cancelled' : 'Pending completion',
+        icon: CheckCircle2,
+        isCompleted: booking.status === 'completed',
+        isActive: booking.status === 'cancelled',
+        isLast: true
+      }
+    ];
+  }, [booking]);
 
   const handleCancel = async () => {
     if (!cancellationReason.trim()) {
@@ -204,60 +288,6 @@ export default function ConsultingBookingDetails() {
   const canBeCancelled = ['pending', 'confirmed'].includes(booking.status);
   const canBeReviewed = booking.status === 'completed' && !booking.review;
   const isUpcoming = ['pending', 'confirmed'].includes(booking.status);
-  const sessionDate = React.useMemo(() => {
-    try {
-      const [hours, minutes] = booking.selected_time.replace(/\s?[AP]M/, '').split(':');
-      const isPM = booking.selected_time.includes('PM');
-      
-      // Convert to 24-hour format
-      let hour = parseInt(hours);
-      if (isPM && hour !== 12) hour += 12;
-      if (!isPM && hour === 12) hour = 0;
-      
-      const date = new Date(booking.selected_date);
-      date.setHours(hour, parseInt(minutes), 0, 0);
-      
-      return date;
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return new Date(); // Fallback to current date
-    }
-  }, [booking.selected_date, booking.selected_time]);
-
-  const timelineSteps = [
-    {
-      title: 'Booking Placed',
-      description: format(new Date(booking.created_at), 'MMM d, yyyy h:mm a'),
-      icon: CircleDot,
-      isCompleted: true
-    },
-    {
-      title: 'Booking Confirmed',
-      description: booking.status === 'pending' ? 'Awaiting confirmation' : 'Payment confirmed',
-      icon: CheckCircle2,
-      isCompleted: booking.status !== 'pending',
-      isActive: booking.status === 'pending'
-    },
-    {
-      title: 'Session in Progress',
-      description: booking.status === 'ongoing' ? 'Currently in session' : 
-        booking.status === 'completed' ? 'Session completed' :
-        format(sessionDate, 'MMM d, yyyy h:mm a'),
-      icon: Timer,
-      isCompleted: ['completed', 'cancelled'].includes(booking.status),
-      isActive: booking.status === 'ongoing'
-    },
-    {
-      title: 'Session Completed',
-      description: booking.status === 'completed' ? 
-        'Session successfully completed' : 
-        booking.status === 'cancelled' ? 'Session cancelled' : 'Pending completion',
-      icon: CheckCircle2,
-      isCompleted: booking.status === 'completed',
-      isActive: booking.status === 'cancelled',
-      isLast: true
-    }
-  ];
 
   return (
     <motion.div
@@ -382,7 +412,9 @@ export default function ConsultingBookingDetails() {
                 </div>
                 <div className="flex items-center text-sm">
                   <Clock className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">{formatTime(booking.selected_time)}</span>
+                  <span className="font-medium">
+                    {formatTime(booking.selected_time)}
+                  </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Timer className="h-4 w-4 mr-2 text-primary" />

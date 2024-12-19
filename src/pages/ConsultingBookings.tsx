@@ -127,6 +127,29 @@ const calculateCompletionRate = (bookings: any[]) => {
     : 0;
 };
 
+const formatBookingTime = (date: string, time: string) => {
+  try {
+    const [hours, minutes] = time.split(':');
+    const bookingDate = new Date(date);
+    bookingDate.setHours(parseInt(hours), parseInt(minutes));
+
+    return {
+      date: format(bookingDate, 'EEEE, MMMM d, yyyy', {
+        timeZone: 'Africa/Lagos'
+      }),
+      time: new Intl.DateTimeFormat('en-NG', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+        timeZone: 'Africa/Lagos'
+      }).format(bookingDate)
+    };
+  } catch (error) {
+    console.error('Error formatting booking time:', error);
+    return { date: date, time: time };
+  }
+};
+
 export default function ConsultingBookings() {
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useQuery({
@@ -148,7 +171,7 @@ export default function ConsultingBookings() {
   const renderBookingCard = (booking: any) => {
     const StatusIcon = statusIcons[booking.status];
     const isUpcoming = ['pending', 'confirmed'].includes(booking.status);
-    const date = new Date(booking.selected_date);
+    const formattedDateTime = formatBookingTime(booking.selected_date, booking.selected_time);
     
     return (
       <Card
@@ -175,12 +198,12 @@ export default function ConsultingBookings() {
                 <div className="flex items-center text-sm">
                   <Calendar className="h-4 w-4 mr-2 text-primary" />
                   <span className="font-medium">
-                    {format(date, 'EEEE, MMMM d, yyyy')}
+                    {formattedDateTime.date}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Clock className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">{formatTime(booking.selected_time)}</span>
+                  <span className="font-medium">{formattedDateTime.time}</span>
                 </div>
               </div>
 

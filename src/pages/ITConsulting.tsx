@@ -35,16 +35,19 @@ import PagePreloader from '@/components/ui/PagePreloader';
 import { consultingService } from '@/services/consultingService';
 import type { TimeSlot, ConsultingSettings } from '@/services/consultingService';
 
+interface SlotData {
+  id: string;
+  time: string;
+}
+
 const formatTime = (time: string) => {
-  if (time.includes('AM') || time.includes('PM')) {
+  try {
+    // Time is already formatted from backend
+    return time;
+  } catch (error) {
+    console.error('Error formatting time:', error);
     return time;
   }
-  
-  const [hours, minutes] = time.split(':');
-  const hour = parseInt(hours, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const formattedHour = hour % 12 || 12;
-  return `${formattedHour}:${minutes} ${ampm}`;
 };
 
 export default function ITConsulting() {
@@ -64,9 +67,10 @@ export default function ITConsulting() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
+  const [availableSlots, setAvailableSlots] = useState<Record<string, SlotData[]>>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [settings, setSettings] = useState<ConsultingSettings | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const balance = user?.wallet_balance ?? 0;
   const hourlyRate = settings?.hourly_rate ?? 10000;
@@ -94,42 +98,18 @@ export default function ITConsulting() {
   }, []);
 
   const handleBookSession = async () => {
-    if (!selectedDate || !selectedTime) {
+    if (!selectedSlotId) {
       toast.error("Select Appointment Time", {
-        description: "Please select your preferred appointment date and time."
+        description: "Please select your preferred appointment time."
       });
       return;
     }
 
     setLoading(true);
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const selectedDateTime = new Date(selectedDate);
-      selectedDateTime.setHours(0, 0, 0, 0);
-
-      if (selectedDateTime < today) {
-        toast.error("Invalid Date", {
-          description: "Please select today or a future date"
-        });
-        return;
-      }
-
-      const formattedDate = selectedDateTime.toISOString().split('T')[0];
-      const formattedTime = selectedTime;
-
-      console.log('Booking Request:', {
-        hours,
-        selected_date: formattedDate,
-        selected_time: formattedTime,
-        payment_method: 'wallet'
-      });
-
       const response = await consultingService.createBooking({
         hours,
-        selected_date: formattedDate,
-        selected_time: formattedTime,
+        slot_id: selectedSlotId,
         requirements: '', 
         payment_method: 'wallet'
       });
@@ -186,13 +166,12 @@ export default function ITConsulting() {
   };
 
   const ScheduleModal = () => {
-    const isDateTimeDisabled = (date: string, time: string) => {
+    const isDateTimeDisabled = (date: string, slot: SlotData) => {
       const now = new Date();
       const selectedDate = new Date(date);
-      const [hours, minutes] = time.replace(/\s?[AP]M/, '').split(':');
-      const isPM = time.includes('PM');
+      const [hours, minutes] = slot.time.replace(/\s?[AP]M/, '').split(':');
+      const isPM = slot.time.includes('PM');
       
-      // Convert to 24-hour format
       let hour = parseInt(hours);
       if (isPM && hour !== 12) hour += 12;
       if (!isPM && hour === 12) hour = 0;
@@ -221,7 +200,6 @@ export default function ITConsulting() {
                   today.setHours(0, 0, 0, 0);
                   parsedDate.setHours(0, 0, 0, 0);
                   
-                  // Skip past dates entirely
                   if (parsedDate < today) return null;
                   
                   const isSelected = selectedDate === date;
@@ -238,14 +216,13 @@ export default function ITConsulting() {
                         </h3>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {slots.map((time) => {
-                          const isTimeSelected = selectedDate === date && selectedTime === time;
-                          const formattedTime = formatTime(time);
-                          const isDisabled = isDateTimeDisabled(date, time);
+                        {slots.map((slot) => {
+                          const isTimeSelected = selectedDate === date && selectedTime === slot.time;
+                          const isDisabled = isDateTimeDisabled(date, slot);
                           
                           return (
                             <Button
-                              key={`${date}-${time}`}
+                              key={`${date}-${slot.time}`}
                               variant={isTimeSelected ? "default" : "outline"}
                               className={cn(
                                 "h-auto py-3",
@@ -255,12 +232,13 @@ export default function ITConsulting() {
                               disabled={isDisabled}
                               onClick={() => {
                                 setSelectedDate(date);
-                                setSelectedTime(time);
+                                setSelectedTime(slot.time);
+                                setSelectedSlotId(slot.id);
                                 setShowScheduleModal(false);
                               }}
                             >
                               <div className="text-sm">
-                                <p className="font-medium">{formattedTime}</p>
+                                <p className="font-medium">{slot.time}</p>
                                 {isDisabled && (
                                   <p className="text-xs text-muted-foreground">
                                     Not available

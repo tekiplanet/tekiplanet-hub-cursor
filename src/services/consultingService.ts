@@ -1,8 +1,8 @@
 import { apiClient } from '@/lib/axios';
 
 export interface TimeSlot {
-  date: string;
-  slots: string[];
+  id: string;
+  time: string;
 }
 
 export interface ConsultingBooking {
@@ -45,8 +45,7 @@ export const consultingService = {
 
   createBooking: async (data: {
     hours: number;
-    selected_date: string;
-    selected_time: string;
+    slot_id: string;
     requirements?: string;
     payment_method: string;
   }) => {

@@ -25,8 +25,10 @@ class ConsultingController extends Controller
                 ->groupBy('date')
                 ->map(function ($dateSlots) {
                     return $dateSlots->map(function ($slot) {
-                        // Format time to 12-hour format
-                        return Carbon::parse($slot->time)->format('h:i A');
+                        return [
+                            'id' => $slot->id,
+                            'time' => Carbon::parse($slot->time)->format('h:i A')
+                        ];
                     });
                 });
 
@@ -47,44 +49,20 @@ class ConsultingController extends Controller
     public function createBooking(Request $request)
     {
         try {
-            // Log incoming request for debugging
-            \Log::info('Raw Booking Request:', [
-                'user_id' => auth()->id(),
-                'data' => $request->all()
-            ]);
-
             $validated = $request->validate([
                 'hours' => 'required|integer|min:1|max:10',
-                'selected_date' => 'required|date|after_or_equal:today',
-                'selected_time' => 'required|string',
+                'slot_id' => 'required|exists:consulting_time_slots,id',
                 'requirements' => 'nullable|string',
                 'payment_method' => 'required|in:wallet'
             ]);
 
             DB::beginTransaction();
 
-            // Parse the incoming time to remove AM/PM and convert to 24-hour format
-            $timeFormat = Carbon::createFromFormat('h:i A', $request->selected_time)->format('H:i:s');
-
-            // Log the time comparison
-            \Log::info('Time Comparison:', [
-                'requested_date' => $request->selected_date,
-                'requested_time' => $request->selected_time,
-                'formatted_time' => $timeFormat,
-            ]);
-
             // Check if slot is available
-            $slot = ConsultingTimeSlot::where('date', $request->selected_date)
-                ->whereRaw("TIME(time) = ?", [$timeFormat])
+            $slot = ConsultingTimeSlot::where('id', $request->slot_id)
                 ->where('is_available', true)
                 ->where('is_booked', false)
                 ->first();
-
-            // Log slot query results
-            \Log::info('Slot Query Result:', [
-                'slot_found' => $slot ? true : false,
-                'slot_details' => $slot
-            ]);
 
             if (!$slot) {
                 return response()->json([
@@ -111,8 +89,8 @@ class ConsultingController extends Controller
                 'user_id' => $user->id,
                 'hours' => $request->hours,
                 'total_cost' => $totalCost,
-                'selected_date' => $request->selected_date,
-                'selected_time' => $request->selected_time,
+                'selected_date' => $slot->date,
+                'selected_time' => $slot->time,
                 'requirements' => $request->requirements,
                 'status' => 'confirmed',
                 'payment_status' => 'paid',
