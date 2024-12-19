@@ -17,6 +17,7 @@ import AdminUsers from "@/pages/admin/Users";
 import AdminCourses from "@/pages/admin/Courses";
 import AdminTransactions from "@/pages/admin/Transactions";
 import AdminSettings from "@/pages/admin/Settings";
+import { queryClient } from '@/lib/queryClient';
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -32,8 +33,6 @@ const PaymentConfirmation = React.lazy(() => import('@/pages/PaymentConfirmation
 const PaystackCallback = React.lazy(() => import('@/pages/PaystackCallback'));
 const CourseDetails = React.lazy(() => import('@/components/academy/CourseDetails'));
 const Academy = React.lazy(() => import('@/pages/Academy'));
-
-const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

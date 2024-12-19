@@ -26,6 +26,7 @@ import { settingsService } from '@/services/settingsService';
 import { storeService } from '@/services/storeService';
 import { formatPrice } from '@/lib/formatters';
 import { toast } from "sonner";
+import { queryClient } from '@/lib/queryClient';
 
 const steps = [
   { id: 'shipping', title: 'Shipping' },
@@ -75,15 +76,13 @@ export default function Checkout() {
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (!isLoading && (!cartData || cartData.items.length === 0)) {
+    if (!isLoading && (!cartData || cartData.items.length === 0) && currentStep !== 'confirmation') {
       navigate('/dashboard/cart');
-      toast({
-        title: "Empty Cart",
-        description: "Your cart is empty. Please add items before checkout.",
-        variant: "destructive"
+      toast.error("Empty Cart", {
+        description: "Your cart is empty. Please add items before checkout."
       });
     }
-  }, [cartData, isLoading, navigate]);
+  }, [cartData, isLoading, navigate, currentStep]);
 
   if (isLoading || !cartData) {
     return (
@@ -141,6 +140,10 @@ export default function Checkout() {
       setOrderData(response.order);
       setCurrentStep('confirmation');
       
+      queryClient.invalidateQueries(['cart']);
+      queryClient.invalidateQueries(['wallet']);
+      queryClient.invalidateQueries(['orders']);
+
       toast.success("Order Placed Successfully", {
         description: "Your order has been confirmed and is being processed."
       });
