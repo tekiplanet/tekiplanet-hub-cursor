@@ -52,6 +52,12 @@ class ProductController extends Controller
     {
         $query = Product::with(['images', 'category', 'brand']);
 
+        // Add at the start of getProducts method
+        \Log::info('Category Filter:', [
+            'requested_category' => $request->category,
+            'all_categories' => ProductCategory::pluck('name')->toArray()
+        ]);
+
         // Search
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -65,7 +71,7 @@ class ProductController extends Controller
         // Category filter
         if ($request->has('category') && !empty($request->category)) {
             $query->whereHas('category', function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->category}%");
+                $q->where('name', 'like', $request->category);
             });
         }
 

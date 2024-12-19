@@ -378,7 +378,7 @@ export default function Store() {
               key={category.id}
               whileHover={{ scale: 1.02 }}
               className="bg-card rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/dashboard/products?category=${category.id}`)}
+              onClick={() => navigate(`/dashboard/products?category=${category.name.toLowerCase()}`)}
             >
               <h3 className="font-semibold">{category.name}</h3>
               <p className="text-sm text-muted-foreground">{category.count} items</p>
