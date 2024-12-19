@@ -18,9 +18,45 @@ class OrderController extends Controller
             // Search functionality
             if ($request->has('search')) {
                 $search = $request->search;
+                
+                // Add debug logging
+                \Log::info('Search Debug', [
+                    'original_search' => $search,
+                    'original_length' => strlen($search)
+                ]);
+
                 $query->where(function($q) use ($search) {
-                    // Search by order ID
-                    $q->where('id', 'like', "%{$search}%")
+                    // Clean up search term (remove dashes and convert to uppercase)
+                    $cleanSearch = strtoupper(str_replace(['-', ' '], '', $search));
+                    
+                    // More debug logging
+                    \Log::info('Clean Search Debug', [
+                        'cleanSearch' => $cleanSearch,
+                        'cleanLength' => strlen($cleanSearch)
+                    ]);
+
+                    $q->where(function($subQ) use ($cleanSearch) {
+                        // Get all orders first for debugging
+                        $allOrders = Order::where('user_id', auth()->id())->get();
+                        
+                        // Debug log all order IDs and their formatted versions
+                        foreach ($allOrders as $order) {
+                            $formattedId = substr($order->id, 0, 12) . substr($order->id, -4);
+                            \Log::info('Order ID Check', [
+                                'original_id' => $order->id,
+                                'formatted_id' => $formattedId,
+                                'formatted_upper' => strtoupper($formattedId),
+                                'matches_search' => $cleanSearch === strtoupper($formattedId)
+                            ]);
+                        }
+
+                        // Try a simpler search approach
+                        $subQ->where(function($innerQ) use ($cleanSearch) {
+                            $innerQ->whereRaw('UPPER(id) LIKE ?', ['%' . $cleanSearch . '%'])
+                                ->orWhereRaw('UPPER(CONCAT(SUBSTRING(id, 1, 12), SUBSTRING(id, -4))) LIKE ?', 
+                                    ['%' . $cleanSearch . '%']);
+                        });
+                    })
                     // Search in related products
                     ->orWhereHas('items.product', function($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
@@ -62,7 +98,7 @@ class OrderController extends Controller
             // Pagination
             $orders = $query->paginate(10)->through(function ($order) {
                 // Get the first 6 and last 4 characters of the order ID for tracking
-                $trackingNumber = substr($order->id, 0, 6) . substr($order->id, -4);
+                $trackingNumber = substr($order->id, 0, 12) . substr($order->id, -4);
                 
                 // Calculate estimated delivery date
                 $estimatedDelivery = Carbon::parse($order->created_at)
@@ -96,7 +132,7 @@ class OrderController extends Controller
                         ];
                     }),
                     'tracking' => [
-                        'number' => $trackingNumber,
+                        'number' => $order->id,
                         'carrier' => $order->shippingMethod->name,
                         'status' => ucfirst($order->status),
                         'estimatedDelivery' => $estimatedDelivery,
@@ -132,7 +168,7 @@ class OrderController extends Controller
             }
 
             // Get tracking number (first 6 + last 4 of order ID)
-            $trackingNumber = substr($order->id, 0, 6) . substr($order->id, -4);
+            $trackingNumber = substr($order->id, 0, 12) . substr($order->id, -4);
             
             // Calculate estimated delivery date
             $estimatedDelivery = Carbon::parse($order->created_at)
@@ -166,7 +202,7 @@ class OrderController extends Controller
                     ];
                 }),
                 'tracking' => [
-                    'number' => $trackingNumber,
+                    'number' => $order->id,
                     'carrier' => $order->shippingMethod->name,
                     'status' => ucfirst($order->status),
                     'estimatedDelivery' => $estimatedDelivery,

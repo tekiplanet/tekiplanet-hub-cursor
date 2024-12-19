@@ -37,6 +37,7 @@ import axios from '@/lib/axios';
 import { useInView } from 'react-intersection-observer';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useDebounce } from '@/hooks/useDebounce';
+import { settingsService } from '@/services/settingsService';
 
 const statusColors = {
   pending: 'bg-yellow-500/10 text-yellow-600',
@@ -61,6 +62,28 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const { ref, inView } = useInView();
+  const [currency, setCurrency] = useState(settingsService.getDefaultCurrency());
+
+  useEffect(() => {
+    const loadCurrency = async () => {
+      await settingsService.fetchSettings();
+      setCurrency(settingsService.getDefaultCurrency());
+    };
+    loadCurrency();
+  }, []);
+
+  const formatId = (id: string) => {
+    const first12 = id.substring(0, 12);
+    const last4 = id.substring(id.length - 4);
+    return `${first12}${last4}`.toUpperCase();
+  };
+
+  const formatAmount = (amount: number) => {
+    return `${currency}${amount.toLocaleString('en-US', { 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
 
   // Fetch orders with infinite scroll
   const {
@@ -218,7 +241,7 @@ export default function Orders() {
                     <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Order {order.id}</h3>
+                          <h3 className="font-semibold">Order #{formatId(order.id)}</h3>
                           <Badge
                             variant="secondary"
                             className={cn(
@@ -268,7 +291,7 @@ export default function Orders() {
                               Quantity: {item.quantity}
                             </p>
                             <p className="font-medium">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              {formatAmount(item.price * item.quantity)}
                             </p>
                           </div>
                           <Button
@@ -288,7 +311,7 @@ export default function Orders() {
                         <div className="flex items-center gap-2 text-sm">
                           <Package className="h-4 w-4" />
                           <span className="font-medium">
-                            Tracking Number: {order.tracking.number}
+                            Tracking Number: {formatId(order.tracking.number)}
                           </span>
                           <span className="text-muted-foreground">
                             via {order.tracking.carrier}
