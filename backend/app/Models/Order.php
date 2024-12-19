@@ -51,6 +51,6 @@ class Order extends Model
 
     public function tracking()
     {
-        return $this->hasMany(OrderTracking::class);
+        return $this->hasOne(OrderTracking::class);
     }
 } 

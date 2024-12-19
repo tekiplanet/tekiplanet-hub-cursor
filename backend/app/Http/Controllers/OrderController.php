@@ -225,4 +225,112 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    public function tracking($id)
+    {
+        try {
+            \Log::info('Tracking Request', ['order_id' => $id]);
+
+            $order = Order::with([
+                'items.product.images',  // Make sure we're loading images
+                'shippingAddress.state', // Make sure we're loading state
+                'shippingMethod',
+                'tracking'
+            ])->findOrFail($id);
+
+            \Log::info('Order Found', [
+                'order' => $order->toArray(),
+                'user_id' => auth()->id()
+            ]);
+
+            // Verify order belongs to authenticated user
+            if ($order->user_id !== auth()->id()) {
+                return response()->json([
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            // Format tracking number
+            $trackingNumber = substr(str_replace('-', '', $order->id), 0, 12) . 
+                             substr(str_replace('-', '', $order->id), -4);
+
+            // Calculate estimated delivery
+            $estimatedDelivery = Carbon::parse($order->created_at)
+                ->addDays($order->shippingMethod->estimated_days_max)
+                ->format('D, M d, Y');
+
+            // Define status timeline
+            $allStatuses = [
+                'pending' => 'Order Placed',
+                'confirmed' => 'Order Confirmed',
+                'processing' => 'Processing',
+                'shipped' => 'Shipped',
+                'in_transit' => 'In Transit',
+                'out_for_delivery' => 'Out for Delivery',
+                'delivered' => 'Delivered',
+                'cancelled' => 'Cancelled'
+            ];
+
+            // Get current status index for progress calculation
+            $statusOrder = array_keys($allStatuses);
+            $currentStatusIndex = array_search($order->status, $statusOrder);
+
+            // Create timeline with proper scope access
+            $timeline = collect($statusOrder)
+                ->take($currentStatusIndex + 1)
+                ->map(function ($status) use ($order, $allStatuses, $currentStatusIndex) {  // Add $currentStatusIndex here
+                    $index = array_search($status, array_keys($allStatuses));
+                    return [
+                        'status' => $allStatuses[$status],
+                        'date' => $index === 0 ? 
+                            $order->created_at->format('D, M d, Y H:i:s') : 
+                            now()->subHours(($currentStatusIndex - $index) * 24)->format('D, M d, Y H:i:s'),
+                        'location' => $status === $order->status ? 
+                            ($order->tracking?->location ?? 'Processing Center') : 'Processing Center',
+                        'description' => $order->tracking?->description ?? 
+                            "Order {$allStatuses[$status]}",
+                        'completed' => true
+                    ];
+                })->values();
+
+            return response()->json([
+                'order_number' => $trackingNumber,
+                'status' => ucfirst($order->status),
+                'estimated_delivery' => $estimatedDelivery,
+                'carrier' => $order->shippingMethod->name,
+                'current_location' => $order->tracking?->location ?? 'Processing Center',
+                'shipping_address' => [
+                    'name' => $order->shippingAddress->first_name . ' ' . $order->shippingAddress->last_name,
+                    'address' => $order->shippingAddress->address,
+                    'city' => $order->shippingAddress->city,
+                    'state' => $order->shippingAddress->state->name,
+                    'phone' => $order->shippingAddress->phone,
+                ],
+                'order_summary' => [
+                    'items' => $order->items->map(function ($item) {
+                        return [
+                            'name' => $item->product->name,
+                            'quantity' => $item->quantity,
+                            'price' => (float) $item->price,
+                            'image' => $item->product->images->first()?->image_url ?? null,
+                        ];
+                    }),
+                    'total' => (float) $order->total,
+                ],
+                'timeline' => $timeline
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Tracking Error', [
+                'order_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching tracking details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 

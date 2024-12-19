@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -14,84 +14,117 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import axios from '@/lib/axios';
+import { settingsService } from '@/services/settingsService';
 
-// Mock data for order tracking
-const orderDetails = {
-  id: 'ORD-001',
-  date: '2024-03-15',
-  total: 999.99,
-  status: 'in_transit',
-  items: [
-    {
-      id: 1,
-      name: 'Professional Powerstation X1',
-      quantity: 1,
-      price: 999.99,
-      image: 'https://www.motortrend.com/uploads/2023/02/001-kelin-tools-blackfire-pac-1000-1500-watt-portable-power-station-review.jpg',
+const timelineVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
     }
-  ],
-  tracking: {
-    number: 'TRK123456789',
-    carrier: 'DHL',
-    status: 'In Transit',
-    estimatedDelivery: '2024-03-18',
-    currentLocation: 'Lagos, Nigeria',
-    timeline: [
-      {
-        status: 'Delivered',
-        date: '2024-03-18 14:30',
-        location: 'Lagos, Nigeria',
-        description: 'Package delivered successfully',
-        completed: false,
-      },
-      {
-        status: 'Out for Delivery',
-        date: '2024-03-18 09:15',
-        location: 'Lagos, Nigeria',
-        description: 'Package is out for delivery',
-        completed: false,
-      },
-      {
-        status: 'In Transit',
-        date: '2024-03-17 15:45',
-        location: 'Lagos Distribution Center',
-        description: 'Package arrived at local facility',
-        completed: true,
-      },
-      {
-        status: 'Shipped',
-        date: '2024-03-16 10:20',
-        location: 'Warehouse',
-        description: 'Package has been shipped',
-        completed: true,
-      },
-      {
-        status: 'Order Confirmed',
-        date: '2024-03-15 16:00',
-        location: 'Online',
-        description: 'Order has been confirmed',
-        completed: true,
-      },
-    ],
+  }
+};
+
+const eventVariants = {
+  hidden: { 
+    opacity: 0, 
+    x: -20,
   },
-  shippingAddress: {
-    name: 'John Doe',
-    address: '123 Main Street',
-    city: 'Lagos',
-    state: 'Lagos State',
-    country: 'Nigeria',
-    phone: '+234 123 456 7890',
-  },
+  show: { 
+    opacity: 1, 
+    x: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  }
 };
 
 export default function OrderTracking() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const [currency, setCurrency] = useState(settingsService.getDefaultCurrency());
+
+  // Fetch tracking data
+  const { data: tracking, isLoading, error, isError } = useQuery({
+    queryKey: ['order-tracking', orderId],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(`/orders/${orderId}/tracking`);
+        return response.data;
+      } catch (error: any) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch tracking information');
+      }
+    }
+  });
+
+  // Load currency
+  useEffect(() => {
+    const loadCurrency = async () => {
+      await settingsService.fetchSettings();
+      setCurrency(settingsService.getDefaultCurrency());
+    };
+    loadCurrency();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Truck className="h-8 w-8 animate-pulse text-primary" />
+          <p className="text-sm text-muted-foreground">Loading tracking information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-destructive/10 text-destructive p-4 rounded-lg max-w-md text-center">
+          <p className="font-medium mb-2">Error loading tracking information</p>
+          <p className="text-sm">{(error as Error)?.message || 'Please try again later.'}</p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => navigate('/dashboard/orders')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Orders
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tracking) {
+    return null;
+  }
+
+  // Format currency
+  const formatAmount = (amount: number) => {
+    return `${currency}${amount.toLocaleString('en-US', { 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-6">
+          {/* Back button */}
+          <Button
+            variant="ghost"
+            className="w-fit gap-2"
+            onClick={() => navigate('/dashboard/orders')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Orders
+          </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Tracking Information */}
@@ -104,54 +137,91 @@ export default function OrderTracking() {
                       <Truck className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{orderDetails.tracking.status}</h3>
+                      <h3 className="font-semibold">{tracking.status}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Estimated Delivery: {new Date(orderDetails.tracking.estimatedDelivery).toLocaleDateString()}
+                        Estimated Delivery: {tracking.estimated_delivery}
                       </p>
                     </div>
                   </div>
                   <Badge variant="secondary" className="capitalize">
-                    {orderDetails.status}
+                    {tracking.status.toLowerCase()}
                   </Badge>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>Current Location: {orderDetails.tracking.currentLocation}</span>
+                  <span>Current Location: {tracking.current_location}</span>
                 </div>
               </div>
 
               {/* Tracking Timeline */}
               <div className="bg-card rounded-lg p-6">
                 <h3 className="font-semibold mb-6">Tracking History</h3>
-                <div className="relative space-y-8">
-                  {orderDetails.tracking.timeline.map((event, index) => (
-                    <div key={index} className="flex gap-4">
+                <motion.div 
+                  className="relative space-y-8"
+                  variants={timelineVariants}
+                  initial="hidden"
+                  animate="show"
+                >
+                  {tracking.timeline.map((event, index) => (
+                    <motion.div 
+                      key={index} 
+                      className="flex gap-4"
+                      variants={eventVariants}
+                    >
                       <div className="relative">
-                        <div
+                        <motion.div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center",
                             event.completed
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted"
                           )}
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ 
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20,
+                            delay: index * 0.1 
+                          }}
                         >
                           {event.completed ? (
-                            <CheckCircle className="h-4 w-4" />
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.2 }}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </motion.div>
                           ) : (
                             <Clock className="h-4 w-4" />
                           )}
-                        </div>
-                        {index !== orderDetails.tracking.timeline.length - 1 && (
-                          <div
+                        </motion.div>
+                        {index !== tracking.timeline.length - 1 && (
+                          <motion.div
                             className={cn(
-                              "absolute top-8 left-1/2 w-0.5 h-12 -translate-x-1/2",
+                              "absolute top-8 left-1/2 w-0.5 -translate-x-1/2",
                               event.completed ? "bg-primary" : "bg-muted"
                             )}
+                            initial={{ height: 0 }}
+                            animate={{ height: 48 }}
+                            transition={{ 
+                              duration: 0.4,
+                              delay: index * 0.2 
+                            }}
                           />
                         )}
                       </div>
-                      <div className="flex-1 pb-8">
+                      <motion.div 
+                        className="flex-1 pb-8"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ 
+                          duration: 0.4,
+                          delay: index * 0.2 + 0.2
+                        }}
+                      >
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                           <h4 className="font-medium">{event.status}</h4>
                           <time className="text-sm text-muted-foreground">
@@ -165,10 +235,10 @@ export default function OrderTracking() {
                           <MapPin className="h-3 w-3 inline mr-1" />
                           {event.location}
                         </p>
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             </div>
 
@@ -178,11 +248,10 @@ export default function OrderTracking() {
               <div className="bg-card rounded-lg p-6">
                 <h3 className="font-semibold mb-4">Shipping Information</h3>
                 <div className="space-y-3 text-sm">
-                  <p className="font-medium">{orderDetails.shippingAddress.name}</p>
-                  <p>{orderDetails.shippingAddress.address}</p>
-                  <p>{`${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state}`}</p>
-                  <p>{orderDetails.shippingAddress.country}</p>
-                  <p className="text-muted-foreground">{orderDetails.shippingAddress.phone}</p>
+                  <p className="font-medium">{tracking.shipping_address.name}</p>
+                  <p>{tracking.shipping_address.address}</p>
+                  <p>{`${tracking.shipping_address.city}, ${tracking.shipping_address.state}`}</p>
+                  <p className="text-muted-foreground">{tracking.shipping_address.phone}</p>
                 </div>
               </div>
 
@@ -190,7 +259,7 @@ export default function OrderTracking() {
               <div className="bg-card rounded-lg p-6">
                 <h3 className="font-semibold mb-4">Order Summary</h3>
                 <div className="space-y-4">
-                  {orderDetails.items.map((item) => (
+                  {tracking.order_summary.items.map((item) => (
                     <div key={item.id} className="flex gap-4">
                       <img
                         src={item.image}
@@ -203,11 +272,19 @@ export default function OrderTracking() {
                           Quantity: {item.quantity}
                         </p>
                         <p className="font-medium">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatAmount(item.price * item.quantity)}
                         </p>
                       </div>
                     </div>
                   ))}
+                  <div className="pt-4 border-t">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Total</span>
+                      <span className="font-medium">
+                        {formatAmount(tracking.order_summary.total)}
+                      </span>
+                    </div>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm" 

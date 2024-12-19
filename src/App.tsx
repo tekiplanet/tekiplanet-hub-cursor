@@ -33,6 +33,7 @@ const PaymentConfirmation = React.lazy(() => import('@/pages/PaymentConfirmation
 const PaystackCallback = React.lazy(() => import('@/pages/PaystackCallback'));
 const CourseDetails = React.lazy(() => import('@/components/academy/CourseDetails'));
 const Academy = React.lazy(() => import('@/pages/Academy'));
+const OrderTracking = React.lazy(() => import('@/pages/OrderTracking'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -62,6 +63,7 @@ const AppContent = () => {
                   <Route index element={<Dashboard />} />
                   <Route path="*" element={<Dashboard />} />
                   <Route path="payment-confirmation" element={<PaymentConfirmation />} />
+                  <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
                   <Route 
                     path="services/quote/:categoryId/:serviceId" 
                     element={
