@@ -120,6 +120,27 @@ const TimelineItem = ({
   </div>
 );
 
+const formatBookingTime = (date: string, time: string) => {
+  try {
+    const cleanDate = date.split('T')[0];
+    const cleanTime = time.split('T')[1]?.split('.')[0] || time.split('.')[0];
+    
+    const bookingDate = new Date(cleanDate);
+    const [hours, minutes] = cleanTime.split(':').map(Number);
+    
+    bookingDate.setHours(hours, minutes, 0, 0);
+
+    return bookingDate;
+  } catch (error) {
+    console.error('Error formatting booking time:', {
+      error,
+      date,
+      time
+    });
+    return new Date();
+  }
+};
+
 const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   const [timeLeft, setTimeLeft] = React.useState('');
 
@@ -185,20 +206,7 @@ export default function ConsultingBookingDetails() {
   const sessionDate = React.useMemo(() => {
     if (!booking) return new Date();
     
-    try {
-      const [hours, minutes] = booking.selected_time.split(':');
-      const date = new Date(booking.selected_date);
-      date.setHours(parseInt(hours), parseInt(minutes));
-
-      const nigerianDate = new Date(date.toLocaleString('en-US', {
-        timeZone: 'Africa/Lagos'
-      }));
-
-      return nigerianDate;
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return new Date();
-    }
+    return formatBookingTime(booking.selected_date, booking.selected_time);
   }, [booking]);
 
   const timelineSteps = React.useMemo(() => {
@@ -224,9 +232,14 @@ export default function ConsultingBookingDetails() {
         title: 'Session Time',
         description: booking.status === 'ongoing' ? 'Currently in session' : 
           booking.status === 'completed' ? 'Session completed' :
-          `${format(new Date(booking.selected_date), 'MMM d, yyyy', {
-            timeZone: 'Africa/Lagos'
-          })} at ${formatTime(booking.selected_time)}`,
+          `${format(sessionDate, 'MMM d, yyyy', { timeZone: 'Africa/Lagos' })} at ${
+            new Intl.DateTimeFormat('en-NG', {
+              hour: 'numeric',
+              minute: 'numeric',
+              hour12: true,
+              timeZone: 'Africa/Lagos'
+            }).format(sessionDate)
+          }`,
         icon: Timer,
         isCompleted: ['completed', 'cancelled'].includes(booking.status),
         isActive: booking.status === 'ongoing'
@@ -407,13 +420,20 @@ export default function ConsultingBookingDetails() {
                 <div className="flex items-center text-sm">
                   <Calendar className="h-4 w-4 mr-2 text-primary" />
                   <span className="font-medium">
-                    {format(new Date(booking.selected_date), 'EEEE, MMMM d, yyyy')}
+                    {format(sessionDate, 'EEEE, MMMM d, yyyy', {
+                      timeZone: 'Africa/Lagos'
+                    })}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Clock className="h-4 w-4 mr-2 text-primary" />
                   <span className="font-medium">
-                    {formatTime(booking.selected_time)}
+                    {new Intl.DateTimeFormat('en-NG', {
+                      hour: 'numeric',
+                      minute: 'numeric',
+                      hour12: true,
+                      timeZone: 'Africa/Lagos'
+                    }).format(sessionDate)}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
@@ -452,11 +472,6 @@ export default function ConsultingBookingDetails() {
                 <Wallet className="h-4 w-4" />
                 <span>Paid via Wallet</span>
               </div>
-
-              <Button variant="outline" className="w-full gap-2">
-                <Receipt className="w-4 h-4" />
-                Download Receipt
-              </Button>
             </CardContent>
           </Card>
         </div>
