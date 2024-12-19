@@ -18,6 +18,9 @@ import { CartItem, ShippingAddress } from '@/types/store';
 import { cn } from "@/lib/utils";
 import { useAuthStore } from '@/store/useAuthStore';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
+import { AddressList } from '@/components/shipping/AddressList';
+import { shippingService, ShippingAddress as IShippingAddress } from '@/services/shippingService';
 
 // Mock cart data (you can get this from your cart state)
 const cartItems: CartItem[] = [
@@ -50,34 +53,34 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState('shipping');
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    fullName: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-    phone: ''
-  });
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('wallet');
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuthStore();
+
+  // Get addresses
+  const { data: addresses = [] } = useQuery({
+    queryKey: ['shipping-addresses'],
+    queryFn: shippingService.getAddresses
+  });
+
+  // Find selected address
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const shipping = 29.99;
   const total = subtotal + shipping;
 
   const handleShippingSubmit = () => {
-    // Validate shipping address
-    if (Object.values(shippingAddress).some(value => !value)) {
+    if (!selectedAddress) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all shipping details",
+        description: "Please select a shipping address",
         variant: "destructive"
       });
       return;
     }
-    setCurrentStep('payment');
+    setCurrentStep('review');
   };
 
   const handlePaymentSubmit = async () => {
@@ -195,85 +198,11 @@ export default function Checkout() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name</Label>
-                      <Input
-                        id="fullName"
-                        value={shippingAddress.fullName}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          fullName: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        value={shippingAddress.phone}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          phone: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={shippingAddress.address}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          address: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        value={shippingAddress.city}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          city: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state">State</Label>
-                      <Input
-                        id="state"
-                        value={shippingAddress.state}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          state: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
-                      <Input
-                        id="zipCode"
-                        value={shippingAddress.zipCode}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          zipCode: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country</Label>
-                      <Input
-                        id="country"
-                        value={shippingAddress.country}
-                        onChange={e => setShippingAddress({
-                          ...shippingAddress,
-                          country: e.target.value
-                        })}
-                      />
-                    </div>
-                  </div>
+                  <AddressList 
+                    selectedId={selectedAddressId}
+                    onSelect={setSelectedAddressId}
+                  />
+
                   <div className="flex justify-between">
                     <Button
                       variant="outline"
@@ -284,7 +213,7 @@ export default function Checkout() {
                       Back to Cart
                     </Button>
                     <Button 
-                      onClick={() => setCurrentStep('review')} 
+                      onClick={handleShippingSubmit} 
                       className="gap-2"
                     >
                       Review Purchase
@@ -315,13 +244,17 @@ export default function Checkout() {
                         Edit
                       </Button>
                     </div>
-                    <div className="text-sm space-y-1">
-                      <p className="font-medium">{shippingAddress.fullName}</p>
-                      <p>{shippingAddress.address}</p>
-                      <p>{`${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}`}</p>
-                      <p>{shippingAddress.country}</p>
-                      <p>{shippingAddress.phone}</p>
-                    </div>
+                    {selectedAddress && (
+                      <div className="text-sm space-y-1">
+                        <p className="font-medium">
+                          {selectedAddress.first_name} {selectedAddress.last_name}
+                        </p>
+                        <p>{selectedAddress.address}</p>
+                        <p>{`${selectedAddress.city}, ${selectedAddress.state.name}`}</p>
+                        <p>{selectedAddress.phone}</p>
+                        <p>{selectedAddress.email}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Order Review */}

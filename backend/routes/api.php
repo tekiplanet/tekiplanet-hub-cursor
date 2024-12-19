@@ -19,6 +19,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\ShippingAddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -149,4 +150,13 @@ Route::prefix('products')->group(function () {
     Route::get('/promotions', [ProductController::class, 'getPromotions']);
     Route::get('/brands', [ProductController::class, 'getBrands']);
     Route::get('/{id}', [ProductController::class, 'getProductDetails']);
+});
+
+// Shipping Address Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/shipping/states', [ShippingAddressController::class, 'getStates']);
+    Route::get('/shipping/addresses', [ShippingAddressController::class, 'index']);
+    Route::post('/shipping/addresses', [ShippingAddressController::class, 'store']);
+    Route::put('/shipping/addresses/{address}', [ShippingAddressController::class, 'update']);
+    Route::delete('/shipping/addresses/{address}', [ShippingAddressController::class, 'destroy']);
 });
