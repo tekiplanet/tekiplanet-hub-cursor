@@ -7,6 +7,7 @@ use App\Models\ProductCategory;
 use App\Models\Brand;
 use App\Models\Promotion;
 use App\Models\Setting;
+use App\Models\ShippingMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -166,8 +167,12 @@ class ProductController extends Controller
                 'category',
                 'brand',
                 'features',
-                'specifications'
+                'specifications',
+                'reviews.user',
             ])->findOrFail($id);
+
+            // Get shipping methods
+            $shippingMethods = ShippingMethod::where('is_active', true)->get();
 
             return response()->json([
                 'product' => [
@@ -183,8 +188,17 @@ class ProductController extends Controller
                     'reviews_count' => $product->reviews_count,
                     'stock' => $product->stock,
                     'features' => $product->features->pluck('feature'),
-                    'specifications' => $product->specifications->pluck('value', 'key')->toArray()
+                    'specifications' => $product->specifications->pluck('value', 'key')->toArray(),
+                    'reviews' => $product->reviews->map(fn($review) => [
+                        'id' => $review->id,
+                        'rating' => (float) $review->rating,
+                        'comment' => $review->comment,
+                        'user_name' => $review->user->name,
+                        'is_verified' => $review->is_verified_purchase,
+                        'created_at' => $review->created_at->diffForHumans()
+                    ]),
                 ],
+                'shipping_methods' => $shippingMethods,
                 'currency' => Setting::getSetting('default_currency', '₦')
             ]);
         } catch (\Exception $e) {

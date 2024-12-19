@@ -23,6 +23,9 @@ import { storeService } from '@/services/storeService';
 import { useQuery } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/formatters';
 import PagePreloader from '@/components/ui/PagePreloader';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -60,6 +63,18 @@ export default function ProductDetails() {
   if (!product) {
     return <div>Product not found</div>;
   }
+
+  const reviewStats = {
+    average: product.rating || 0,
+    total: product.reviews_count || 0,
+    distribution: {
+      5: product.reviews?.filter(r => Math.floor(r.rating) === 5).length || 0,
+      4: product.reviews?.filter(r => Math.floor(r.rating) === 4).length || 0,
+      3: product.reviews?.filter(r => Math.floor(r.rating) === 3).length || 0,
+      2: product.reviews?.filter(r => Math.floor(r.rating) === 2).length || 0,
+      1: product.reviews?.filter(r => Math.floor(r.rating) === 1).length || 0,
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,8 +267,115 @@ export default function ProductDetails() {
                 ))}
               </div>
             </TabsContent>
-            <TabsContent value="reviews">Reviews content...</TabsContent>
-            <TabsContent value="shipping">Shipping information...</TabsContent>
+            <TabsContent value="reviews" className="mt-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Review Summary */}
+                <Card className="p-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold mb-2">{reviewStats.average.toFixed(1)}</h3>
+                    <div className="flex justify-center items-center gap-1 mb-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "h-4 w-4",
+                            i < Math.floor(reviewStats.average)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "fill-muted text-muted"
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Based on {reviewStats.total} reviews
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(reviewStats.distribution)
+                      .reverse()
+                      .map(([rating, count]) => (
+                        <div key={rating} className="flex items-center gap-2">
+                          <span className="text-sm w-6">{rating}★</span>
+                          <Progress
+                            value={(count / reviewStats.total) * 100}
+                            className="h-2"
+                          />
+                          <span className="text-sm text-muted-foreground w-10">
+                            {count}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </Card>
+
+                {/* Reviews List */}
+                <div className="md:col-span-2 space-y-6">
+                  {product.reviews?.map((review) => (
+                    <div key={review.id} className="border-b pb-6 last:border-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {review.user_name ? review.user_name.substring(0, 2).toUpperCase() : 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{review.user_name || 'Anonymous User'}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={cn(
+                                    "h-3 w-3",
+                                    i < Math.floor(review.rating)
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "fill-muted text-muted"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {review.created_at}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm">{review.comment}</p>
+                      {review.is_verified && (
+                        <Badge variant="secondary" className="mt-2">
+                          Verified Purchase
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="shipping" className="mt-6">
+              <div className="space-y-6">
+                {productData?.shipping_methods.map((method) => (
+                  <Card key={method.id} className="p-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-semibold">{method.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {method.description}
+                        </p>
+                      </div>
+                      <p className="font-semibold">
+                        {formatPrice(method.base_cost, currency)}
+                      </p>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Estimated delivery: {method.estimated_days_min}-{method.estimated_days_max} business days
+                    </div>
+                  </Card>
+                ))}
+                <div className="text-sm text-muted-foreground">
+                  * Delivery times may vary based on your location and order time
+                </div>
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
