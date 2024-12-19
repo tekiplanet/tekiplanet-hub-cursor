@@ -13,7 +13,11 @@ import {
   Wallet,
   Timer,
   MessageSquare,
-  Star
+  Star,
+  CalendarClock,
+  Receipt,
+  CircleDot,
+  ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,18 +33,18 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
+import { format, formatDistanceToNow, isFuture } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  ongoing: 'bg-purple-100 text-purple-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
+  ongoing: 'bg-purple-100 text-purple-800 border-purple-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200'
 };
 
 const statusIcons = {
@@ -49,6 +53,96 @@ const statusIcons = {
   ongoing: Loader2,
   completed: CheckCircle2,
   cancelled: XCircle
+};
+
+const formatTime = (time: string) => {
+  if (time.includes('AM') || time.includes('PM')) return time;
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const formattedHour = hour % 12 || 12;
+  return `${formattedHour}:${minutes} ${ampm}`;
+};
+
+const TimelineItem = ({ 
+  title, 
+  description, 
+  icon: Icon, 
+  isActive = false,
+  isCompleted = false,
+  isLast = false
+}) => (
+  <div className="flex gap-4">
+    <div className="flex flex-col items-center">
+      <div className={cn(
+        "w-8 h-8 rounded-full flex items-center justify-center",
+        isCompleted ? "bg-primary text-primary-foreground" :
+        isActive ? "bg-primary/20 text-primary border-2 border-primary" :
+        "bg-muted text-muted-foreground"
+      )}>
+        <Icon className="w-4 h-4" />
+      </div>
+      {!isLast && (
+        <div className={cn(
+          "w-0.5 h-full mt-2",
+          isCompleted ? "bg-primary" : "bg-muted"
+        )} />
+      )}
+    </div>
+    <div className="flex-1 pb-8">
+      <p className={cn(
+        "font-medium",
+        isActive || isCompleted ? "text-foreground" : "text-muted-foreground"
+      )}>
+        {title}
+      </p>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  </div>
+);
+
+const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
+  const [timeLeft, setTimeLeft] = React.useState('');
+
+  React.useEffect(() => {
+    const calculateTimeLeft = () => {
+      try {
+        const now = new Date();
+        const difference = targetDate.getTime() - now.getTime();
+
+        if (difference <= 0) {
+          setTimeLeft('Session starting soon');
+          return;
+        }
+
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (days > 0) {
+          setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+        } else if (hours > 0) {
+          setTimeLeft(`${hours}h ${minutes}m`);
+        } else {
+          setTimeLeft(`${minutes}m`);
+        }
+      } catch (error) {
+        console.error('Error calculating time left:', error);
+        setTimeLeft('Time not available');
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <CalendarClock className="w-4 h-4 text-muted-foreground" />
+      <span>{timeLeft}</span>
+    </div>
+  );
 };
 
 export default function ConsultingBookingDetails() {
@@ -109,6 +203,61 @@ export default function ConsultingBookingDetails() {
   const StatusIcon = statusIcons[booking.status];
   const canBeCancelled = ['pending', 'confirmed'].includes(booking.status);
   const canBeReviewed = booking.status === 'completed' && !booking.review;
+  const isUpcoming = ['pending', 'confirmed'].includes(booking.status);
+  const sessionDate = React.useMemo(() => {
+    try {
+      const [hours, minutes] = booking.selected_time.replace(/\s?[AP]M/, '').split(':');
+      const isPM = booking.selected_time.includes('PM');
+      
+      // Convert to 24-hour format
+      let hour = parseInt(hours);
+      if (isPM && hour !== 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+      
+      const date = new Date(booking.selected_date);
+      date.setHours(hour, parseInt(minutes), 0, 0);
+      
+      return date;
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return new Date(); // Fallback to current date
+    }
+  }, [booking.selected_date, booking.selected_time]);
+
+  const timelineSteps = [
+    {
+      title: 'Booking Placed',
+      description: format(new Date(booking.created_at), 'MMM d, yyyy h:mm a'),
+      icon: CircleDot,
+      isCompleted: true
+    },
+    {
+      title: 'Booking Confirmed',
+      description: booking.status === 'pending' ? 'Awaiting confirmation' : 'Payment confirmed',
+      icon: CheckCircle2,
+      isCompleted: booking.status !== 'pending',
+      isActive: booking.status === 'pending'
+    },
+    {
+      title: 'Session in Progress',
+      description: booking.status === 'ongoing' ? 'Currently in session' : 
+        booking.status === 'completed' ? 'Session completed' :
+        format(sessionDate, 'MMM d, yyyy h:mm a'),
+      icon: Timer,
+      isCompleted: ['completed', 'cancelled'].includes(booking.status),
+      isActive: booking.status === 'ongoing'
+    },
+    {
+      title: 'Session Completed',
+      description: booking.status === 'completed' ? 
+        'Session successfully completed' : 
+        booking.status === 'cancelled' ? 'Session cancelled' : 'Pending completion',
+      icon: CheckCircle2,
+      isCompleted: booking.status === 'completed',
+      isActive: booking.status === 'cancelled',
+      isLast: true
+    }
+  ];
 
   return (
     <motion.div
@@ -116,152 +265,170 @@ export default function ConsultingBookingDetails() {
       animate={{ opacity: 1, y: 0 }}
       className="container mx-auto p-4 max-w-4xl space-y-6"
     >
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        className="gap-2"
-        onClick={() => navigate('/dashboard/consulting/bookings')}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Bookings
-      </Button>
 
       {/* Status Card */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <Badge 
                 variant="secondary" 
-                className={statusColors[booking.status]}
+                className={`${statusColors[booking.status]} px-2 py-1`}
               >
                 <StatusIcon className="w-4 h-4 mr-1" />
                 {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
               </Badge>
               <h2 className="text-2xl font-bold">IT Consulting Session</h2>
+              {isUpcoming && <CountdownTimer targetDate={sessionDate} />}
             </div>
 
-            {canBeCancelled && (
-              <Button 
-                variant="destructive" 
-                onClick={() => setShowCancelDialog(true)}
-              >
-                Cancel Booking
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canBeReviewed && (
+                <Button 
+                  className="gap-2"
+                  onClick={() => setShowReviewDialog(true)}
+                >
+                  <Star className="w-4 h-4" />
+                  Leave Review
+                </Button>
+              )}
+              {canBeCancelled && (
+                <Button 
+                  variant="destructive" 
+                  className="gap-2"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel Booking
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Details Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Session Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center text-sm">
-                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>
-                  {new Date(booking.selected_date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </span>
-              </div>
-              <div className="flex items-center text-sm">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{booking.selected_time}</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <Timer className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{booking.hours} hour{booking.hours > 1 ? 's' : ''}</span>
-              </div>
-            </div>
-
-            {booking.requirements && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Requirements:</label>
-                  <p className="text-sm text-muted-foreground">{booking.requirements}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Rate per Hour</span>
-                <span>{formatCurrency(booking.total_cost / booking.hours)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Duration</span>
-                <span>{booking.hours} hour{booking.hours > 1 ? 's' : ''}</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between font-medium">
-                <span>Total Paid</span>
-                <span>{formatCurrency(booking.total_cost)}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-              <Wallet className="h-4 w-4" />
-              <span>Paid via Wallet</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Review Section */}
-      {booking.review ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-5 w-5 ${
-                    i < booking.review.rating
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
+      {/* Main Content Grid */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Timeline - Left Column */}
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {timelineSteps.map((step, index) => (
+                <TimelineItem
+                  key={index}
+                  {...step}
                 />
               ))}
-            </div>
-            {booking.review.comment && (
-              <p className="text-muted-foreground">{booking.review.comment}</p>
-            )}
-          </CardContent>
-        </Card>
-      ) : canBeReviewed ? (
-        <Card>
-          <CardContent className="p-6">
-            <Button 
-              className="w-full"
-              onClick={() => setShowReviewDialog(true)}
-            >
-              <Star className="mr-2 h-4 w-4" />
-              Leave a Review
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+            </CardContent>
+          </Card>
+
+          {/* Requirements Card */}
+          {booking.requirements && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Session Requirements</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">{booking.requirements}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Review Card */}
+          {booking.review && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Review</CardTitle>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "w-4 h-4",
+                        i < booking.review.rating
+                          ? "text-yellow-400 fill-current"
+                          : "text-gray-300"
+                      )}
+                    />
+                  ))}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {booking.review.comment && (
+                  <p className="text-muted-foreground">{booking.review.comment}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Details Cards - Right Column */}
+        <div className="space-y-6">
+          {/* Session Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    {format(new Date(booking.selected_date), 'EEEE, MMMM d, yyyy')}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Clock className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">{formatTime(booking.selected_time)}</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Timer className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    {booking.hours} hour{booking.hours > 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Rate per Hour</span>
+                  <span>{formatCurrency(booking.total_cost / booking.hours)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Duration</span>
+                  <span>{booking.hours} hour{booking.hours > 1 ? 's' : ''}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>Total Paid</span>
+                  <span>{formatCurrency(booking.total_cost)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                <Wallet className="h-4 w-4" />
+                <span>Paid via Wallet</span>
+              </div>
+
+              <Button variant="outline" className="w-full gap-2">
+                <Receipt className="w-4 h-4" />
+                Download Receipt
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Cancel Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
@@ -319,9 +486,10 @@ export default function ConsultingBookingDetails() {
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-6 w-6 cursor-pointer transition-colors ${
-                    i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                  }`}
+                  className={cn(
+                    "h-8 w-8 cursor-pointer transition-colors",
+                    i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                  )}
                   onClick={() => setRating(i + 1)}
                 />
               ))}
