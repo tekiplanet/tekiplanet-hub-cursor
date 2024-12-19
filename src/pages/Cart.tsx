@@ -7,7 +7,8 @@ import {
   Plus, 
   ShoppingBag, 
   ArrowRight,
-  ChevronLeft 
+  ChevronLeft,
+  Loader2 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,11 +16,14 @@ import { CartItem } from '@/types/store';
 import { EmptyPlaceholder } from '@/components/empty-placeholder';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storeService } from '@/services/storeService';
+import PagePreloader from '@/components/ui/PagePreloader';
+import { formatPrice } from '@/lib/formatters';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   // Fetch cart data
   const { data: cartData, isLoading } = useQuery({
@@ -28,9 +32,12 @@ export default function Cart() {
   });
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setUpdatingItemId(itemId);
+    
     try {
       await storeService.updateCartItemQuantity(itemId, newQuantity);
-      queryClient.invalidateQueries(['cart']);
+      queryClient.invalidateQueries(['cart', 'cartCount']);
     } catch (error: any) {
       if (error.response?.status === 422) {
         toast({
@@ -39,13 +46,16 @@ export default function Cart() {
           variant: "destructive"
         });
       }
+    } finally {
+      setUpdatingItemId(null);
     }
   };
 
   const removeItem = async (itemId: string) => {
+    setUpdatingItemId(itemId);
     try {
       await storeService.removeCartItem(itemId);
-      queryClient.invalidateQueries(['cart']);
+      queryClient.invalidateQueries(['cart', 'cartCount']);
       toast({
         title: "Item removed",
         description: "The item has been removed from your cart",
@@ -56,6 +66,8 @@ export default function Cart() {
         description: "Failed to remove item",
         variant: "destructive"
       });
+    } finally {
+      setUpdatingItemId(null);
     }
   };
 
@@ -117,38 +129,55 @@ export default function Cart() {
                   <div className="flex-1 space-y-2">
                     <div className="flex justify-between">
                       <h3 className="font-semibold">{item.product.name}</h3>
-                      <p className="font-bold">${(item.product.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold">
+                        {formatPrice(item.product.price * item.quantity, cartData.currency)}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">${item.product.price.toFixed(2)} each</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatPrice(item.product.price, cartData.currency)} each
+                    </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1 || updatingItemId === item.id}
                         >
-                          <Minus className="h-4 w-4" />
+                          {updatingItemId === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Minus className="h-4 w-4" />
+                          )}
                         </Button>
                         <span className="w-8 text-center">{item.quantity}</span>
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.product.stock}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={updatingItemId === item.id}
                         >
-                          <Plus className="h-4 w-4" />
+                          {updatingItemId === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:text-red-600"
-                        onClick={() => removeItem(item.product.id)}
+                        onClick={() => removeItem(item.id)}
+                        disabled={updatingItemId === item.id}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {updatingItemId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -163,22 +192,14 @@ export default function Cart() {
               <h2 className="text-lg font-semibold">Order Summary</h2>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span className="font-bold">Total</span>
+                  <span className="font-bold">
+                    {formatPrice(cartData.totals.current, cartData.currency)}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span>${shipping.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Including VAT
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  * Shipping costs will be calculated at checkout
+                </p>
               </div>
               <Button 
                 className="w-full gap-2" 
