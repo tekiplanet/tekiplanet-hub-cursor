@@ -67,6 +67,13 @@ export interface CartResponse {
   currency: string;
 }
 
+export interface WishlistResponse {
+  items: {
+    id: string;
+    product: Product;
+  }[];
+}
+
 export const storeService = {
   getFeaturedProducts: async (): Promise<ProductsResponse> => {
     const response = await axiosInstance.get('/products/featured');
@@ -145,5 +152,25 @@ export const storeService = {
   getCartCount: async (): Promise<number> => {
     const response = await axiosInstance.get('/cart/count');
     return response.data.count;
+  },
+
+  getWishlist: async (): Promise<WishlistResponse> => {
+    const response = await axiosInstance.get('/wishlist');
+    return response.data;
+  },
+
+  getWishlistCount: async (): Promise<number> => {
+    const response = await axiosInstance.get('/wishlist/count');
+    return response.data.count;
+  },
+
+  toggleWishlist: async (productId: string): Promise<{ message: string; is_wishlisted: boolean }> => {
+    const response = await axiosInstance.post(`/wishlist/toggle/${productId}`);
+    return response.data;
+  },
+
+  checkWishlistStatus: async (productId: string): Promise<boolean> => {
+    const response = await axiosInstance.get(`/wishlist/check/${productId}`);
+    return response.data.is_wishlisted;
   }
 }; 

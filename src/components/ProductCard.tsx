@@ -1,10 +1,14 @@
 import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Star } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/formatters';
 import { Product } from '@/types/store';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { storeService } from '@/services/storeService';
+import { toast } from 'sonner';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +17,61 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, currency, onNavigate }: ProductCardProps) {
+  const queryClient = useQueryClient();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  useEffect(() => {
+    storeService.checkWishlistStatus(product.id)
+      .then(status => setIsWishlisted(status))
+      .catch(() => {});
+  }, [product.id]);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (product.stock === 0) {
+      toast.error('Product is out of stock');
+      return;
+    }
+
+    setIsAddingToCart(true);
+    try {
+      await storeService.addToCart(product.id, 1);
+      queryClient.invalidateQueries(['cart', 'cartCount']);
+      toast.success('Added to cart', {
+        description: `${product.name} added to your cart`
+      });
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        toast.error('Cannot add to cart', {
+          description: error.response.data.message
+        });
+      } else {
+        toast.error('Error', {
+          description: 'Failed to add item to cart'
+        });
+      }
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsTogglingWishlist(true);
+    try {
+      const response = await storeService.toggleWishlist(product.id);
+      setIsWishlisted(response.is_wishlisted);
+      queryClient.invalidateQueries(['wishlistCount']);
+      toast.success(response.message);
+    } catch (error) {
+      toast.error('Failed to update wishlist');
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -30,21 +89,27 @@ export function ProductCard({ product, currency, onNavigate }: ProductCardProps)
             size="icon" 
             variant="secondary" 
             className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={handleToggleWishlist}
+            disabled={isTogglingWishlist}
           >
-            <Heart className="h-4 w-4" />
+            {isTogglingWishlist ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className={cn("h-4 w-4", isWishlisted && "fill-current text-red-500")} />
+            )}
           </Button>
           <Button 
             size="icon" 
             variant="secondary" 
             className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={handleAddToCart}
+            disabled={isAddingToCart || product.stock === 0}
           >
-            <ShoppingCart className="h-4 w-4" />
+            {isAddingToCart ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
