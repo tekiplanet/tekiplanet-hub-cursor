@@ -151,18 +151,17 @@ class ProductSeeder extends Seeder
         // Keep track of featured products count
         $featuredCount = 0;
         $maxFeatured = 8; // We want 8 featured products
+        $maxFeaturedPerCategory = ceil($maxFeatured / $categories->count());
 
-        foreach ($categories as $category) {
+        foreach ($categories as $index => $category) {
             // Create 6 products per category
             for ($i = 0; $i < 6; $i++) {
                 $template = $this->productTemplates[$category->name] ?? null;
                 
                 // Determine if this product should be featured
                 $shouldFeature = $featuredCount < $maxFeatured && 
-                    // Feature first 1-2 products of each category
-                    ($i < 2) && 
-                    // Ensure even distribution across categories
-                    ($featuredCount < ($maxFeatured / count($categories)) * ($category->id));
+                    // Feature first products of each category up to max per category
+                    ($i < $maxFeaturedPerCategory);
 
                 $product = Product::create([
                     'name' => $brands->random()->name . ' ' . 
