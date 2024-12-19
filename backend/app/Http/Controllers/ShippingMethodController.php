@@ -31,7 +31,7 @@ class ShippingMethodController extends Controller
                     'id' => $method->id,
                     'name' => $method->name,
                     'description' => $method->description,
-                    'rate' => $rate ? $rate->rate : null,
+                    'rate' => $rate ? (float)$rate->rate : 0,
                     'estimated_days_min' => $method->estimated_days_min,
                     'estimated_days_max' => $method->estimated_days_max,
                 ];

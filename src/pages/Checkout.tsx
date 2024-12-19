@@ -246,7 +246,9 @@ export default function Checkout() {
                                 </p>
                               </div>
                               <p className="font-medium">
-                                {cartData.currency}{method.rate.toFixed(2)}
+                                {cartData.currency}{typeof method.rate === 'number' 
+                                    ? method.rate.toFixed(2) 
+                                    : parseFloat(method.rate).toFixed(2)}
                               </p>
                             </label>
                           </div>
