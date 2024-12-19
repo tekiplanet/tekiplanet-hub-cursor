@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -37,6 +37,8 @@ export default function ProductDetails() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const queryClient = useQueryClient();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
 
   // Fetch product details
   const { data: productData, isLoading } = useQuery({
@@ -47,6 +49,14 @@ export default function ProductDetails() {
 
   const product = productData?.product;
   const currency = productData?.currency || '₦';
+
+  useEffect(() => {
+    if (product?.id) {
+      storeService.checkWishlistStatus(product.id)
+        .then(status => setIsWishlisted(status))
+        .catch(() => {});
+    }
+  }, [product?.id]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -73,6 +83,45 @@ export default function ProductDetails() {
       }
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!product) return;
+    
+    setIsTogglingWishlist(true);
+    try {
+      const response = await storeService.toggleWishlist(product.id);
+      setIsWishlisted(response.is_wishlisted);
+      queryClient.invalidateQueries(['wishlistCount']);
+      toast.success(response.message);
+    } catch (error) {
+      toast.error('Failed to update wishlist');
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product) return;
+    
+    setIsBuyingNow(true);
+    try {
+      await storeService.addToCart(product.id, quantity);
+      queryClient.invalidateQueries(['cart', 'cartCount']);
+      navigate('/dashboard/cart');
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        toast.error('Cannot proceed to cart', {
+          description: error.response.data.message
+        });
+      } else {
+        toast.error('Error', {
+          description: 'Failed to proceed to cart'
+        });
+      }
+    } finally {
+      setIsBuyingNow(false);
     }
   };
 
@@ -217,12 +266,17 @@ export default function ProductDetails() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={handleToggleWishlist}
                   className={cn(
                     isWishlisted && "text-red-500 hover:text-red-600"
                   )}
+                  disabled={isTogglingWishlist}
                 >
-                  <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+                  {isTogglingWishlist ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+                  )}
                 </Button>
                 <Button
                   variant="outline"
@@ -254,10 +308,17 @@ export default function ProductDetails() {
                 <Button
                   variant="secondary"
                   className="flex-1"
-                  onClick={() => navigate('/dashboard/checkout')}
-                  disabled={product.stock === 0}
+                  onClick={handleBuyNow}
+                  disabled={product.stock === 0 || isBuyingNow}
                 >
-                  Buy Now
+                  {isBuyingNow ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Buy Now'
+                  )}
                 </Button>
               </div>
             </div>
