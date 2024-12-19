@@ -30,6 +30,8 @@ import { storeService } from '@/services/storeService';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
 import { formatPrice } from '@/lib/formatters';
+import { ProductCard } from '@/components/ProductCard';
+import PagePreloader from '@/components/ui/PagePreloader';
 
 const sortOptions = [
   { value: 'featured', label: 'Featured' },
@@ -230,67 +232,17 @@ export default function Products() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <AnimatePresence mode="popLayout">
             {isLoading ? (
-              <div>Loading...</div>
+              <PagePreloader />
             ) : !productsData?.products.data || productsData.products.data.length === 0 ? (
               <div>No products found</div>
             ) : (
               productsData.products.data.map((product) => (
-                <motion.div
+                <ProductCard
                   key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-card rounded-lg overflow-hidden group cursor-pointer"
-                  onClick={() => navigate(`/dashboard/store/product/${product.id}`)}
-                >
-                  <div className="relative aspect-square">
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Add to wishlist
-                        }}
-                      >
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Add to cart
-                        }}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <Badge variant="secondary" className="mb-2">
-                      {product.category}
-                    </Badge>
-                    <h3 className="font-semibold mb-2">{product.name}</h3>
-                    <div className="flex justify-between items-center">
-                      <p className="text-lg font-bold">
-                        {formatPrice(product.price, currency)}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm">{product.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                  product={product}
+                  currency={currency}
+                  onNavigate={() => navigate(`/dashboard/store/product/${product.id}`)}
+                />
               ))
             )}
           </AnimatePresence>
