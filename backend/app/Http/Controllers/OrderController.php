@@ -19,6 +19,13 @@ class OrderController extends Controller
             'shipping_address_id' => 'required|exists:shipping_addresses,id',
             'shipping_method_id' => 'required|exists:shipping_methods,id',
             'payment_method' => 'required|in:wallet'
+        ], [
+            'shipping_address_id.required' => 'Shipping address is required',
+            'shipping_address_id.exists' => 'Invalid shipping address',
+            'shipping_method_id.required' => 'Shipping method is required',
+            'shipping_method_id.exists' => 'Invalid shipping method',
+            'payment_method.required' => 'Payment method is required',
+            'payment_method.in' => 'Invalid payment method'
         ]);
 
         DB::beginTransaction();
@@ -26,7 +33,7 @@ class OrderController extends Controller
             // Get cart total and shipping cost
             $cart = Cart::where('user_id', auth()->id())->first();
             $shippingMethod = ShippingMethod::findOrFail($request->shipping_method_id);
-            $total = $cart->totals['current'] + $shippingMethod->rate;
+            $total = $cart->current_total + $shippingMethod->rate;
 
             // Check wallet balance
             $user = auth()->user();
@@ -39,7 +46,7 @@ class OrderController extends Controller
                 'user_id' => auth()->id(),
                 'shipping_address_id' => $request->shipping_address_id,
                 'shipping_method_id' => $request->shipping_method_id,
-                'subtotal' => $cart->totals['current'],
+                'subtotal' => $cart->current_total,
                 'shipping_cost' => $shippingMethod->rate,
                 'total' => $total,
                 'status' => 'pending',
