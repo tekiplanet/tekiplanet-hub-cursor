@@ -19,7 +19,6 @@ class OrderController extends Controller
             if ($request->has('search')) {
                 $search = $request->search;
                 
-                // Add debug logging
                 \Log::info('Search Debug', [
                     'original_search' => $search,
                     'original_length' => strlen($search)
@@ -29,33 +28,21 @@ class OrderController extends Controller
                     // Clean up search term (remove dashes and convert to uppercase)
                     $cleanSearch = strtoupper(str_replace(['-', ' '], '', $search));
                     
-                    // More debug logging
                     \Log::info('Clean Search Debug', [
                         'cleanSearch' => $cleanSearch,
                         'cleanLength' => strlen($cleanSearch)
                     ]);
 
                     $q->where(function($subQ) use ($cleanSearch) {
-                        // Get all orders first for debugging
-                        $allOrders = Order::where('user_id', auth()->id())->get();
+                        // Try to match just the beginning and end
+                        $searchStart = substr($cleanSearch, 0, 8); // Match first 8 chars
+                        $searchEnd = substr($cleanSearch, -4);     // Match last 4 chars
                         
-                        // Debug log all order IDs and their formatted versions
-                        foreach ($allOrders as $order) {
-                            $formattedId = substr($order->id, 0, 12) . substr($order->id, -4);
-                            \Log::info('Order ID Check', [
-                                'original_id' => $order->id,
-                                'formatted_id' => $formattedId,
-                                'formatted_upper' => strtoupper($formattedId),
-                                'matches_search' => $cleanSearch === strtoupper($formattedId)
-                            ]);
-                        }
-
-                        // Try a simpler search approach
-                        $subQ->where(function($innerQ) use ($cleanSearch) {
-                            $innerQ->whereRaw('UPPER(id) LIKE ?', ['%' . $cleanSearch . '%'])
-                                ->orWhereRaw('UPPER(CONCAT(SUBSTRING(id, 1, 12), SUBSTRING(id, -4))) LIKE ?', 
-                                    ['%' . $cleanSearch . '%']);
-                        });
+                        $subQ->whereRaw("
+                            UPPER(SUBSTRING(REPLACE(id, '-', ''), 1, 8)) = ? 
+                            AND 
+                            UPPER(SUBSTRING(REPLACE(id, '-', ''), -4)) = ?
+                        ", [$searchStart, $searchEnd]);
                     })
                     // Search in related products
                     ->orWhereHas('items.product', function($q) use ($search) {
