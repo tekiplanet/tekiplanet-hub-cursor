@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Download,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import axios from '@/lib/axios';
 import { settingsService } from '@/services/settingsService';
+import { toast } from 'sonner';
+import { storeService } from '@/services/storeService';
 
 const timelineVariants = {
   hidden: { opacity: 0 },
@@ -47,6 +50,7 @@ export default function OrderTracking() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [currency, setCurrency] = useState(settingsService.getDefaultCurrency());
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   // Fetch tracking data
   const { data: tracking, isLoading, error, isError } = useQuery({
@@ -116,15 +120,6 @@ export default function OrderTracking() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-6">
-          {/* Back button */}
-          <Button
-            variant="ghost"
-            className="w-fit gap-2"
-            onClick={() => navigate('/dashboard/orders')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Orders
-          </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Tracking Information */}
@@ -289,9 +284,28 @@ export default function OrderTracking() {
                     variant="outline" 
                     size="sm" 
                     className="w-full gap-2"
+                    disabled={downloadingInvoice}
+                    onClick={async () => {
+                      try {
+                        setDownloadingInvoice(true);
+                        await storeService.downloadInvoice(orderId!);
+                        toast.success('Invoice downloaded successfully');
+                      } catch (error) {
+                        console.error('Failed to download invoice:', error);
+                        toast.error('Failed to download invoice', {
+                          description: error instanceof Error ? error.message : 'Please try again later'
+                        });
+                      } finally {
+                        setDownloadingInvoice(false);
+                      }
+                    }}
                   >
-                    <Download className="h-4 w-4" />
-                    Download Invoice
+                    {downloadingInvoice ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {downloadingInvoice ? 'Generating...' : 'Download Invoice'}
                   </Button>
                 </div>
               </div>

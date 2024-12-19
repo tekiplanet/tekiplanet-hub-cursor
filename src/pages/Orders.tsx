@@ -38,6 +38,8 @@ import { useInView } from 'react-intersection-observer';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useDebounce } from '@/hooks/useDebounce';
 import { settingsService } from '@/services/settingsService';
+import { storeService } from '@/services/storeService';
+import { toast } from 'sonner';
 
 const statusColors = {
   pending: 'bg-yellow-500/10 text-yellow-600',
@@ -74,6 +76,7 @@ export default function Orders() {
   const [sortBy, setSortBy] = useState('date');
   const { ref, inView } = useInView();
   const [currency, setCurrency] = useState(settingsService.getDefaultCurrency());
+  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
 
   useEffect(() => {
     const loadCurrency = async () => {
@@ -268,9 +271,32 @@ export default function Orders() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Download className="h-4 w-4" />
-                          Invoice
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-2"
+                          disabled={downloadingInvoice === order.id}
+                          onClick={async () => {
+                            try {
+                              setDownloadingInvoice(order.id);
+                              await storeService.downloadInvoice(order.id);
+                              toast.success('Invoice downloaded successfully');
+                            } catch (error) {
+                              console.error('Failed to download invoice:', error);
+                              toast.error('Failed to download invoice', {
+                                description: error instanceof Error ? error.message : 'Please try again later'
+                              });
+                            } finally {
+                              setDownloadingInvoice(null);
+                            }
+                          }}
+                        >
+                          {downloadingInvoice === order.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          {downloadingInvoice === order.id ? 'Generating...' : 'Invoice'}
                         </Button>
                         <Button 
                           variant="outline" 

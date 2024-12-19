@@ -12,6 +12,8 @@ use App\Models\OrderTracking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use PDF;
+use NumberFormatter;
 
 class OrderController extends Controller
 {
@@ -463,91 +465,55 @@ class OrderController extends Controller
         }
     }
 
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         $validated = $request->validate([
-    //             'shipping_address_id' => 'required|exists:shipping_addresses,id',
-    //             'shipping_method_id' => 'required|exists:shipping_methods,id',
-    //             'payment_method' => 'required|in:wallet',
-    //         ]);
+    public function downloadInvoice($id)
+    {
+        try {
+            $order = Order::with([
+                'items.product',
+                'shippingAddress.state',
+                'shippingMethod',
+                'user'
+            ])->findOrFail($id);
 
-    //         DB::beginTransaction();
+            // Verify order belongs to authenticated user
+            if ($order->user_id !== auth()->id()) {
+                return response()->json([
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
 
-    //         // Get cart items
-    //         $cart = Cart::where('user_id', auth()->id())->with('items.product')->first();
-    //         if (!$cart || $cart->items->isEmpty()) {
-    //             throw new \Exception('Cart is empty');
-    //         }
+            // Format currency without NumberFormatter
+            $formatCurrency = function($amount) {
+                return number_format($amount, 2);
+            };
 
-    //         // Calculate totals
-    //         $subtotal = $cart->items->sum(function ($item) {
-    //             return $item->quantity * $item->product->price;
-    //         });
+            $data = [
+                'order' => $order,
+                'invoice_number' => strtoupper(substr($order->id, 0, 8)),
+                'date' => $order->created_at->format('M d, Y'),
+                'formatter' => $formatCurrency,
+                'currency' => 'NGN' // Add currency symbol
+            ];
 
-    //         // Get shipping cost
-    //         $shippingMethod = ShippingMethod::findOrFail($validated['shipping_method_id']);
-    //         $shippingCost = $shippingMethod->rate;
+            $pdf = PDF::loadView('invoices.order', $data);
+            
+            return $pdf->stream("invoice-{$order->id}.pdf", [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="invoice-' . $order->id . '.pdf"'
+            ]);
 
-    //         $total = $subtotal + $shippingCost;
+        } catch (\Exception $e) {
+            \Log::error('Invoice Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Error generating invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
-    //         // Check wallet balance
-    //         $user = auth()->user();
-    //         if ($user->wallet_balance < $total) {
-    //             throw new \Exception('Insufficient wallet balance');
-    //         }
-
-    //         // Create order
-    //         $order = Order::create([
-    //             'user_id' => auth()->id(),
-    //             'shipping_address_id' => $validated['shipping_address_id'],
-    //             'shipping_method_id' => $validated['shipping_method_id'],
-    //             'subtotal' => $subtotal,
-    //             'shipping_cost' => $shippingCost,
-    //             'total' => $total,
-    //             'status' => 'pending',
-    //             'payment_method' => $validated['payment_method'],
-    //             'payment_status' => 'paid'
-    //         ]);
-
-    //         // Create order items
-    //         foreach ($cart->items as $cartItem) {
-    //             $order->items()->create([
-    //                 'product_id' => $cartItem->product_id,
-    //                 'quantity' => $cartItem->quantity,
-    //                 'price' => $cartItem->product->price,
-    //                 'total' => $cartItem->quantity * $cartItem->product->price,
-    //             ]);
-    //         }
-
-    //         // Create initial tracking
-    //         $order->tracking()->create([
-    //             'status' => 'pending',
-    //             'description' => 'Order has been placed and is pending processing',
-    //             'location' => 'System'
-    //         ]);
-
-    //         // Deduct from wallet
-    //         $user->decrement('wallet_balance', $total);
-
-    //         // Clear cart
-    //         $cart->items()->delete();
-    //         $cart->delete();
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Order created successfully',
-    //             'order' => $order->load(['items.product', 'shippingAddress.state', 'shippingMethod'])
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => $e->getMessage()
-    //         ], 400);
-    //     }
-    // }
+   
 } 

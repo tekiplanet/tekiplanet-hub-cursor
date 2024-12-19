@@ -183,5 +183,32 @@ export const storeService = {
   createOrder: async (data: CreateOrderData) => {
     const response = await axiosInstance.post('/orders', data);
     return response.data;
+  },
+
+  downloadInvoice: async (orderId: string): Promise<void> => {
+    try {
+      const response = await axiosInstance.get(`/orders/${orderId}/invoice`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf',
+          'Content-Type': 'application/pdf'
+        }
+      });
+      
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: 'application/pdf' })
+      );
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${orderId}.pdf`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Invoice download error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to download invoice');
+    }
   }
 }; 
