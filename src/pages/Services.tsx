@@ -51,6 +51,82 @@ const servicesImages = [
   'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4'
 ];
 
+const MobileCategoryPicker: React.FC<{
+  categories: ServiceCategory[];
+  selectedCategory: ServiceCategory | null;
+  onSelect: (category: ServiceCategory | null) => void;
+}> = ({ categories, selectedCategory, onSelect }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative md:hidden">
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-between p-4 h-auto"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {selectedCategory ? (
+          <div className="flex items-center gap-2">
+            {getLucideIcon(selectedCategory.icon)({ className: "h-4 w-4" })}
+            <span>{selectedCategory.title}</span>
+          </div>
+        ) : (
+          <span>All Categories</span>
+        )}
+        <ChevronRight className={cn(
+          "h-4 w-4 transition-transform",
+          isOpen && "rotate-90"
+        )} />
+      </Button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-50 mt-2 w-full rounded-lg border bg-background shadow-lg"
+          >
+            <div className="p-2">
+              <Button
+                key="all"
+                variant={!selectedCategory ? "default" : "ghost"}
+                className="w-full justify-start mb-1"
+                onClick={() => {
+                  onSelect(null);
+                  setIsOpen(false);
+                }}
+              >
+                All Categories
+              </Button>
+              {categories.map((category) => {
+                const ServiceIcon = getLucideIcon(category.icon);
+                return (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory?.id === category.id ? "default" : "ghost"}
+                    className="w-full justify-start mb-1"
+                    onClick={() => {
+                      onSelect(selectedCategory?.id === category.id ? null : category);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <ServiceIcon className="h-4 w-4 mr-2" />
+                    {category.title}
+                    <Badge variant="secondary" className="ml-auto">
+                      {category.subServices.length}
+                    </Badge>
+                  </Button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const ServicesPage: React.FC = () => {
   const navigate = useNavigate();
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
@@ -160,28 +236,45 @@ const ServicesPage: React.FC = () => {
         </motion.div>
 
         {/* Categories Navigation */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide"
-        >
-          {serviceCategories.map((category) => {
-            const ServiceIcon = getLucideIcon(category.icon);
-            return (
-              <Button
-                key={category.id}
-                variant={selectedCategory?.id === category.id ? "default" : "outline"}
-                className="rounded-full px-6 py-2 whitespace-nowrap"
-                onClick={() => setSelectedCategory(
-                  selectedCategory?.id === category.id ? null : category
-                )}
-              >
-                <ServiceIcon className="h-4 w-4 mr-2" />
-                {category.title}
-              </Button>
-            );
-          })}
-        </motion.div>
+        <div>
+          {/* Mobile Category Picker */}
+          <MobileCategoryPicker
+            categories={serviceCategories}
+            selectedCategory={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
+
+          {/* Desktop Categories */}
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="hidden md:flex gap-2 overflow-x-auto pb-4 scrollbar-hide"
+          >
+            <Button
+              variant={!selectedCategory ? "default" : "outline"}
+              className="rounded-full px-6 py-2 whitespace-nowrap"
+              onClick={() => setSelectedCategory(null)}
+            >
+              All Categories
+            </Button>
+            {serviceCategories.map((category) => {
+              const ServiceIcon = getLucideIcon(category.icon);
+              return (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory?.id === category.id ? "default" : "outline"}
+                  className="rounded-full px-6 py-2 whitespace-nowrap"
+                  onClick={() => setSelectedCategory(
+                    selectedCategory?.id === category.id ? null : category
+                  )}
+                >
+                  <ServiceIcon className="h-4 w-4 mr-2" />
+                  {category.title}
+                </Button>
+              );
+            })}
+          </motion.div>
+        </div>
 
         {/* Services Grid */}
         <AnimatePresence mode="wait">
