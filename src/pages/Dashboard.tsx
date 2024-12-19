@@ -27,7 +27,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Header from '../components/Header';
 import SettingsPage from "./Settings"
 import ServicesPage from "./Services"
-import ITConsultingPage from "./ITConsulting"
 import ServiceQuoteRequestPage from "./ServiceQuoteRequest"
 import SoftwareEngineeringQuote from "./SoftwareEngineeringQuote"
 import CyberSecurityQuote from "./CyberSecurityQuote"
@@ -53,6 +52,7 @@ import OrderTracking from "./OrderTracking";
 import Products from "./Products";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storeService } from '@/services/storeService';
+import ITConsulting from "./ITConsulting";
 
 interface MenuItem {
   label: string;
@@ -224,7 +224,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
         <Route path="quotes/:quoteId" element={<QuoteDetailsPage />} />
         <Route path="projects" element={<ProjectsListPage />} />
         <Route path="projects/:projectId" element={<ProjectDetailsPage />} />        
-        <Route path="services/consulting" element={<ITConsultingPage />} />
+        <Route path="it-consulting" element={<ITConsulting />} />
         <Route path="payment-confirmation" element={
           <>
             <div className="mb-8">

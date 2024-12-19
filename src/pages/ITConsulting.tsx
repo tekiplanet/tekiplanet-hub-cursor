@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -31,6 +31,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
+import PagePreloader from '@/components/ui/PagePreloader';
 
 const HOURLY_RATE = 10000; // ₦10,000 per hour
 
@@ -58,8 +59,16 @@ const AVAILABLE_SLOTS = [
   }
 ];
 
+interface PriceContentProps {
+  hours: number;
+  totalCost: number;
+  balance: number;
+  loading: boolean;
+  onBook: () => void;
+}
+
 export default function ITConsulting() {
-  const [hours, setHours] = useState(1);
+  const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
   const { 
     getBalance, 
@@ -67,16 +76,27 @@ export default function ITConsulting() {
     addTransaction 
   } = useWalletStore();
   const { toast } = useToast();
-  const navigate = useNavigate();
+
+  // State
+  const [hours, setHours] = useState(1);
   const [showInsufficientFundsModal, setShowInsufficientFundsModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const balance = getBalance(user?.id || '');
-
   const totalCost = hours * HOURLY_RATE;
+
+  useEffect(() => {
+    // Simulate loading state
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleBookSession = async () => {
     if (!selectedDate || !selectedTime) {
@@ -194,6 +214,10 @@ export default function ITConsulting() {
       </Dialog>
     );
   };
+
+  if (isLoading) {
+    return <PagePreloader />;
+  }
 
   return (
     <motion.div 
@@ -355,14 +379,6 @@ export default function ITConsulting() {
       />
     </motion.div>
   );
-}
-
-interface PriceContentProps {
-  hours: number;
-  totalCost: number;
-  balance: number;
-  loading: boolean;
-  onBook: () => void;
 }
 
 function PriceContent({ hours, totalCost, balance, loading, onBook }: PriceContentProps) {

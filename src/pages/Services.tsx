@@ -407,7 +407,10 @@ const ServicesPage: React.FC = () => {
                 <Button
                   size="lg"
                   className="bg-primary hover:bg-primary/90 text-white"
-                  onClick={() => navigate('/dashboard/it-consulting')}
+                  onClick={() => {
+                    console.log('Navigating to IT Consulting');
+                    navigate('/dashboard/it-consulting');
+                  }}
                 >
                   <MessagesSquare className="mr-2 h-5 w-5" />
                   Consult an Expert

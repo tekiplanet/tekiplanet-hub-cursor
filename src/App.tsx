@@ -18,6 +18,7 @@ import AdminCourses from "@/pages/admin/Courses";
 import AdminTransactions from "@/pages/admin/Transactions";
 import AdminSettings from "@/pages/admin/Settings";
 import { queryClient } from '@/lib/queryClient';
+import ITConsulting from '@/pages/ITConsulting';
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -52,7 +53,6 @@ const QuoteRequestsListPage = React.lazy(() => import('@/pages/QuoteRequestsList
 const QuoteDetailsPage = React.lazy(() => import('@/pages/QuoteDetails'));
 const ProjectsListPage = React.lazy(() => import('@/pages/ProjectsList'));
 const ProjectDetailsPage = React.lazy(() => import('@/pages/ProjectDetails'));
-const ITConsulting = React.lazy(() => import('@/pages/ITConsulting'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -96,11 +96,13 @@ const AppContent = () => {
             <Route path="quotes/:quoteId" element={<QuoteDetailsPage />} />
             <Route path="projects" element={<ProjectsListPage />} />
             <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
-            <Route path="services/consulting" element={<ITConsulting />} />
+            <Route 
+              path="it-consulting" 
+              element={<ITConsulting />}
+            />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
             <Route path="payment-confirmation" element={<PaymentConfirmation />} />
-            <Route path="it-consulting" element={<ITConsulting />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
