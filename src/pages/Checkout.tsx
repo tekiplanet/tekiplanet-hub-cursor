@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import { shippingService, ShippingAddress as IShippingAddress } from '@/services
 import { useCartStore } from '@/store/useCartStore';
 import { settingsService } from '@/services/settingsService';
 import { storeService } from '@/services/storeService';
+import { formatPrice } from '@/lib/formatters';
 
 const steps = [
   { id: 'shipping', title: 'Shipping' },
@@ -54,10 +56,17 @@ export default function Checkout() {
     queryFn: shippingService.getAddresses
   });
 
-  const { data: shippingMethods = [] } = useQuery({
+  const { data: shippingMethods = [], isError: isShippingMethodsError } = useQuery({
     queryKey: ['shipping-methods', selectedAddressId],
     queryFn: () => shippingService.getShippingMethods(selectedAddressId),
-    enabled: !!selectedAddressId // Only fetch when address is selected
+    enabled: !!selectedAddressId,
+    onError: (error: any) => {
+      toast({
+        title: "Shipping Not Available",
+        description: error.response?.data?.message || "Shipping is not available for this location",
+        variant: "destructive"
+      });
+    }
   });
 
   // Find selected address and shipping method
@@ -109,6 +118,38 @@ export default function Checkout() {
     }
 
     setCurrentStep('review');
+  };
+
+  const handlePaymentSubmit = async () => {
+    if (!user?.wallet_balance || user.wallet_balance < total) {
+      toast({
+        title: "Insufficient Balance",
+        description: "Your wallet balance is insufficient for this purchase.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Call your backend API to process the order
+      await storeService.createOrder({
+        shipping_address_id: selectedAddressId!,
+        shipping_method_id: selectedShippingMethodId!,
+        payment_method: paymentMethod,
+      });
+
+      setCurrentStep('confirmation');
+      // Optionally clear cart here
+    } catch (error: any) {
+      toast({
+        title: "Payment Failed",
+        description: error.response?.data?.message || "Failed to process payment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -175,7 +216,7 @@ export default function Checkout() {
                         Quantity: {item.quantity}
                       </p>
                       <p className="font-medium">
-                        {cartData.currency}{(item.product.price * item.quantity).toFixed(2)}
+                        {formatPrice(item.product.price * item.quantity, cartData.currency)}
                       </p>
                     </div>
                   </div>
@@ -183,7 +224,7 @@ export default function Checkout() {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>{cartData.currency}{subtotal.toFixed(2)}</span>
+                    <span>{formatPrice(subtotal, cartData.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
@@ -194,11 +235,11 @@ export default function Checkout() {
                         </span>
                       )}
                     </span>
-                    <span>{cartData.currency}{shippingCost.toFixed(2)}</span>
+                    <span>{formatPrice(shippingCost, cartData.currency)}</span>
                   </div>
                   <div className="flex justify-between font-bold pt-2">
                     <span>Total</span>
-                    <span>{cartData.currency}{total.toFixed(2)}</span>
+                    <span>{formatPrice(total, cartData.currency)}</span>
                   </div>
                 </div>
               </div>
@@ -221,39 +262,50 @@ export default function Checkout() {
                     onSelect={setSelectedAddressId}
                   />
 
-                  {selectedAddressId && shippingMethods.length > 0 && (
+                  {selectedAddressId && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Select Shipping Method</h3>
-                      <RadioGroup
-                        value={selectedShippingMethodId || undefined}
-                        onValueChange={setSelectedShippingMethodId}
-                        className="space-y-3"
-                      >
-                        {shippingMethods.map((method) => (
-                          <div key={method.id} className="flex items-center">
-                            <RadioGroupItem value={method.id} id={method.id} className="peer" />
-                            <label
-                              htmlFor={method.id}
-                              className="flex flex-1 items-center justify-between rounded-lg border p-4 ml-2 cursor-pointer peer-data-[state=checked]:border-primary"
-                            >
-                              <div className="space-y-1">
-                                <p className="font-medium">{method.name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {method.description}
+                      {shippingMethods.length > 0 ? (
+                        <RadioGroup
+                          value={selectedShippingMethodId || undefined}
+                          onValueChange={setSelectedShippingMethodId}
+                          className="space-y-3"
+                        >
+                          {shippingMethods.map((method) => (
+                            <div key={method.id} className="flex items-center">
+                              <RadioGroupItem value={method.id} id={method.id} className="peer" />
+                              <label
+                                htmlFor={method.id}
+                                className="flex flex-1 items-center justify-between rounded-lg border p-4 ml-2 cursor-pointer peer-data-[state=checked]:border-primary"
+                              >
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">{method.name}</p>
+                                    {!method.is_zone_specific && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Base Rate
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    {method.description}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Estimated delivery: {method.estimated_days_min}-{method.estimated_days_max} days
+                                  </p>
+                                </div>
+                                <p className="font-medium">
+                                  {formatPrice(method.rate, cartData.currency)}
                                 </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Estimated delivery: {method.estimated_days_min}-{method.estimated_days_max} days
-                                </p>
-                              </div>
-                              <p className="font-medium">
-                                {cartData.currency}{typeof method.rate === 'number' 
-                                    ? method.rate.toFixed(2) 
-                                    : parseFloat(method.rate).toFixed(2)}
-                              </p>
-                            </label>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                              </label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      ) : (
+                        <div className="p-4 bg-muted rounded-lg text-center text-muted-foreground">
+                          Shipping is not available for this location. Please select a different delivery address.
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -329,7 +381,7 @@ export default function Checkout() {
                               Quantity: {item.quantity}
                             </p>
                             <p className="font-medium">
-                              {cartData.currency}{(item.product.price * item.quantity).toFixed(2)}
+                              {formatPrice(item.product.price * item.quantity, cartData.currency)}
                             </p>
                           </div>
                         </div>
@@ -343,15 +395,15 @@ export default function Checkout() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal</span>
-                        <span>{cartData.currency}{subtotal.toFixed(2)}</span>
+                        <span>{formatPrice(subtotal, cartData.currency)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Shipping</span>
-                        <span>{cartData.currency}{shippingCost.toFixed(2)}</span>
+                        <span>{formatPrice(shippingCost, cartData.currency)}</span>
                       </div>
                       <div className="flex justify-between font-bold pt-2 border-t">
                         <span>Total</span>
-                        <span>{cartData.currency}{total.toFixed(2)}</span>
+                        <span>{formatPrice(total, cartData.currency)}</span>
                       </div>
                     </div>
                   </div>
@@ -390,70 +442,39 @@ export default function Checkout() {
                       <Badge variant="secondary">Wallet Payment</Badge>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-black rounded-lg">
-                      <p className="font-medium text-white">Wallet Balance</p>
-                      <span className="text-xl font-bold text-white">${user?.wallet_balance?.toFixed(2) || '0.00'}</span>
-                    </div>
-
-
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center p-4 bg-background rounded-lg border">
-                        <div>
-                          <p className="font-medium">Amount to Pay</p>
-                          <p className="text-sm text-muted-foreground">Total order value</p>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Wallet className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Wallet Balance</p>
+                            <p className="text-sm text-muted-foreground">
+                              Available: {formatPrice(user?.wallet_balance || 0, cartData.currency)}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xl font-bold text-primary">${total.toFixed(2)}</p>
+                        {user?.wallet_balance && user.wallet_balance >= total ? (
+                          <Badge variant="success" className="bg-green-500/10 text-green-500">
+                            Sufficient Balance
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            Insufficient Balance
+                          </Badge>
+                        )}
                       </div>
 
-                      {user?.wallet_balance < total && (
-                        <div className="flex items-start gap-2 bg-destructive/10 text-destructive p-4 rounded-lg">
-                          <div className="shrink-0 mt-0.5">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-5 w-5"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="12" y1="8" x2="12" y2="12" />
-                              <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="font-medium">Insufficient Balance</p>
-                            <p className="text-sm mt-1">
-                              Please add ${(total - (user?.wallet_balance || 0)).toFixed(2)} to your wallet to complete this purchase.
-                            </p>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => navigate('/dashboard/wallet')}
-                            >
-                              Fund Wallet
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {user?.wallet_balance >= total && (
-                        <div className="flex items-start gap-2 bg-green-500/10 text-green-600 p-4 rounded-lg">
-                          <div className="shrink-0 mt-0.5">
-                            <CheckCircle className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="font-medium">Sufficient Balance</p>
-                            <p className="text-sm mt-1">
-                              Your wallet balance is sufficient to complete this purchase.
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <div className="p-4 border rounded-lg space-y-2">
+                        <p className="font-medium">Order Total</p>
+                        <p className="text-2xl font-bold">
+                          {formatPrice(total, cartData.currency)}
+                        </p>
+                        {user?.wallet_balance && user.wallet_balance < total && (
+                          <p className="text-sm text-destructive">
+                            You need {formatPrice(total - user.wallet_balance, cartData.currency)} more in your wallet
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -468,12 +489,12 @@ export default function Checkout() {
                     </Button>
                     <Button 
                       onClick={handlePaymentSubmit}
-                      disabled={isProcessing || user?.wallet_balance < total}
+                      disabled={isProcessing || !user?.wallet_balance || user.wallet_balance < total}
                       className="gap-2"
                     >
                       {isProcessing ? (
                         <>
-                          <span className="animate-spin">◌</span>
+                          <Loader2 className="h-4 w-4 animate-spin" />
                           Processing...
                         </>
                       ) : (

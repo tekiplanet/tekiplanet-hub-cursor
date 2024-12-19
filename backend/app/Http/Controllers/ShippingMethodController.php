@@ -31,13 +31,20 @@ class ShippingMethodController extends Controller
                     'id' => $method->id,
                     'name' => $method->name,
                     'description' => $method->description,
-                    'rate' => $rate ? (float)$rate->rate : 0,
+                    'rate' => $rate ? (float)$rate->rate : (float)$method->base_cost,
                     'estimated_days_min' => $method->estimated_days_min,
                     'estimated_days_max' => $method->estimated_days_max,
+                    'is_zone_specific' => (bool)$rate // Flag to indicate if rate is zone-specific
                 ];
             })
-            ->filter(fn ($method) => $method['rate'] !== null)
             ->values();
+
+        if ($methods->isEmpty()) {
+            return response()->json([
+                'message' => 'No shipping methods available for this location',
+                'methods' => []
+            ], 404);
+        }
 
         return response()->json([
             'methods' => $methods

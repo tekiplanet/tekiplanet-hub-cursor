@@ -16,16 +16,14 @@ class ShippingMethod extends Model
         'base_cost',
         'estimated_days_min',
         'estimated_days_max',
-        'priority',
-        'is_active'
+        'is_active',
+        'priority'
     ];
 
     protected $casts = [
         'base_cost' => 'decimal:2',
-        'estimated_days_min' => 'integer',
-        'estimated_days_max' => 'integer',
-        'priority' => 'integer',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'priority' => 'integer'
     ];
 
     public function zoneRates(): HasMany
