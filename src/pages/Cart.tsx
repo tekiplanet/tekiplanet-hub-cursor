@@ -8,7 +8,8 @@ import {
   ShoppingBag, 
   ArrowRight,
   ChevronLeft,
-  Loader2 
+  Loader2,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,12 +19,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storeService } from '@/services/storeService';
 import PagePreloader from '@/components/ui/PagePreloader';
 import { formatPrice } from '@/lib/formatters';
+import { useCartStore } from '@/store/useCartStore';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const { cart, removeFromCart, updateQuantity, isHydrated } = useCartStore();
 
   // Fetch cart data
   const { data: cartData, isLoading } = useQuery({
@@ -31,7 +34,7 @@ export default function Cart() {
     queryFn: storeService.getCart
   });
 
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     setUpdatingItemId(itemId);
     
@@ -68,6 +71,12 @@ export default function Cart() {
       });
     } finally {
       setUpdatingItemId(null);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (isHydrated && cart.length > 0) {
+      navigate('/dashboard/checkout');
     }
   };
 
@@ -142,7 +151,7 @@ export default function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1 || updatingItemId === item.id}
                         >
                           {updatingItemId === item.id ? (
@@ -156,7 +165,7 @@ export default function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                           disabled={updatingItemId === item.id}
                         >
                           {updatingItemId === item.id ? (
@@ -205,6 +214,7 @@ export default function Cart() {
                 className="w-full gap-2" 
                 size="lg"
                 onClick={() => navigate('/dashboard/checkout')}
+                disabled={!cartData || cartData.items.length === 0}
               >
                 Proceed to Checkout
                 <ArrowRight className="h-4 w-4" />

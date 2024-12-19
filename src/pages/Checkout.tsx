@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,26 +21,9 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { AddressList } from '@/components/shipping/AddressList';
 import { shippingService, ShippingAddress as IShippingAddress } from '@/services/shippingService';
-
-// Mock cart data (you can get this from your cart state)
-const cartItems: CartItem[] = [
-  {
-    product: {
-      id: '1',
-      name: 'Professional Powerstation X1',
-      description: 'High-capacity portable power station...',
-      price: 999.99,
-      images: ['https://www.motortrend.com/uploads/2023/02/001-kelin-tools-blackfire-pac-1000-1500-watt-portable-power-station-review.jpg'],
-      category: 'Powerstation',
-      rating: 4.8,
-      reviews: 124,
-      stock: 15,
-      specifications: {},
-      features: []
-    },
-    quantity: 1
-  }
-];
+import { useCartStore } from '@/store/useCartStore';
+import { settingsService } from '@/services/settingsService';
+import { storeService } from '@/services/storeService';
 
 const steps = [
   { id: 'shipping', title: 'Shipping' },
@@ -54,22 +37,57 @@ export default function Checkout() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState('shipping');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('wallet');
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuthStore();
 
-  // Get addresses
+  // Fetch cart data
+  const { data: cartData, isLoading } = useQuery({
+    queryKey: ['cart'],
+    queryFn: storeService.getCart
+  });
+
+  // Get addresses and shipping methods
   const { data: addresses = [] } = useQuery({
     queryKey: ['shipping-addresses'],
     queryFn: shippingService.getAddresses
   });
 
-  // Find selected address
-  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+  const { data: shippingMethods = [] } = useQuery({
+    queryKey: ['shipping-methods', selectedAddressId],
+    queryFn: () => shippingService.getShippingMethods(selectedAddressId),
+    enabled: !!selectedAddressId // Only fetch when address is selected
+  });
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const shipping = 29.99;
-  const total = subtotal + shipping;
+  // Find selected address and shipping method
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+  const selectedShippingMethod = shippingMethods.find(method => method.id === selectedShippingMethodId);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (!isLoading && (!cartData || cartData.items.length === 0)) {
+      navigate('/dashboard/cart');
+      toast({
+        title: "Empty Cart",
+        description: "Your cart is empty. Please add items before checkout.",
+        variant: "destructive"
+      });
+    }
+  }, [cartData, isLoading, navigate]);
+
+  if (isLoading || !cartData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin">◌</div>
+      </div>
+    );
+  }
+
+  // Calculate totals
+  const subtotal = cartData.totals.current;
+  const shippingCost = selectedShippingMethod?.rate ?? 0;
+  const total = subtotal + shippingCost;
 
   const handleShippingSubmit = () => {
     if (!selectedAddress) {
@@ -80,24 +98,17 @@ export default function Checkout() {
       });
       return;
     }
-    setCurrentStep('review');
-  };
 
-  const handlePaymentSubmit = async () => {
-    try {
-      setIsProcessing(true);
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setCurrentStep('confirmation');
-    } catch (error) {
+    if (!selectedShippingMethod) {
       toast({
-        title: "Payment Failed",
-        description: "There was an error processing your payment",
+        title: "Missing Information",
+        description: "Please select a shipping method",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
+      return;
     }
+
+    setCurrentStep('review');
   };
 
   return (
@@ -151,7 +162,7 @@ export default function Checkout() {
             <div className="bg-card p-6 rounded-lg space-y-4 sticky top-4">
               <h2 className="text-lg font-semibold">Order Summary</h2>
               <div className="space-y-4">
-                {cartItems.map((item) => (
+                {cartData.items.map((item) => (
                   <div key={item.product.id} className="flex gap-4">
                     <img
                       src={item.product.images[0]}
@@ -164,7 +175,7 @@ export default function Checkout() {
                         Quantity: {item.quantity}
                       </p>
                       <p className="font-medium">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        {cartData.currency}{(item.product.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -172,15 +183,22 @@ export default function Checkout() {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{cartData.currency}{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
+                    <span className="text-muted-foreground">
+                      Shipping
+                      {selectedShippingMethod && (
+                        <span className="text-xs block">
+                          ({selectedShippingMethod.name})
+                        </span>
+                      )}
+                    </span>
+                    <span>{cartData.currency}{shippingCost.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold pt-2">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{cartData.currency}{total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -203,6 +221,40 @@ export default function Checkout() {
                     onSelect={setSelectedAddressId}
                   />
 
+                  {selectedAddressId && shippingMethods.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Select Shipping Method</h3>
+                      <RadioGroup
+                        value={selectedShippingMethodId || undefined}
+                        onValueChange={setSelectedShippingMethodId}
+                        className="space-y-3"
+                      >
+                        {shippingMethods.map((method) => (
+                          <div key={method.id} className="flex items-center">
+                            <RadioGroupItem value={method.id} id={method.id} className="peer" />
+                            <label
+                              htmlFor={method.id}
+                              className="flex flex-1 items-center justify-between rounded-lg border p-4 ml-2 cursor-pointer peer-data-[state=checked]:border-primary"
+                            >
+                              <div className="space-y-1">
+                                <p className="font-medium">{method.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {method.description}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Estimated delivery: {method.estimated_days_min}-{method.estimated_days_max} days
+                                </p>
+                              </div>
+                              <p className="font-medium">
+                                {cartData.currency}{method.rate.toFixed(2)}
+                              </p>
+                            </label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+
                   <div className="flex justify-between">
                     <Button
                       variant="outline"
@@ -213,7 +265,8 @@ export default function Checkout() {
                       Back to Cart
                     </Button>
                     <Button 
-                      onClick={handleShippingSubmit} 
+                      onClick={handleShippingSubmit}
+                      disabled={!selectedAddressId || !selectedShippingMethodId}
                       className="gap-2"
                     >
                       Review Purchase
@@ -261,7 +314,7 @@ export default function Checkout() {
                   <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                     <h3 className="font-semibold">Order Details</h3>
                     <div className="space-y-4">
-                      {cartItems.map((item) => (
+                      {cartData.items.map((item) => (
                         <div key={item.product.id} className="flex gap-4">
                           <img
                             src={item.product.images[0]}
@@ -274,7 +327,7 @@ export default function Checkout() {
                               Quantity: {item.quantity}
                             </p>
                             <p className="font-medium">
-                              ${(item.product.price * item.quantity).toFixed(2)}
+                              {cartData.currency}{(item.product.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -288,15 +341,15 @@ export default function Checkout() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
+                        <span>{cartData.currency}{subtotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Shipping</span>
-                        <span>${shipping.toFixed(2)}</span>
+                        <span>{cartData.currency}{shippingCost.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between font-bold pt-2 border-t">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>{cartData.currency}{total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

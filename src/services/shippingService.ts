@@ -40,6 +40,15 @@ export interface State {
     name: string;
 }
 
+export interface ShippingMethod {
+    id: string;
+    name: string;
+    description: string;
+    rate: number;
+    estimated_days_min: number;
+    estimated_days_max: number;
+}
+
 export const shippingService = {
     getStates: async (): Promise<State[]> => {
         const response = await axiosInstance.get('/shipping/states');
@@ -63,5 +72,11 @@ export const shippingService = {
 
     deleteAddress: async (id: string): Promise<void> => {
         await axiosInstance.delete(`/shipping/addresses/${id}`);
+    },
+
+    getShippingMethods: async (addressId?: string | null): Promise<ShippingMethod[]> => {
+        if (!addressId) return [];
+        const response = await axiosInstance.get(`/shipping/methods?address_id=${addressId}`);
+        return response.data.methods;
     }
 }; 

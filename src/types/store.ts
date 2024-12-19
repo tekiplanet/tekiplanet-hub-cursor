@@ -6,12 +6,10 @@ export interface Product {
   images: string[];
   category: string;
   rating: number;
-  reviews_count: number;
+  reviews: number;
   stock: number;
-  specifications?: {
-    [key: string]: string;
-  };
-  features?: string[];
+  specifications: Record<string, any>;
+  features: string[];
 }
 
 export interface CartItem {
@@ -20,11 +18,16 @@ export interface CartItem {
 }
 
 export interface ShippingAddress {
-  fullName: string;
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string;
   address: string;
   city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  phone: string;
+  state: {
+    id: string;
+    name: string;
+  };
+  is_default: boolean;
 } 

@@ -275,7 +275,7 @@ export default function ProductDetails() {
                   {isTogglingWishlist ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+                  <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
                   )}
                 </Button>
                 <Button
@@ -301,7 +301,7 @@ export default function ProductDetails() {
                   ) : (
                     <>
                       <ShoppingCart className="mr-2 h-4 w-4" />
-                      Add to Cart
+                  Add to Cart
                     </>
                   )}
                 </Button>

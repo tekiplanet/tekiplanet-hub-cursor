@@ -20,6 +20,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\ShippingMethodController;
 
 /*
 |--------------------------------------------------------------------------
@@ -159,4 +160,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/shipping/addresses', [ShippingAddressController::class, 'store']);
     Route::put('/shipping/addresses/{address}', [ShippingAddressController::class, 'update']);
     Route::delete('/shipping/addresses/{address}', [ShippingAddressController::class, 'destroy']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/shipping/methods', [ShippingMethodController::class, 'getMethodsForAddress']);
 });
