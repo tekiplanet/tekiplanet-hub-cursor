@@ -85,6 +85,8 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Orders
         Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show']);
     });
 });
 
@@ -168,4 +170,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shipping/methods', [ShippingMethodController::class, 'getMethodsForAddress']);
+});
+
+// Order routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
