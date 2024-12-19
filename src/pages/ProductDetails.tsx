@@ -22,6 +22,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { storeService } from '@/services/storeService';
 import { useQuery } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/formatters';
+import PagePreloader from '@/components/ui/PagePreloader';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -53,7 +54,7 @@ export default function ProductDetails() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <PagePreloader />;
   }
 
   if (!product) {
