@@ -51,7 +51,14 @@ export const storeService = {
     min_price?: number;
     max_price?: number;
   }): Promise<ProductsResponse> => {
-    const response = await axios.get(`${API_URL}/products`, { params });
+    const queryParams = {
+      ...params,
+      brands: params.brands?.join(',')
+    };
+    
+    const response = await axios.get(`${API_URL}/products`, { 
+      params: queryParams 
+    });
     return response.data;
   },
 

@@ -52,7 +52,7 @@ export default function Store() {
   
   // State for filters
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [priceRange, setPriceRange] = useState([10000, 10000000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
 
   // Fetch data using React Query
@@ -87,7 +87,7 @@ export default function Store() {
       max_price: priceRange[1]
     }),
     // Only fetch if we have filters active
-    enabled: !!(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000)
+    enabled: !!(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 10000 || priceRange[1] !== 10000000)
   });
 
   const currency = featuredData?.currency || '₦';
@@ -115,7 +115,7 @@ export default function Store() {
   const handleResetFilters = () => {
     setSelectedCategory("");
     setSelectedBrands([]);
-    setPriceRange([0, 5000]);
+    setPriceRange([10000, 10000000]);
     setSearchQuery('');
     setIsSheetOpen(false);
   };
@@ -241,16 +241,17 @@ export default function Store() {
                   <Label>Price Range</Label>
                   <div className="pt-2">
                     <Slider
-                      defaultValue={[0, 5000]}
-                      max={5000}
-                      step={100}
+                      defaultValue={[10000, 10000000]}
+                      min={10000}
+                      max={10000000}
+                      step={10000}
                       value={priceRange}
                       onValueChange={setPriceRange}
                       className="mb-2"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{currency}{priceRange[0]}</span>
-                      <span>{currency}{priceRange[1]}</span>
+                      <span>{currency}{priceRange[0].toLocaleString()}</span>
+                      <span>{currency}{priceRange[1].toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -280,7 +281,7 @@ export default function Store() {
                 </div>
 
                 {/* Active Filters */}
-                {(selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+                {(selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 10000 || priceRange[1] !== 10000000) && (
                   <div className="space-y-2">
                     <Label>Active Filters</Label>
                     <div className="flex flex-wrap gap-2">
@@ -310,9 +311,9 @@ export default function Store() {
                           </Button>
                         </Badge>
                       ))}
-                      {(priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+                      {(priceRange[0] !== 10000 || priceRange[1] !== 10000000) && (
                         <Badge variant="secondary">
-                          {currency}{priceRange[0]} - {currency}{priceRange[1]}
+                          {currency}{priceRange[0].toLocaleString()} - {currency}{priceRange[1].toLocaleString()}
                         </Badge>
                       )}
                     </div>
@@ -341,7 +342,8 @@ export default function Store() {
         </div>
 
         {/* Show filtered results if any filters are active */}
-        {(debouncedSearch || selectedCategory || selectedBrands.length > 0 || priceRange[0] !== 0 || priceRange[1] !== 5000) && (
+        {(debouncedSearch || selectedCategory || selectedBrands.length > 0 || 
+          priceRange[0] !== 10000 || priceRange[1] !== 10000000) && (
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-4">Search Results</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -434,7 +436,9 @@ export default function Store() {
                 </Badge>
                 <h3 className="font-semibold mb-2">{product.name}</h3>
                 <div className="flex justify-between items-center">
-                  <p className="text-lg font-bold">{currency}{product.price}</p>
+                  <p className="text-lg font-bold">
+                    {currency}{product.price.toLocaleString()}
+                  </p>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm">{product.rating}</span>
@@ -539,7 +543,9 @@ function ProductCard({
         </Badge>
         <h3 className="font-semibold mb-2">{product.name}</h3>
         <div className="flex justify-between items-center">
-          <p className="text-lg font-bold">{currency}{product.price}</p>
+          <p className="text-lg font-bold">
+            {currency}{product.price.toLocaleString()}
+          </p>
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm">{product.rating}</span>

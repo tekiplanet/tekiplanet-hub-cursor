@@ -71,8 +71,15 @@ class ProductController extends Controller
 
         // Brand filter
         if ($request->has('brands') && !empty($request->brands)) {
-            $brands = explode(',', $request->brands);
-            $query->whereIn('brand_id', $brands);
+            $brands = is_array($request->brands) 
+                ? $request->brands 
+                : explode(',', $request->brands);
+            
+            $query->whereIn('brand_id', function($query) use ($brands) {
+                $query->select('id')
+                    ->from('brands')
+                    ->whereIn('name', $brands);
+            });
         }
 
         // Price range filter
