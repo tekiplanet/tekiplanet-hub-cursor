@@ -215,56 +215,61 @@ export default function Checkout() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Summary - Will appear first on mobile */}
-          <div className="lg:col-span-1 order-first lg:order-last">
-            <div className="bg-card p-6 rounded-lg space-y-4 sticky top-4">
-              <h2 className="text-lg font-semibold">Order Summary</h2>
-              <div className="space-y-4">
-                {cartData.items.map((item) => (
-                  <div key={item.product.id} className="flex gap-4">
-                    <img
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      className="w-20 h-20 object-cover rounded-md"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Quantity: {item.quantity}
-                      </p>
-                      <p className="font-medium">
-                        {formatPrice(item.product.price * item.quantity, cartData.currency)}
-                      </p>
+          {/* Order Summary - Hide on confirmation step */}
+          {currentStep !== 'confirmation' && (
+            <div className="lg:col-span-1 order-first lg:order-last">
+              <div className="bg-card p-6 rounded-lg space-y-4 sticky top-4">
+                <h2 className="text-lg font-semibold">Order Summary</h2>
+                <div className="space-y-4">
+                  {cartData.items.map((item) => (
+                    <div key={item.product.id} className="flex gap-4">
+                      <img
+                        src={item.product.images[0]}
+                        alt={item.product.name}
+                        className="w-20 h-20 object-cover rounded-md"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-medium">{item.product.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity: {item.quantity}
+                        </p>
+                        <p className="font-medium">
+                          {formatPrice(item.product.price * item.quantity, cartData.currency)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatPrice(subtotal, cartData.currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Shipping
-                      {selectedShippingMethod && (
-                        <span className="text-xs block">
-                          ({selectedShippingMethod.name})
-                        </span>
-                      )}
-                    </span>
-                    <span>{formatPrice(shippingCost, cartData.currency)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-2">
-                    <span>Total</span>
-                    <span>{formatPrice(total, cartData.currency)}</span>
+                  ))}
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatPrice(subtotal, cartData.currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Shipping
+                        {selectedShippingMethod && (
+                          <span className="text-xs block">
+                            ({selectedShippingMethod.name})
+                          </span>
+                        )}
+                      </span>
+                      <span>{formatPrice(shippingCost, cartData.currency)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold pt-2">
+                      <span>Total</span>
+                      <span>{formatPrice(total, cartData.currency)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Main Content - Will appear second on mobile */}
-          <div className="lg:col-span-2 order-last lg:order-first">
+          {/* Main content area - Make it full width on confirmation */}
+          <div className={cn(
+            "lg:col-span-2",
+            currentStep === 'confirmation' && "lg:col-span-3"
+          )}>
             <AnimatePresence mode="wait">
               {currentStep === 'shipping' && (
                 <motion.div
@@ -583,7 +588,7 @@ export default function Checkout() {
                               Qty: {item.quantity}
                             </p>
                           </div>
-                          <p>{formatPrice(item.total)}</p>
+                          <p>{formatPrice(item.total, orderData.currency)}</p>
                         </div>
                       ))}
                     </div>
@@ -591,15 +596,15 @@ export default function Checkout() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <p>Subtotal</p>
-                        <p>{formatPrice(orderData.subtotal)}</p>
+                        <p>{formatPrice(orderData.subtotal, orderData.currency)}</p>
                       </div>
                       <div className="flex justify-between">
                         <p>Shipping</p>
-                        <p>{formatPrice(orderData.shipping_cost)}</p>
+                        <p>{formatPrice(orderData.shipping_cost, orderData.currency)}</p>
                       </div>
                       <div className="flex justify-between font-semibold">
                         <p>Total</p>
-                        <p>{formatPrice(orderData.total)}</p>
+                        <p>{formatPrice(orderData.total, orderData.currency)}</p>
                       </div>
                     </div>
                   </div>
