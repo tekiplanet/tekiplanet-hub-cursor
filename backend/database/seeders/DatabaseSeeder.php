@@ -35,6 +35,8 @@ class DatabaseSeeder extends Seeder
             ProductCategorySeeder::class,
             BrandSeeder::class,
             ProductSeeder::class,
+            ProductReviewSeeder::class,
+            ShippingMethodSeeder::class,
             PromotionSeeder::class,
         ]);
     }
