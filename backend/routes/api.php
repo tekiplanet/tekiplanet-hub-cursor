@@ -21,6 +21,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\ShippingMethodController;
+use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,6 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/toggle/{productId}', [WishlistController::class, 'toggleWishlistItem']);
             Route::get('/check/{productId}', [WishlistController::class, 'checkWishlistStatus']);
         });
+        
+        // Orders
+        Route::post('/orders', [OrderController::class, 'store']);
     });
 });
 

@@ -2,14 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-    use HasUuids;
-
     protected $fillable = [
         'order_id',
         'product_id',
@@ -19,27 +15,17 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
         'price' => 'decimal:2',
-        'total' => 'decimal:2'
+        'total' => 'decimal:2',
     ];
 
-    public function order(): BelongsTo
+    public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function product(): BelongsTo
+    public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($item) {
-            $item->total = $item->price * $item->quantity;
-        });
     }
 } 

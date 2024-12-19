@@ -132,16 +132,26 @@ export default function Checkout() {
 
     setIsProcessing(true);
     try {
-      // Call your backend API to process the order
       await storeService.createOrder({
         shipping_address_id: selectedAddressId!,
         shipping_method_id: selectedShippingMethodId!,
-        payment_method: paymentMethod,
+        payment_method: 'wallet',
       });
 
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['cart']);
+      queryClient.invalidateQueries(['wallet']);
+      queryClient.invalidateQueries(['orders']);
+
       setCurrentStep('confirmation');
-      // Optionally clear cart here
+      
+      toast({
+        title: "Order Placed Successfully",
+        description: "Your order has been confirmed and is being processed.",
+      });
+
     } catch (error: any) {
+      console.error('Payment Error:', error);
       toast({
         title: "Payment Failed",
         description: error.response?.data?.message || "Failed to process payment. Please try again.",
@@ -421,7 +431,7 @@ export default function Checkout() {
                       onClick={() => setCurrentStep('payment')} 
                       className="gap-2"
                     >
-                      Continue to Payment
+                      Make Payment
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -443,37 +453,62 @@ export default function Checkout() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Wallet className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-medium">Wallet Balance</p>
-                            <p className="text-sm text-muted-foreground">
-                              Available: {formatPrice(user?.wallet_balance || 0, cartData.currency)}
-                            </p>
+                      <div className="space-y-4">
+                        {/* Wallet Balance Card */}
+                        <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg">
+                          <div className="flex items-center gap-3 flex-1">
+                            <Wallet className="h-5 w-5 shrink-0 text-primary" />
+                            <div className="min-w-0"> {/* Prevent text overflow */}
+                              <p className="font-medium truncate">Wallet Balance</p>
+                              <p className="text-sm text-muted-foreground">
+                                Available: {formatPrice(user?.wallet_balance || 0, cartData.currency)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-start sm:justify-end items-center">
+                            {user?.wallet_balance && user.wallet_balance >= total ? (
+                              <Badge 
+                                variant="success" 
+                                className="bg-green-500/10 text-green-500 whitespace-nowrap"
+                              >
+                                Sufficient Balance
+                              </Badge>
+                            ) : (
+                              <Badge 
+                                variant="destructive"
+                                className="whitespace-nowrap"
+                              >
+                                Insufficient Balance
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                        {user?.wallet_balance && user.wallet_balance >= total ? (
-                          <Badge variant="success" className="bg-green-500/10 text-green-500">
-                            Sufficient Balance
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            Insufficient Balance
-                          </Badge>
-                        )}
-                      </div>
 
-                      <div className="p-4 border rounded-lg space-y-2">
-                        <p className="font-medium">Order Total</p>
-                        <p className="text-2xl font-bold">
-                          {formatPrice(total, cartData.currency)}
-                        </p>
-                        {user?.wallet_balance && user.wallet_balance < total && (
-                          <p className="text-sm text-destructive">
-                            You need {formatPrice(total - user.wallet_balance, cartData.currency)} more in your wallet
+                        {/* Order Total Card */}
+                        <div className="p-4 border rounded-lg space-y-3">
+                          <p className="font-medium">Order Total</p>
+                          <p className="text-2xl font-bold">
+                            {formatPrice(total, cartData.currency)}
                           </p>
-                        )}
+                          {user?.wallet_balance && user.wallet_balance < total && (
+                            <div className="space-y-3">
+                              <p className="text-sm text-destructive break-words">
+                                You need {formatPrice(total - user.wallet_balance, cartData.currency)} more in your wallet
+                              </p>
+                              <Button 
+                                variant="outline" 
+                                className="w-full gap-2"
+                                onClick={() => navigate('/dashboard/wallet')}
+                              >
+                                <Wallet className="h-4 w-4 shrink-0" />
+                                Fund Wallet
+                              </Button>
+                              <p className="text-xs text-muted-foreground text-center">
+                                You'll be redirected to the wallet dashboard to add funds
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

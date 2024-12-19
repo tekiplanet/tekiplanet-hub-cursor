@@ -74,6 +74,12 @@ export interface WishlistResponse {
   }[];
 }
 
+interface CreateOrderData {
+  shipping_address_id: string;
+  shipping_method_id: string;
+  payment_method: string;
+}
+
 export const storeService = {
   getFeaturedProducts: async (): Promise<ProductsResponse> => {
     const response = await axiosInstance.get('/products/featured');
@@ -172,5 +178,10 @@ export const storeService = {
   checkWishlistStatus: async (productId: string): Promise<boolean> => {
     const response = await axiosInstance.get(`/wishlist/check/${productId}`);
     return response.data.is_wishlisted;
+  },
+
+  createOrder: async (data: CreateOrderData) => {
+    const response = await axiosInstance.post('/orders', data);
+    return response.data;
   }
 }; 
