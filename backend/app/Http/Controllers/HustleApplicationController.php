@@ -29,11 +29,12 @@ class HustleApplicationController extends Controller
                             'title' => $application->hustle->title,
                             'category' => $application->hustle->category->name,
                             'budget' => $application->hustle->budget,
-                            'deadline' => $application->hustle->deadline->format('M d, Y'),
+                            'deadline' => $application->hustle->deadline->format('Y-m-d'),
                             'status' => $application->hustle->status
                         ],
                         'status' => $application->status,
                         'applied_at' => $application->created_at->format('M d, Y'),
+                        'created_at' => $application->created_at->toISOString(),
                         'can_withdraw' => $application->canBeWithdrawn()
                     ];
                 });

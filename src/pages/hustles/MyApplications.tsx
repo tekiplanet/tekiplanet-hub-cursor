@@ -17,8 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { hustleService } from '@/services/hustleService';
-import { formatCurrency } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { formatCurrency, formatDate, formatShortDate, cn } from '@/lib/utils';
 
 const MyApplications = () => {
   const navigate = useNavigate();
@@ -90,7 +89,7 @@ const MyApplications = () => {
                       {application.status.toUpperCase()}
                     </Badge>
                     <p className="text-xs text-muted-foreground">
-                      Applied on {new Date(application.created_at).toLocaleDateString()}
+                      Applied on {formatDate(application.applied_at)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -115,7 +114,7 @@ const MyApplications = () => {
                       Deadline
                     </p>
                     <p className="text-sm font-medium">
-                      {new Date(application.hustle.deadline).toLocaleDateString()}
+                      {formatShortDate(application.hustle.deadline)}
                     </p>
                   </div>
                   <div className="space-y-1">

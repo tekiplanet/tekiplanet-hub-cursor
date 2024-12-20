@@ -72,3 +72,19 @@ export const calculatePlanChange = (currentSubscription: WorkstationSubscription
     finalAmount: selectedPlan.price
   };
 };
+
+export const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+export const formatShortDate = (date: string) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};

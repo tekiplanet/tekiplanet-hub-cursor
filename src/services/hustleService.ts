@@ -57,9 +57,17 @@ interface ProfileCheckResponse {
 
 export interface HustleApplication {
   id: string;
-  hustle: Hustle;
+  hustle: {
+    id: string;
+    title: string;
+    category: string;
+    budget: number;
+    deadline: string;
+    status: string;
+  };
   status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
   created_at: string;
+  applied_at: string;
 }
 
 export const hustleService = {
