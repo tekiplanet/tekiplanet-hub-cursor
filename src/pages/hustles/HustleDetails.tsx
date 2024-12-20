@@ -123,14 +123,60 @@ const HustleDetails = () => {
                 <h1 className="text-2xl md:text-3xl font-bold">{hustle.title}</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Button 
-                  size="lg"
-                  onClick={() => setIsApplyDialogOpen(true)}
-                  className="bg-primary text-white hover:bg-primary/90"
-                >
-                  <UserCheck className="h-5 w-5 mr-2" />
-                  Apply for Hustle
-                </Button>
+                {/* Apply Button with Status */}
+                {hustle.can_apply ? (
+                  <>
+                    <Button 
+                      size="lg"
+                      onClick={() => setIsApplyDialogOpen(true)}
+                      className="bg-primary text-white hover:bg-primary/90"
+                    >
+                      <UserCheck className="h-5 w-5 mr-2" />
+                      Apply for Hustle
+                    </Button>
+                    <ApplyHustleDialog
+                      isOpen={isApplyDialogOpen}
+                      onClose={() => setIsApplyDialogOpen(false)}
+                      onConfirm={() => {
+                        applyMutation.mutate(id!);
+                        setIsApplyDialogOpen(false);
+                      }}
+                      isLoading={applyMutation.isPending}
+                      hustleTitle={hustle.title}
+                    />
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="lg"
+                      disabled
+                      className="bg-muted"
+                    >
+                      <UserCheck className="h-5 w-5 mr-2" />
+                      {hustle.application_status ? (
+                        hustle.application_status === 'pending' ? 'Application Pending' :
+                        hustle.application_status === 'approved' ? 'Application Approved' :
+                        hustle.application_status === 'rejected' ? 'Application Rejected' :
+                        'Cannot Apply'
+                      ) : (
+                        'Cannot Apply'
+                      )}
+                    </Button>
+                    {/* Show reason why user can't apply */}
+                    <p className="text-sm text-muted-foreground">
+                      {hustle.application_status ? (
+                        hustle.application_status === 'pending' ? 'Your application is under review' :
+                        hustle.application_status === 'approved' ? 'You have been selected for this hustle' :
+                        hustle.application_status === 'rejected' ? 'Your application was not successful' :
+                        'This hustle is no longer accepting applications'
+                      ) : (
+                        'This hustle is no longer accepting applications'
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* Show application status badge */}
                 {hustle.application_status && (
                   <Badge variant={
                     hustle.application_status === 'approved' ? 'success' :
