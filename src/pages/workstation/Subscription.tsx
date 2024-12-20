@@ -14,7 +14,6 @@ import {
   Wallet,
   ChevronRight,
   Building2,
-  History,
   Download,
   ArrowUpCircle,
   ArrowDownCircle,
@@ -114,21 +113,6 @@ const Subscription = () => {
   const [isCancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
-
-  const handleRenewSubscription = async () => {
-    try {
-      setIsRenewing(true);
-      await workstationService.renewSubscription(subscription.id);
-      queryClient.invalidateQueries(['current-subscription']);
-      toast.success('Subscription renewed successfully');
-    } catch (error: any) {
-      toast.error('Failed to renew subscription', {
-        description: error.response?.data?.message || 'Please try again'
-      });
-    } finally {
-      setIsRenewing(false);
-    }
-  };
 
   const navigate = useNavigate();
 
@@ -321,9 +305,6 @@ const Subscription = () => {
                         <QrCode className="h-5 w-5 text-primary" />
                         Access Card
                       </h3>
-                      <Button variant="outline" size="sm">
-                        View History
-                      </Button>
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-6">
