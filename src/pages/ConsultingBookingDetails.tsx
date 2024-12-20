@@ -17,7 +17,9 @@ import {
   CalendarClock,
   Receipt,
   CircleDot,
-  ChevronRight
+  ChevronRight,
+  Users,
+  Mail
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +40,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { format, formatDistanceToNow, isFuture } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -187,6 +190,53 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
     </div>
   );
 };
+
+const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Users className="h-5 w-5 text-primary" />
+        Assigned Expert
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="flex items-start gap-4">
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={expert.user.avatar} />
+          <AvatarFallback>
+            {expert.user.name.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-1">
+          <h3 className="font-medium">{expert.user.name}</h3>
+          <p className="text-sm text-muted-foreground">{expert.role}</p>
+        </div>
+      </div>
+
+      {expert.expertise_areas && expert.expertise_areas.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Expertise Areas</p>
+          <div className="flex flex-wrap gap-2">
+            {expert.expertise_areas.map(area => (
+              <Badge key={area} variant="secondary">
+                {area}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          <Mail className="h-4 w-4 text-primary" />
+          <span>{expert.user.email}</span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default function ConsultingBookingDetails() {
   const { id } = useParams();
@@ -445,6 +495,26 @@ export default function ConsultingBookingDetails() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Expert Card - Show only if expert is assigned */}
+          {booking.assigned_expert_id && booking.expert && (
+            <ExpertCard expert={booking.expert} />
+          )}
+
+          {/* Show message if no expert assigned yet */}
+          {!booking.assigned_expert_id && isUpcoming && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <Users className="h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium">Expert Assignment Pending</p>
+                  <p className="text-sm text-muted-foreground">
+                    An expert will be assigned to your session soon
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Payment Details */}
           <Card>

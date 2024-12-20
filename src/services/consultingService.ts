@@ -5,6 +5,19 @@ export interface TimeSlot {
   time: string;
 }
 
+export interface ConsultingExpert {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  role: string;
+  expertise_areas?: string[];
+  status: string;
+}
+
 export interface ConsultingBooking {
   id: string;
   user_id: string;
@@ -22,6 +35,9 @@ export interface ConsultingBooking {
     rating: number;
     comment?: string;
   };
+  assigned_expert_id: string | null;
+  expert_assigned_at: string | null;
+  expert?: ConsultingExpert;
 }
 
 export interface ConsultingSettings {
