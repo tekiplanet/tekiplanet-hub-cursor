@@ -26,6 +26,7 @@ use App\Http\Controllers\ConsultingController;
 use App\Http\Controllers\ConsultingReviewController;
 use App\Http\Controllers\WorkstationController;
 use App\Http\Controllers\ProfessionalController;
+use App\Http\Controllers\ProfessionalCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -216,4 +217,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/professional/profile/check', [ProfessionalController::class, 'checkProfile']);
     Route::post('/professional/profile', [ProfessionalController::class, 'store']);
     Route::put('/professional/profile', [ProfessionalController::class, 'update']);
+});
+
+// Professional Category Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/professional/categories', [ProfessionalCategoryController::class, 'index']);
+    Route::get('/professional/categories/{id}', [ProfessionalCategoryController::class, 'show']);
 });

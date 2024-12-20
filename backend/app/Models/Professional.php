@@ -90,4 +90,10 @@ class Professional extends Model
 
         $this->update(['rating' => $averageRating]);
     }
+
+    // Add this to your existing Professional model
+    public function category()
+    {
+        return $this->belongsTo(ProfessionalCategory::class);
+    }
 } 

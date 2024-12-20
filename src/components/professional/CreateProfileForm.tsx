@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -25,12 +26,31 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { professionalService } from "@/services/professionalService";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { professionalCategoryService } from "@/services/professionalCategoryService";
+import { Icons, type Icon } from "@/components/ui/icons";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState as useHookState } from "react";
+import { Search } from "lucide-react";
 
 // Form schemas for each step
 const basicInfoSchema = z.object({
   title: z.string().min(1, "Title is required"),
+  category_id: z.string().min(1, "Category is required"),
   specialization: z.string().min(1, "Specialization is required"),
   years_of_experience: z.string().transform(Number),
   hourly_rate: z.string().transform(Number),
@@ -70,17 +90,43 @@ const steps = [
   },
 ];
 
+// Add this interface near the top of the file
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  is_active: boolean;
+  order: number;
+}
+
 const CreateProfileForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Form for basic info
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading, error } = useQuery<ProfessionalCategory[]>({
+    queryKey: ['professional-categories'],
+    queryFn: professionalCategoryService.getCategories,
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.filter(category => category.is_active),
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to load categories. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Forms
   const basicInfoForm = useForm({
     resolver: zodResolver(basicInfoSchema),
     defaultValues: {
       title: "",
+      category_id: "",
       specialization: "",
       years_of_experience: "",
       hourly_rate: "",
@@ -88,7 +134,6 @@ const CreateProfileForm = () => {
     },
   });
 
-  // Form for expertise
   const expertiseForm = useForm({
     resolver: zodResolver(expertiseSchema),
     defaultValues: {
@@ -98,7 +143,6 @@ const CreateProfileForm = () => {
     },
   });
 
-  // Form for contact
   const contactForm = useForm({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -114,7 +158,6 @@ const CreateProfileForm = () => {
     setFormData((prev) => ({ ...prev, ...data }));
     
     if (currentStep === steps.length - 1) {
-      // Submit the complete form
       try {
         const completeData = {
           ...formData,
@@ -144,6 +187,21 @@ const CreateProfileForm = () => {
 
   const currentForm = [basicInfoForm, expertiseForm, contactForm][currentStep];
 
+  if (categoriesLoading) {
+    return (
+      <div className="container max-w-3xl mx-auto p-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-72 bg-muted animate-pulse rounded" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-3xl mx-auto p-4">
       <Card>
@@ -156,6 +214,7 @@ const CreateProfileForm = () => {
           </p>
         </CardHeader>
         <CardContent>
+          {/* Step Progress */}
           <div className="mb-8">
             <div className="flex justify-between mb-4">
               {steps.map((step, index) => (
@@ -186,6 +245,7 @@ const CreateProfileForm = () => {
             </div>
           </div>
 
+          {/* Form Steps */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -194,7 +254,7 @@ const CreateProfileForm = () => {
               exit={{ opacity: 0, x: -20 }}
             >
               <Form {...currentForm}>
-                <form onSubmit={currentForm.handleSubmit(handleNext)}>
+                <form onSubmit={currentForm.handleSubmit(handleNext)} className="space-y-4">
                   {/* Step 1: Basic Info */}
                   {currentStep === 0 && (
                     <div className="space-y-4">
@@ -211,25 +271,121 @@ const CreateProfileForm = () => {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="category_id"
+                        render={({ field }) => {
+                          const [open, setOpen] = useHookState(false);
+                          const [searchValue, setSearchValue] = useHookState("");
+
+                          return (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Category</FormLabel>
+                              <Popover open={open} onOpenChange={setOpen}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={open}
+                                      className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        categories.find((category) => category.id === field.value)?.name
+                                      ) : (
+                                        "Select category"
+                                      )}
+                                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[400px] p-0" align="start">
+                                  <Command
+                                    filter={(value, search) => {
+                                      if (value.toLowerCase().includes(search.toLowerCase())) return 1
+                                      return 0
+                                    }}
+                                  >
+                                    <div className="flex items-center border-b px-3">
+                                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                      <input
+                                        placeholder="Search categories..."
+                                        value={searchValue}
+                                        onChange={(e) => setSearchValue(e.target.value)}
+                                        className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                      />
+                                    </div>
+                                    <div className="max-h-[300px] overflow-y-auto">
+                                      {categoriesLoading ? (
+                                        <div className="p-4 space-y-2">
+                                          <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                                          <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+                                        </div>
+                                      ) : categories.length === 0 ? (
+                                        <p className="p-4 text-sm text-center text-muted-foreground">
+                                          No categories available
+                                        </p>
+                                      ) : (
+                                        <div className="p-2">
+                                          {categories
+                                            .filter((category) =>
+                                              category.name
+                                                .toLowerCase()
+                                                .includes(searchValue.toLowerCase())
+                                            )
+                                            .map((category) => {
+                                              const IconComponent = Icons[category.icon as Icon];
+                                              return (
+                                                <div
+                                                  key={category.id}
+                                                  onClick={() => {
+                                                    field.onChange(category.id);
+                                                    setOpen(false);
+                                                  }}
+                                                  className={cn(
+                                                    "flex items-center gap-2 w-full rounded-sm px-2 py-3 cursor-pointer hover:bg-muted",
+                                                    field.value === category.id && "bg-muted"
+                                                  )}
+                                                >
+                                                  {IconComponent && (
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-muted/50">
+                                                      <IconComponent className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                  )}
+                                                  <div className="flex flex-col flex-1">
+                                                    <span className="font-medium">{category.name}</span>
+                                                    <span className="text-xs text-muted-foreground line-clamp-1">
+                                                      {category.description}
+                                                    </span>
+                                                  </div>
+                                                  {field.value === category.id && (
+                                                    <Check className="h-4 w-4 text-primary" />
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
+                      />
+
                       {/* Add other basic info fields */}
                     </div>
                   )}
 
-                  {/* Step 2: Expertise */}
-                  {currentStep === 1 && (
-                    <div className="space-y-4">
-                      {/* Add expertise fields */}
-                    </div>
-                  )}
-
-                  {/* Step 3: Contact */}
-                  {currentStep === 2 && (
-                    <div className="space-y-4">
-                      {/* Add contact fields */}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between mt-8">
+                  {/* Navigation Buttons */}
+                  <div className="flex justify-between pt-4">
                     <Button
                       type="button"
                       variant="outline"

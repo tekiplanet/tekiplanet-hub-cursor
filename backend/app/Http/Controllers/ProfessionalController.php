@@ -37,6 +37,7 @@ class ProfessionalController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'specialization' => 'required|string|max:255',
+                'category_id' => 'required|exists:professional_categories,id',
                 'expertise_areas' => 'required|array',
                 'years_of_experience' => 'required|integer|min:0',
                 'hourly_rate' => 'required|numeric|min:0',
@@ -90,6 +91,7 @@ class ProfessionalController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'specialization' => 'required|string|max:255',
+                'category_id' => 'required|exists:professional_categories,id',
                 'expertise_areas' => 'required|array',
                 'years_of_experience' => 'required|integer|min:0',
                 'hourly_rate' => 'required|numeric|min:0',
