@@ -63,6 +63,7 @@ class WorkstationController extends Controller
 
             $user = auth()->user();
             $plan = WorkstationPlan::findOrFail($request->plan_id);
+            $now = now();
 
             // Get current subscription if exists
             $currentSubscription = WorkstationSubscription::where('user_id', $user->id)
@@ -74,41 +75,58 @@ class WorkstationController extends Controller
                 if ($currentSubscription) {
                     // Handle upgrade/downgrade logic
                     $currentPlan = $currentSubscription->plan;
-                    $now = now();
                     $currentStartDate = new \DateTime($currentSubscription->start_date);
                     $currentEndDate = new \DateTime($currentSubscription->end_date);
 
-                    // Calculate remaining value
-                    $remainingDays = $now->diffInDays($currentEndDate);
-                    $dailyRate = $currentSubscription->total_amount / $currentPlan->duration_days;
-                    $remainingValue = $dailyRate * $remainingDays;
+                    // Determine start and end dates
+                    if ($request->start_date) {
+                        // If user selected a future date, use it
+                        $startDate = new \DateTime($request->start_date);
+                        $endDate = clone $startDate;
+                        $endDate->modify("+ {$plan->duration_days} days");
+
+                        // Calculate remaining value from current subscription
+                        if ($currentStartDate > $now) {
+                            // If current subscription hasn't started, use full amount
+                            $remainingValue = $currentSubscription->total_amount;
+                        } else {
+                            // Calculate prorated remaining value
+                            $remainingDuration = $currentEndDate->getTimestamp() - $now->getTimestamp();
+                            $totalDuration = $currentEndDate->getTimestamp() - $currentStartDate->getTimestamp();
+                            $remainingDays = $remainingDuration / (24 * 60 * 60);
+                            $totalDays = $totalDuration / (24 * 60 * 60);
+                            $remainingValue = ($remainingDays / $totalDays) * $currentSubscription->total_amount;
+                        }
+                    } else {
+                        // If no start date selected, use existing logic
+                        if ($currentStartDate > $now) {
+                            $startDate = $currentStartDate;
+                            $endDate = clone $currentEndDate;
+                            $endDate->modify("+ {$plan->duration_days} days");
+                            $remainingValue = $currentSubscription->total_amount;
+                        } elseif ($currentEndDate > $now) {
+                            $startDate = $currentEndDate;
+                            $endDate = clone $startDate;
+                            $endDate->modify("+ {$plan->duration_days} days");
+                            $remainingValue = ($currentEndDate->getTimestamp() - $now->getTimestamp()) / (24 * 60 * 60) * ($currentSubscription->total_amount / $currentPlan->duration_days);
+                        } else {
+                            $startDate = $now;
+                            $endDate = clone $startDate;
+                            $endDate->modify("+ {$plan->duration_days} days");
+                            $remainingValue = 0;
+                        }
+                    }
 
                     // Calculate new subscription cost
                     $newAmount = $request->payment_type === 'full' 
                         ? $plan->price 
                         : $plan->installment_amount;
 
-                    // Determine start and end dates
-                    if ($currentStartDate > $now) {
-                        $startDate = $currentStartDate;
-                        $endDate = clone $currentEndDate;
-                        $endDate->modify("+ {$plan->duration_days} days");
-                    } elseif ($currentEndDate > $now) {
-                        $startDate = $currentEndDate;
-                        $endDate = clone $startDate;
-                        $endDate->modify("+ {$plan->duration_days} days");
-                    } else {
-                        $startDate = $now;
-                        $endDate = clone $startDate;
-                        $endDate->modify("+ {$plan->duration_days} days");
-                    }
-
-                    // Calculate final amount considering remaining value
+                    // Calculate final amount
                     $finalAmount = $newAmount - $remainingValue;
 
                     // Handle wallet adjustment
                     if ($finalAmount > 0) {
-                        // For upgrades - check wallet balance and deduct
                         if ($user->wallet_balance < $finalAmount) {
                             return response()->json([
                                 'message' => 'Insufficient wallet balance',
@@ -117,7 +135,6 @@ class WorkstationController extends Controller
                         }
                         $user->wallet_balance -= $finalAmount;
                     } else {
-                        // For downgrades - credit the difference back to wallet
                         $user->wallet_balance += abs($finalAmount);
                     }
                     $user->save();
@@ -133,7 +150,7 @@ class WorkstationController extends Controller
 
                     $subscription = $currentSubscription;
 
-                    // Create transaction record for the adjustment
+                    // Create transaction record
                     $transaction = Transaction::create([
                         'user_id' => $user->id,
                         'amount' => abs($finalAmount),
@@ -226,7 +243,7 @@ class WorkstationController extends Controller
                 return response()->json([
                     'message' => 'Subscription ' . ($currentSubscription ? 'updated' : 'created') . ' successfully',
                     'subscription' => $subscription->load('plan', 'payments'),
-                    'transaction_reference' => isset($transaction) ? $transaction->reference_number : null
+                    'transaction_reference' => $transaction->reference_number ?? null
                 ]);
 
             } catch (\Exception $e) {
