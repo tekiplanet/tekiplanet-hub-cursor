@@ -258,7 +258,7 @@ class WorkstationController extends Controller
             
             if ($subscription->status === 'active') {
                 // For active subscriptions, keep future start dates
-                if ($currentStartDate->gt($startDate)) {
+                if ($currentStartDate > $startDate) {
                     $startDate = $currentStartDate;
                 } else {
                     // If current start date is in the past, use end_date as start
