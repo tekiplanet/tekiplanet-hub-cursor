@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/axios';
+import { format } from 'date-fns';
 
 export interface WorkstationPlan {
   id: string;
@@ -66,5 +67,18 @@ export const workstationService = {
   getCurrentSubscription: async () => {
     const response = await apiClient.get('/workstation/subscription');
     return response.data.subscription as WorkstationSubscription;
+  },
+
+  createSubscription: async (
+    planId: string, 
+    paymentType: 'full' | 'installment',
+    startDate?: Date
+  ) => {
+    const response = await apiClient.post('/workstation/subscriptions', {
+      plan_id: planId,
+      payment_type: paymentType,
+      start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined
+    });
+    return response.data;
   },
 }; 

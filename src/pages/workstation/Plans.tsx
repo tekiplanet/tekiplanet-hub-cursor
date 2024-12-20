@@ -8,10 +8,15 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { workstationService } from "@/services/workstationService";
 import { formatCurrency } from "@/lib/utils";
+import { SubscriptionDialog } from "@/components/workstation/SubscriptionDialog";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Plans = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  
+  const [showDialog, setShowDialog] = useState(false);
+  const navigate = useNavigate();
+
   const { data: plans, isLoading, error } = useQuery({
     queryKey: ['workstation-plans'],
     queryFn: workstationService.getPlans
@@ -30,6 +35,22 @@ const Plans = () => {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
+  };
+
+  const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => {
+    try {
+      // Close dialog
+      setShowDialog(false);
+      
+      // Create subscription
+      await workstationService.createSubscription(planId, paymentType, startDate);
+      
+      toast.success('Subscription created successfully!');
+      navigate('/dashboard/workstation/subscription');
+    } catch (error) {
+      console.error('Subscription error:', error);
+      toast.error('Failed to process subscription');
+    }
   };
 
   if (error) {
@@ -153,7 +174,10 @@ const Plans = () => {
                   {/* Action Button */}
                   <Button 
                     className="w-full mt-6" 
-                    onClick={() => setSelectedPlan(plan.id)}
+                    onClick={() => {
+                      setSelectedPlan(plan.id);
+                      setShowDialog(true);
+                    }}
                   >
                     Subscribe Now
                   </Button>
@@ -180,6 +204,16 @@ const Plans = () => {
           </Button>
         </motion.div>
       </div>
+
+      <SubscriptionDialog 
+        plan={plans?.find(p => p.id === selectedPlan) ?? null}
+        isOpen={showDialog}
+        onClose={() => {
+          setShowDialog(false);
+          setSelectedPlan(null);
+        }}
+        onSubscribe={handleSubscribe}
+      />
     </div>
   );
 };
