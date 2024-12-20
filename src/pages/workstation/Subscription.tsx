@@ -21,7 +21,19 @@ import {
   Plus,
   Info,
   LayoutDashboard,
-  X
+  X,
+  AlertTriangle,
+  Ban,
+  AlertCircle,
+  RotateCcw,
+  HelpCircle,
+  PauseCircle,
+  MessageCircle,
+  Star,
+  Percent,
+  Key,
+  Check,
+  ClipboardList
 } from "lucide-react";
 import { formatCurrency, comparePlans } from "@/lib/utils";
 import { workstationService } from "@/services/workstationService";
@@ -497,15 +509,25 @@ const Subscription = () => {
       <ConfirmDialog
         open={showCancelDialog}
         onOpenChange={setShowCancelDialog}
-        title="Cancel Subscription"
-        description="We're sorry to see you go. Please help us understand why you're cancelling."
+        title={
+          <div className="flex items-center gap-3 pb-2 mb-4 border-b">
+            <div className="p-3 rounded-full bg-destructive/10">
+              <X className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Cancel Subscription</h2>
+              <p className="text-sm text-muted-foreground">We're sorry to see you go</p>
+            </div>
+          </div>
+        }
+        description={null}
         actionLabel="Cancel Subscription"
         variant="destructive"
         fields={[
           {
             type: 'select',
             name: 'reason',
-            label: 'Reason for cancellation',
+            label: 'Why are you cancelling?',
             placeholder: 'Select a reason',
             options: CANCELLATION_REASONS,
             required: true
@@ -513,8 +535,8 @@ const Subscription = () => {
           {
             type: 'textarea',
             name: 'feedback',
-            label: 'Additional feedback',
-            placeholder: 'Please provide any additional feedback (optional)'
+            label: 'Help us improve',
+            placeholder: 'Share your experience and suggestions (optional)'
           }
         ]}
         onConfirm={async (data) => {
@@ -541,16 +563,147 @@ const Subscription = () => {
             setCancelling(false);
           }
         }}
-      />
+      >
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-destructive/5 border-destructive/20 border">
+            <h4 className="font-medium text-destructive flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-4 w-4" />
+              Important Information
+            </h4>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Your subscription will be cancelled immediately:</p>
+              <div className="grid gap-2">
+                {[
+                  { icon: Calendar, text: `Access until ${format(new Date(subscription.end_date), "MMM d, yyyy")}` },
+                  { icon: Ban, text: 'Access revoked after current period' },
+                  { icon: AlertCircle, text: 'Unused features will be lost' },
+                  { icon: RotateCcw, text: 'This action cannot be undone' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <item.icon className="h-4 w-4 text-muted-foreground/70" />
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border p-4">
+            <h4 className="font-medium flex items-center gap-2 mb-3 text-blue-500">
+              <HelpCircle className="h-4 w-4" />
+              Consider these alternatives
+            </h4>
+            <div className="grid gap-3">
+              {[
+                { icon: ArrowDownCircle, text: 'Switch to a lower-tier plan', action: 'View Plans' },
+                { icon: PauseCircle, text: 'Pause your subscription temporarily', action: 'Learn More' },
+                { icon: MessageCircle, text: 'Talk to our support team', action: 'Contact' }
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2 text-sm">
+                    <item.icon className="h-4 w-4 text-muted-foreground/70" />
+                    <span className="text-muted-foreground">{item.text}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    {item.action}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={showRenewDialog}
         onOpenChange={setShowRenewDialog}
-        title="Renew Subscription"
-        description="Are you sure you want to renew your subscription? This will extend your current plan for another period."
-        actionLabel="Renew"
-        onConfirm={handleRenewSubscription}
-      />
+        title={
+          <div className="flex items-center gap-3 pb-2 mb-4 border-b">
+            <div className="p-3 rounded-full bg-primary/10">
+              <RefreshCw className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Renew Subscription</h2>
+              <p className="text-sm text-muted-foreground">Extend your workspace access</p>
+            </div>
+          </div>
+        }
+        description={null}
+        actionLabel="Confirm Renewal"
+        fields={[
+          {
+            type: 'select',
+            name: 'duration',
+            label: 'Choose Renewal Duration',
+            placeholder: 'Select duration',
+            options: [
+              { label: 'Same as current plan', value: 'same' },
+              { label: '3 Months (10% off)', value: '3' },
+              { label: '6 Months (15% off)', value: '6' },
+              { label: '12 Months (20% off)', value: '12' }
+            ],
+            required: true
+          }
+        ]}
+        onConfirm={async (data) => {
+          try {
+            setIsRenewing(true);
+            await workstationService.renewSubscription(subscription.id, data.duration);
+            queryClient.invalidateQueries(['current-subscription']);
+            toast.success('Subscription renewed successfully');
+            setShowRenewDialog(false);
+          } catch (error: any) {
+            toast.error('Failed to renew subscription', {
+              description: error.response?.data?.message || 'Please try again'
+            });
+          } finally {
+            setIsRenewing(false);
+          }
+        }}
+      >
+        <div className="space-y-6">
+          <div className="grid gap-4">
+            <div className="p-4 rounded-xl bg-muted">
+              <h4 className="font-medium flex items-center gap-2 mb-3">
+                <ClipboardList className="h-4 w-4 text-primary" />
+                Current Plan Details
+              </h4>
+              <div className="space-y-3">
+                {[
+                  { label: 'Plan Name', value: subscription.plan.name },
+                  { label: 'Current End Date', value: format(new Date(subscription.end_date), "MMM d, yyyy") },
+                  { label: 'Base Amount', value: formatCurrency(subscription.plan.price) }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="font-medium">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border p-4">
+              <h4 className="font-medium flex items-center gap-2 mb-3 text-blue-500">
+                <Star className="h-4 w-4" />
+                Renewal Benefits
+              </h4>
+              <div className="grid gap-2">
+                {[
+                  { icon: Key, text: 'Uninterrupted workspace access' },
+                  { icon: Clock, text: 'Keep your existing meeting room hours' },
+                  { icon: Check, text: 'Continue using all plan features' },
+                  { icon: Percent, text: 'Save more with longer durations' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <item.icon className="h-4 w-4 text-blue-500/70" />
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 };
