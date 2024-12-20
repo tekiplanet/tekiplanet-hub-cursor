@@ -55,6 +55,9 @@ const QuoteRequestsListPage = React.lazy(() => import('@/pages/QuoteRequestsList
 const QuoteDetailsPage = React.lazy(() => import('@/pages/QuoteDetails'));
 const ProjectsListPage = React.lazy(() => import('@/pages/ProjectsList'));
 const ProjectDetailsPage = React.lazy(() => import('@/pages/ProjectDetails'));
+const WorkstationPlans = React.lazy(() => import('@/pages/workstation/Plans'));
+const WorkstationSubscription = React.lazy(() => import('@/pages/workstation/Subscription'));
+const DashboardHome = React.lazy(() => import('@/pages/DashboardHome'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -77,7 +80,7 @@ const AppContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<DashboardHome />} />
             <Route path="store" element={<Store />} />
             <Route path="products" element={<Products />} />
             <Route path="store/product/:id" element={<ProductDetails />} />
@@ -107,6 +110,10 @@ const AppContent = () => {
             <Route path="payment-confirmation" element={<PaymentConfirmation />} />
             <Route path="consulting/bookings" element={<ConsultingBookings />} />
             <Route path="consulting/bookings/:id" element={<ConsultingBookingDetails />} />
+            <Route path="workstation">
+              <Route path="plans" element={<WorkstationPlans />} />
+              <Route path="subscription" element={<WorkstationSubscription />} />
+            </Route>
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />

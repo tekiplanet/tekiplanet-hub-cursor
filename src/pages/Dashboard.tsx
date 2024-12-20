@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package, BrainCircuit, Calendar } from "lucide-react"
+import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package, BrainCircuit, Calendar, Building2, LayoutDashboard, CreditCard } from "lucide-react"
 import { useNavigate, Routes, Route, useLocation, Outlet } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -61,6 +61,7 @@ interface MenuItem {
   path: string;
   icon: React.ReactNode;
   badge?: string;
+  submenu?: MenuItem[];
 }
 
 const Dashboard = ({ children }: { children?: React.ReactNode }) => {
@@ -69,6 +70,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
   const { user, updateUserType } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const { data: cartCount = 0 } = useQuery({
     queryKey: ['cartCount'],
@@ -164,101 +166,6 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
     setIsSheetOpen(false); // Close the sheet when menu item is clicked
   };
 
-  const renderContent = () => {
-    // If children are provided, render them
-    if (children) {
-      return children;
-    }
-
-    // Otherwise, use the default dashboard rendering
-    return (
-      <Routes>
-        <Route index element={
-          <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold">Welcome back!</h1>
-              <p className="text-muted-foreground">
-                Here's an overview of your activities
-              </p>
-            </div>
-            {renderDashboard()}
-          </>
-        } />
-        <Route path="store" element={<Store />} />
-        <Route path="products" element={<Products />} />
-        <Route path="store/product/:id" element={<ProductDetails />} />
-        <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="academy" element={<Academy />} />
-        <Route path="academy/my-courses" element={<MyCourses />} />
-        <Route path="academy/:courseId" element={<CourseDetails />} />
-        <Route path="academy/:courseId/manage" element={<CourseManagement />} />
-        <Route path="wallet" element={
-          <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold">Wallet</h1>
-              <p className="text-muted-foreground">
-                Manage your funds and transactions
-              </p>
-            </div>
-            <WalletDashboard />
-          </>
-        } />
-        <Route path="wallet/transactions/:transactionId" element={<TransactionDetails />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="services" element={<ServicesPage />} />
-        <Route 
-          path="services/quote/software-engineering/:serviceId" 
-          element={<SoftwareEngineeringQuote />} 
-        />
-        <Route 
-          path="services/quote/cyber-security/:serviceId" 
-          element={<CyberSecurityQuote />} 
-        />
-      <Route path="services">
-        <Route index element={<ServicesPage />} />
-        <Route 
-          path="quote/:categoryId/:serviceId" 
-          element={<ServiceQuoteRequestPage />} 
-        />
-      </Route>        
-        <Route path="quotes" element={<QuoteRequestsListPage />} />
-        <Route path="quotes/:quoteId" element={<QuoteDetailsPage />} />
-        <Route path="projects" element={<ProjectsListPage />} />
-        <Route path="projects/:projectId" element={<ProjectDetailsPage />} />        
-        <Route path="it-consulting" element={<ITConsulting />} />
-        <Route path="consulting">
-          <Route path="bookings" element={
-            <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold">Consulting Sessions</h1>
-                <p className="text-muted-foreground">
-                  Manage your IT consulting sessions and appointments
-                </p>
-              </div>
-              <ConsultingBookings />
-            </>
-          } />
-          <Route path="bookings/:id" element={<ConsultingBookingDetails />} />
-        </Route>
-        <Route path="payment-confirmation" element={
-          <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold">Payment Confirmation</h1>
-              <p className="text-muted-foreground">
-                Confirm and complete your wallet funding
-              </p>
-            </div>
-            <PaymentConfirmation />
-          </>
-        } />
-        <Route path="orders" element={<Orders />} />
-        <Route path="orders/:orderId/tracking" element={<OrderTracking />} />
-        <Route path="*" element={<Outlet />} />
-      </Routes>
-    );
-  };
-
   const handleFundWallet = async () => {
     try {
       console.log('Fund Wallet Clicked', { amount: 1000, paymentMethod: 'bank-transfer' });
@@ -280,6 +187,14 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       console.error('Fund Wallet Error:', error);
       toast.error('Failed to process wallet funding');
     }
+  };
+
+  const toggleSubmenu = (path: string) => {
+    setExpandedMenus(current => 
+      current.includes(path) 
+        ? current.filter(p => p !== path)
+        : [...current, path]
+    );
   };
 
   const menuItems: MenuItem[] = [
@@ -349,7 +264,26 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       path: '/dashboard/consulting/bookings',
       icon: <Calendar className="h-5 w-5" />
     },
+    {
+      label: "Workstation",
+      path: "/dashboard/workstation/plans",
+      icon: <Building2 className="h-5 w-5" />,
+      submenu: [
+        {
+          label: "Plans",
+          path: "/dashboard/workstation/plans",
+          icon: <LayoutDashboard className="h-4 w-4" />
+        },
+        {
+          label: "My Subscription",
+          path: "/dashboard/workstation/subscription",
+          icon: <CreditCard className="h-4 w-4" />
+        }
+      ]
+    }
   ];
+
+
 
   return (
     <>
@@ -396,28 +330,74 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
 
             {/* Scrollable Menu Items */}
             <div className="flex-1 overflow-y-auto">
-              <nav className="space-y-1 px-3 py-3">
+              <nav className="flex-1 space-y-1 px-4 py-2 overflow-y-auto">
                 {menuItems.map((item) => (
-                  <Button
-                    key={item.path}
-                    variant={location.pathname === item.path ? "default" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-2",
-                      location.pathname === item.path && "bg-primary text-primary-foreground"
-                    )}
-                    onClick={() => navigate(item.path)}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <Badge 
-                        variant={location.pathname === item.path ? "secondary" : "default"}
-                        className="ml-auto"
+                  <div key={item.path}>
+                    {/* Main Menu Item */}
+                    <Button
+                      variant={location.pathname === item.path ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start mb-1",
+                        item.submenu && "mb-2"
+                      )}
+                      onClick={() => {
+                        if (item.submenu) {
+                          toggleSubmenu(item.path);
+                        } else {
+                          navigate(item.path);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center">
+                          {item.icon}
+                          <span className="ml-3">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto mr-2">
+                            {item.badge}
+                          </Badge>
+                        )}
+                        {item.submenu && (
+                          <ChevronDown 
+                            className={cn(
+                              "h-4 w-4 ml-auto transition-transform duration-200",
+                              expandedMenus.includes(item.path) ? "rotate-180" : ""
+                            )} 
+                          />
+                        )}
+                      </div>
+                    </Button>
+
+                    {/* Submenu Items */}
+                    {item.submenu && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ 
+                          height: expandedMenus.includes(item.path) ? "auto" : 0,
+                          opacity: expandedMenus.includes(item.path) ? 1 : 0
+                        }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
                       >
-                        {item.badge}
-                      </Badge>
+                        <div className="ml-4 space-y-1 pt-1">
+                          {item.submenu.map((subItem) => (
+                            <Button
+                              key={subItem.path}
+                              variant={location.pathname === subItem.path ? "secondary" : "ghost"}
+                              className="w-full justify-start pl-6"
+                              onClick={() => navigate(subItem.path)}
+                            >
+                              <div className="flex items-center">
+                                {subItem.icon}
+                                <span className="ml-3">{subItem.label}</span>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </motion.div>
                     )}
-                  </Button>
+                  </div>
                 ))}
               </nav>
             </div>
@@ -760,7 +740,7 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto bg-background">
             <div className="container mx-auto p-4 md:p-6 max-w-7xl">
-              {renderContent()}
+              <Outlet />
             </div>
           </main>
         </div>

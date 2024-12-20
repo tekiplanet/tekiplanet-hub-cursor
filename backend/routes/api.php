@@ -24,6 +24,7 @@ use App\Http\Controllers\ShippingMethodController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ConsultingController;
 use App\Http\Controllers\ConsultingReviewController;
+use App\Http\Controllers\WorkstationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,6 +92,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::get('/orders/{id}/tracking', [OrderController::class, 'tracking']);
         Route::get('/orders/{id}/invoice', [OrderController::class, 'downloadInvoice']);
+        
+        // Workstation routes
+        Route::prefix('workstation')->group(function () {
+            Route::get('/plans', [WorkstationController::class, 'getPlans']);
+            Route::get('/subscription', [WorkstationController::class, 'getCurrentSubscription']);
+        });
     });
 });
 
