@@ -73,4 +73,10 @@ class ConsultingBooking extends Model
 
         return now()->diffInHours($this->selected_date) >= $cancellationHours;
     }
+
+    public function expert()
+    {
+        return $this->belongsTo(ProjectTeamMember::class, 'assigned_expert_id')
+            ->with('user');
+    }
 } 

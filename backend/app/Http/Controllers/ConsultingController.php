@@ -201,7 +201,7 @@ class ConsultingController extends Controller
     public function getBookingDetails($id)
     {
         try {
-            $booking = ConsultingBooking::with(['review'])
+            $booking = ConsultingBooking::with(['review', 'expert.user'])
                 ->where('user_id', auth()->id())
                 ->findOrFail($id);
 

@@ -202,13 +202,16 @@ const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => (
     <CardContent className="space-y-4">
       <div className="flex items-start gap-4">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={expert.user.avatar} />
+          <AvatarImage src={expert.user?.avatar} />
           <AvatarFallback>
-            {expert.user.name.split(' ').map(n => n[0]).join('')}
+            {expert.user?.name 
+              ? expert.user.name.split(' ').map(n => n[0]).join('')
+              : 'EX'
+            }
           </AvatarFallback>
         </Avatar>
         <div className="space-y-1">
-          <h3 className="font-medium">{expert.user.name}</h3>
+          <h3 className="font-medium">{expert.user?.name || 'Expert'}</h3>
           <p className="text-sm text-muted-foreground">{expert.role}</p>
         </div>
       </div>
@@ -228,12 +231,14 @@ const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => (
 
       <Separator />
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <Mail className="h-4 w-4 text-primary" />
-          <span>{expert.user.email}</span>
+      {expert.user?.email && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Mail className="h-4 w-4 text-primary" />
+            <span>{expert.user.email}</span>
+          </div>
         </div>
-      </div>
+      )}
     </CardContent>
   </Card>
 );
