@@ -252,23 +252,35 @@ class WorkstationController extends Controller
                 default => $subscription->plan->duration_days
             };
 
-            // Handle start date based on subscription status and current start date
-            $startDate = now();
+            $now = now();
             $currentStartDate = new \DateTime($subscription->start_date);
-            
-            if ($subscription->status === 'active') {
-                // For active subscriptions, keep future start dates
-                if ($currentStartDate > $startDate) {
-                    $startDate = $currentStartDate;
-                } else {
-                    // If current start date is in the past, use end_date as start
-                    $startDate = new \DateTime($subscription->end_date);
-                }
-            }
+            $currentEndDate = new \DateTime($subscription->end_date);
 
-            // Calculate new end date
-            $endDate = clone $startDate;
-            $endDate->modify("+ {$durationDays} days");
+            // Determine start and end dates
+            if ($subscription->status === 'active') {
+                if ($currentStartDate > $now) {
+                    // If start date is in future, keep it
+                    $startDate = $currentStartDate;
+                    // Calculate new end date from current end date
+                    $endDate = clone $currentEndDate;
+                    $endDate->modify("+ {$durationDays} days");
+                } elseif ($currentEndDate > $now) {
+                    // If only end date is in future
+                    $startDate = $currentEndDate;
+                    $endDate = clone $startDate;
+                    $endDate->modify("+ {$durationDays} days");
+                } else {
+                    // Both dates are in past
+                    $startDate = $now;
+                    $endDate = clone $startDate;
+                    $endDate->modify("+ {$durationDays} days");
+                }
+            } else {
+                // For expired subscriptions, start fresh from today
+                $startDate = $now;
+                $endDate = clone $startDate;
+                $endDate->modify("+ {$durationDays} days");
+            }
 
             // Calculate price with discount
             $basePrice = $subscription->plan->price;
