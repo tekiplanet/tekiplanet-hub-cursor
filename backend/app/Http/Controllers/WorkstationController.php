@@ -233,9 +233,10 @@ class WorkstationController extends Controller
                 ], 403);
             }
 
-            if ($subscription->status !== 'active') {
+            // Only allow renewal for active or expired subscriptions
+            if (!in_array($subscription->status, ['active', 'expired'])) {
                 return response()->json([
-                    'message' => 'Only active subscriptions can be renewed'
+                    'message' => 'Only active or expired subscriptions can be renewed'
                 ], 400);
             }
 
@@ -243,7 +244,7 @@ class WorkstationController extends Controller
                 'duration' => 'nullable|string|in:same,3,6,12'
             ]);
 
-            // Calculate new end date based on duration, starting from current end_date
+            // Calculate duration
             $durationDays = match($request->duration) {
                 '3' => 90,
                 '6' => 180,
@@ -251,8 +252,23 @@ class WorkstationController extends Controller
                 default => $subscription->plan->duration_days
             };
 
-            // Use end_date as the starting point for renewal
-            $newEndDate = date('Y-m-d', strtotime($subscription->end_date . " + {$durationDays} days"));
+            // Handle start date based on subscription status and current start date
+            $startDate = now();
+            $currentStartDate = new \DateTime($subscription->start_date);
+            
+            if ($subscription->status === 'active') {
+                // For active subscriptions, keep future start dates
+                if ($currentStartDate->gt($startDate)) {
+                    $startDate = $currentStartDate;
+                } else {
+                    // If current start date is in the past, use end_date as start
+                    $startDate = new \DateTime($subscription->end_date);
+                }
+            }
+
+            // Calculate new end date
+            $endDate = clone $startDate;
+            $endDate->modify("+ {$durationDays} days");
 
             // Calculate price with discount
             $basePrice = $subscription->plan->price;
@@ -266,7 +282,8 @@ class WorkstationController extends Controller
             $finalPrice = $basePrice * (1 - $discount);
 
             $subscription->update([
-                'end_date' => $newEndDate,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
                 'total_amount' => $finalPrice,
                 'status' => 'active'
             ]);

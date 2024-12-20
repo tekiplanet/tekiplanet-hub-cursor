@@ -43,7 +43,7 @@ import { Progress } from "@/components/ui/progress";
 import { SubscriptionDialog } from "@/components/workstation/SubscriptionDialog";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -276,8 +276,16 @@ const Subscription = () => {
                     size="sm" 
                     className="mt-2"
                     onClick={() => setShowRenewDialog(true)}
+                    disabled={isRenewing}
                   >
-                    Renew Subscription
+                    {isRenewing ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Renewing...
+                      </>
+                    ) : (
+                      'Renew Subscription'
+                    )}
                   </Button>
                 </div>
               </div>
