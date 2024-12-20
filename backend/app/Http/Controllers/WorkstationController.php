@@ -31,8 +31,14 @@ class WorkstationController extends Controller
         try {
             $subscription = WorkstationSubscription::with(['plan', 'payments'])
                 ->where('user_id', auth()->id())
-                ->where('status', 'active')
+                ->latest()
                 ->first();
+
+            // Check if subscription has expired
+            if ($subscription && $subscription->status === 'active' && now()->startOfDay()->gt($subscription->end_date)) {
+                $subscription->update(['status' => 'expired']);
+                $subscription->refresh();
+            }
 
             return response()->json([
                 'subscription' => $subscription
