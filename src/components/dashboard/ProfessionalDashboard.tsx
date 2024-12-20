@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { professionalService } from "@/services/professionalService";
 import NoProfessionalProfile from "../professional/NoProfessionalProfile";
+import InactiveProfessionalProfile from "../professional/InactiveProfessionalProfile";
+import SuspendedProfessionalProfile from "../professional/SuspendedProfessionalProfile";
 
 // Animation variants
 const container = {
@@ -120,7 +123,7 @@ interface DashboardProps {
   isLoading?: boolean;
 }
 
-const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
+const ProfessionalDashboard: React.FC<DashboardProps> = ({ isLoading = false }) => {
   const navigate = useNavigate();
   const [selectedStat, setSelectedStat] = useState<string | null>(null);
 
@@ -149,6 +152,14 @@ const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
 
   if (!profileData?.has_profile) {
     return <NoProfessionalProfile />;
+  }
+
+  if (profileData?.profile?.status === 'inactive') {
+    return <InactiveProfessionalProfile />;
+  }
+
+  if (profileData?.profile?.status === 'suspended') {
+    return <SuspendedProfessionalProfile />;
   }
 
   return (
