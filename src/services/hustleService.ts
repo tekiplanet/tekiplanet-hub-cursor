@@ -15,8 +15,8 @@ export interface Hustle {
   has_applied: boolean;
   can_apply: boolean;
   status: 'open' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+  assigned_professional_id?: string | null;
   application_status?: 'pending' | 'approved' | 'rejected' | 'withdrawn';
-  assigned_professional_id?: string;
   initial_payment_released: boolean;
   final_payment_released: boolean;
   messages?: Array<{
@@ -29,6 +29,11 @@ export interface Hustle {
     };
     created_at: string;
   }>;
+  cannot_apply_reason?: string;
+  professional?: {
+    id: string;
+    category_id: string;
+  } | null;
 }
 
 export interface Category {
@@ -64,6 +69,11 @@ export const hustleService = {
 
   withdrawApplication: async (applicationId: string) => {
     const { data } = await api.post(`/hustle-applications/${applicationId}/withdraw`);
+    return data;
+  },
+
+  checkProfessionalProfile: async () => {
+    const { data } = await api.get('/professional/profile/check');
     return data;
   }
 }; 
