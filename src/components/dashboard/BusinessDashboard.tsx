@@ -130,7 +130,7 @@ export default function BusinessDashboard() {
             trend: "Growth rate" 
           }
         ].map((metric, index) => (
-          <Card key={metric.title}>
+          <Card key={metric.title} className="relative">
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex justify-between items-center mb-2">
                 {metric.icon}
@@ -141,6 +141,7 @@ export default function BusinessDashboard() {
                 <p className="text-xs text-primary">{metric.trend}</p>
               </div>
             </CardContent>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
           </Card>
         ))}
       </div>
@@ -148,7 +149,7 @@ export default function BusinessDashboard() {
       {/* Service Management & Promotions */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Service Requests */}
-        <Card>
+        <Card className="relative">
           <CardHeader>
             <CardTitle>Current Services</CardTitle>
             <CardDescription>Ongoing and pending service requests</CardDescription>
@@ -167,10 +168,11 @@ export default function BusinessDashboard() {
               View All Services
             </Button>
           </CardContent>
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
         </Card>
 
         {/* Promotions Carousel */}
-        <Card>
+        <Card className="relative">
           <CardHeader>
             <CardTitle>Promotions</CardTitle>
           </CardHeader>
@@ -196,6 +198,7 @@ export default function BusinessDashboard() {
               </CarouselContent>
             </Carousel>
           </CardContent>
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
         </Card>
       </div>
 
@@ -205,11 +208,12 @@ export default function BusinessDashboard() {
           <Button 
             key={action.title}
             variant="outline" 
-            className="flex flex-col h-24 justify-center items-center space-y-2"
+            className="relative flex flex-col h-24 justify-center items-center space-y-2"
             onClick={action.onClick}
           >
             {action.icon}
             <span className="text-xs">{action.title}</span>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
           </Button>
         ))}
       </div>
