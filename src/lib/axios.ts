@@ -1,32 +1,24 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+const instance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: {
+    'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Content-Type': 'application/json'
   }
 });
 
-// Interceptor to add token to every request
-apiClient.interceptors.request.use((config) => {
+// Add token to every request
+instance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log('Axios Interceptor - Token:', {
-    token: token ? 'Present' : 'Not Found',
-    fullToken: token ? `Bearer ${token}` : null,
-    url: config.url
-  });
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
 
-// Add isAxiosError method
-export const isAxiosError = axios.isAxiosError;
-
-export { apiClient };
-export default apiClient;
+// Export both named and default for backward compatibility
+export const apiClient = instance;
+export { instance as axios };
+export default instance;

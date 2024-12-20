@@ -126,7 +126,8 @@ const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['professional-profile'],
-    queryFn: professionalService.checkProfile
+    queryFn: professionalService.checkProfile,
+    retry: false
   });
 
   if (isLoading || profileLoading) {
@@ -146,7 +147,6 @@ const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
     );
   }
 
-  // If no profile exists, show the NoProfessionalProfile component
   if (!profileData?.has_profile) {
     return <NoProfessionalProfile />;
   }

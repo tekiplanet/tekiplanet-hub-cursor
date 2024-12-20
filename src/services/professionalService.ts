@@ -1,4 +1,4 @@
-import { axios } from "@/lib/axios";
+import { apiClient } from '@/lib/axios';
 
 export interface ProfessionalProfile {
   id: string;
@@ -24,17 +24,17 @@ export interface ProfessionalProfile {
 
 export const professionalService = {
   checkProfile: async () => {
-    const response = await axios.get('/professional/profile/check');
+    const response = await apiClient.get('/professional/profile/check');
     return response.data;
   },
 
   createProfile: async (data: Partial<ProfessionalProfile>) => {
-    const response = await axios.post('/professional/profile', data);
+    const response = await apiClient.post('/professional/profile', data);
     return response.data;
   },
 
   updateProfile: async (data: Partial<ProfessionalProfile>) => {
-    const response = await axios.put('/professional/profile', data);
+    const response = await apiClient.put('/professional/profile', data);
     return response.data;
   }
 }; 
