@@ -14,6 +14,21 @@ export interface Hustle {
   applications_count: number;
   has_applied: boolean;
   can_apply: boolean;
+  status: 'open' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+  application_status?: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+  assigned_professional_id?: string;
+  initial_payment_released: boolean;
+  final_payment_released: boolean;
+  messages?: Array<{
+    id: string;
+    message: string;
+    sender_type: 'admin' | 'professional';
+    user: {
+      name: string;
+      avatar?: string;
+    };
+    created_at: string;
+  }>;
 }
 
 export interface Category {
