@@ -17,7 +17,9 @@ import {
   History,
   Download,
   ArrowUpCircle,
-  ArrowDownCircle
+  ArrowDownCircle,
+  Plus,
+  Info
 } from "lucide-react";
 import { formatCurrency, comparePlans } from "@/lib/utils";
 import { workstationService } from "@/services/workstationService";
@@ -28,6 +30,7 @@ import { SubscriptionDialog } from "@/components/workstation/SubscriptionDialog"
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { cn } from "@/lib/utils";
 
 const Subscription = () => {
   const { data: subscription, isLoading } = useQuery({
@@ -155,39 +158,155 @@ const Subscription = () => {
                   </Button>
                 </div>
 
-                <div className="flex gap-2 mt-4">
-                  {plans?.map(plan => {
-                    if (plan.duration_days === subscription.plan.duration_days) return null;
-                    
-                    const action = comparePlans(subscription.plan.duration_days, plan.duration_days);
-                    const isUpgrade = action === 'upgrade';
-                    
-                    return (
-                      <Button
-                        key={plan.id}
-                        variant={isUpgrade ? "default" : "outline"}
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setSelectedPlan(plan.id);
-                          setShowUpgradeDialog(true);
-                        }}
-                      >
-                        {isUpgrade ? (
-                          <>
-                            <ArrowUpCircle className="w-4 h-4" />
-                            Upgrade to {plan.name}
-                          </>
-                        ) : (
-                          <>
-                            <ArrowDownCircle className="w-4 h-4" />
-                            Downgrade to {plan.name}
-                          </>
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
+                {/* Plan Management Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          Plan Management
+                        </h3>
+                        <Badge variant="outline" className="font-medium">
+                          {subscription.plan.duration_days} Days Plan
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {plans?.map(plan => {
+                          if (plan.duration_days === subscription.plan.duration_days) {
+                            return (
+                              <Card key={plan.id} className="bg-primary/5 border-primary">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <Badge variant="default" className="bg-primary">Current Plan</Badge>
+                                  </div>
+                                  <h4 className="font-semibold">{plan.name}</h4>
+                                  <p className="text-sm text-muted-foreground mb-4">
+                                    {plan.duration_days} days access
+                                  </p>
+                                  <p className="font-medium">{formatCurrency(plan.price)}</p>
+                                </CardContent>
+                              </Card>
+                            );
+                          }
+
+                          const action = comparePlans(subscription.plan.duration_days, plan.duration_days);
+                          const isUpgrade = action === 'upgrade';
+                          
+                          return (
+                            <Card 
+                              key={plan.id} 
+                              className={cn(
+                                "relative group hover:shadow-lg transition-all duration-300",
+                                isUpgrade ? "hover:border-green-500/50" : "hover:border-orange-500/50"
+                              )}
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      isUpgrade 
+                                        ? "border-green-500/20 bg-green-500/10 text-green-500" 
+                                        : "border-orange-500/20 bg-orange-500/10 text-orange-500"
+                                    )}
+                                  >
+                                    {isUpgrade ? 'Upgrade Available' : 'Downgrade Option'}
+                                  </Badge>
+                                </div>
+                                <h4 className="font-semibold">{plan.name}</h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  {plan.duration_days} days access
+                                </p>
+                                <div className="flex items-baseline gap-2">
+                                  <p className="font-medium">{formatCurrency(plan.price)}</p>
+                                  {isUpgrade && (
+                                    <span className="text-xs text-muted-foreground">
+                                      (+{formatCurrency(plan.price - subscription.plan.price)})
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Feature Comparison */}
+                                <div className="mt-4 space-y-2">
+                                  {plan.meeting_room_hours > subscription.plan.meeting_room_hours && (
+                                    <div className="flex items-center gap-2 text-xs text-green-500">
+                                      <ArrowUpCircle className="w-3 h-3" />
+                                      <span>+{plan.meeting_room_hours - subscription.plan.meeting_room_hours}hr meeting room</span>
+                                    </div>
+                                  )}
+                                  {plan.print_pages_limit > subscription.plan.print_pages_limit && (
+                                    <div className="flex items-center gap-2 text-xs text-green-500">
+                                      <ArrowUpCircle className="w-3 h-3" />
+                                      <span>+{plan.print_pages_limit - subscription.plan.print_pages_limit} print pages</span>
+                                    </div>
+                                  )}
+                                  {!subscription.plan.has_locker && plan.has_locker && (
+                                    <div className="flex items-center gap-2 text-xs text-green-500">
+                                      <Plus className="w-3 h-3" />
+                                      <span>Includes locker access</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <Button
+                                  className="w-full mt-4 gap-2"
+                                  variant={isUpgrade ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPlan(plan.id);
+                                    setShowUpgradeDialog(true);
+                                  }}
+                                >
+                                  {isUpgrade ? (
+                                    <>
+                                      <ArrowUpCircle className="w-4 h-4" />
+                                      Upgrade Now
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ArrowDownCircle className="w-4 h-4" />
+                                      Downgrade
+                                    </>
+                                  )}
+                                </Button>
+                              </CardContent>
+
+                              {/* Decorative Elements */}
+                              <div 
+                                className={cn(
+                                  "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none",
+                                  isUpgrade 
+                                    ? "bg-gradient-to-tr from-green-500/5 to-transparent" 
+                                    : "bg-gradient-to-tr from-orange-500/5 to-transparent"
+                                )}
+                              />
+                            </Card>
+                          );
+                        })}
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="mt-6 p-4 rounded-lg bg-muted/50">
+                        <div className="flex items-start gap-3">
+                          <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">Plan Change Information</p>
+                            <p className="text-sm text-muted-foreground">
+                              When upgrading, we'll calculate the remaining value of your current plan. 
+                              Downgrades will take effect at the end of your current billing period.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
