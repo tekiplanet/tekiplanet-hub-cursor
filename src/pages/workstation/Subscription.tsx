@@ -267,26 +267,27 @@ const Subscription = () => {
                 <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="font-medium text-red-500">Subscription Expired</p>
-                  <p className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     Your subscription expired on {format(new Date(subscription.end_date), "MMMM d, yyyy")}. 
                     Renew now to continue accessing workspace facilities.
-                  </p>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => setShowRenewDialog(true)}
-                    disabled={isRenewing}
-                  >
-                    {isRenewing ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Renewing...
-                      </>
-                    ) : (
-                      'Renew Subscription'
-                    )}
-                  </Button>
+                  </div>
+                  <div className="mt-2">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => setShowRenewDialog(true)}
+                      disabled={isRenewing}
+                    >
+                      {isRenewing ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Renewing...
+                        </>
+                      ) : (
+                        'Renew Subscription'
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
