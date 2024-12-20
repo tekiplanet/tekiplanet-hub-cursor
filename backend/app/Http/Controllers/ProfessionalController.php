@@ -34,10 +34,10 @@ class ProfessionalController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
+            $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
-                'specialization' => 'required|string|max:255',
                 'category_id' => 'required|exists:professional_categories,id',
+                'specialization' => 'nullable|string|max:255',
                 'expertise_areas' => 'required|array',
                 'years_of_experience' => 'required|integer|min:0',
                 // 'hourly_rate' => 'required|numeric|min:0',
@@ -62,7 +62,20 @@ class ProfessionalController extends Controller
 
             $professional = Professional::create([
                 'user_id' => Auth::id(),
-                ...$validated,
+                'category_id' => $validatedData['category_id'],
+                'title' => $validatedData['title'],
+                'specialization' => $validatedData['specialization'],
+                'expertise_areas' => $validatedData['expertise_areas'],
+                'years_of_experience' => $validatedData['years_of_experience'],
+                'bio' => $validatedData['bio'],
+                'certifications' => $validatedData['certifications'],
+                'linkedin_url' => $validatedData['linkedin_url'],
+                'github_url' => $validatedData['github_url'],
+                'portfolio_url' => $validatedData['portfolio_url'],
+                'preferred_contact_method' => $validatedData['preferred_contact_method'],
+                'timezone' => $validatedData['timezone'],
+                'languages' => $validatedData['languages'],
+                'availability_status' => $validatedData['availability_status'],
                 'status' => 'active',
                 'rating' => null,
                 'total_sessions' => 0

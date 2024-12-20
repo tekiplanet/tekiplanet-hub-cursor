@@ -30,7 +30,8 @@ class Professional extends Model
         'rating',
         'total_sessions',
         'status',
-        'verified_at'
+        'verified_at',
+        'category_id'
     ];
 
     protected $casts = [
@@ -94,7 +95,7 @@ class Professional extends Model
     // Add this to your existing Professional model
     public function category()
     {
-        return $this->belongsTo(ProfessionalCategory::class);
+        return $this->belongsTo(ProfessionalCategory::class, 'category_id');
     }
 
     // Add these relationships to the existing Professional model
