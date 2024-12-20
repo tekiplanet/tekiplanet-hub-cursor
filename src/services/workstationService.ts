@@ -49,6 +49,18 @@ export interface WorkstationSubscription {
     due_date: string;
     status: 'paid' | 'pending' | 'overdue';
   }>;
+  cancelled_at?: string;
+  cancellation_reason?: string;
+  cancellation_feedback?: string;
+}
+
+export interface SubscriptionHistoryFilters {
+  status?: 'active' | 'expired' | 'cancelled';
+  dateRange?: [Date, Date];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  perPage?: number;
 }
 
 export const workstationService = {
@@ -89,8 +101,36 @@ export const workstationService = {
     return response.data;
   },
 
-  cancelSubscription: async (subscriptionId: string) => {
-    const response = await apiClient.post(`/workstation/subscriptions/${subscriptionId}/cancel`);
+  cancelSubscription: async (subscriptionId: string, data: { reason: string; feedback?: string }) => {
+    const response = await apiClient.post(`/workstation/subscriptions/${subscriptionId}/cancel`, data);
     return response.data;
+  },
+
+  getSubscriptionHistory: async (filters?: SubscriptionHistoryFilters) => {
+    const params = new URLSearchParams();
+    
+    if (filters?.status) {
+      params.append('status', filters.status);
+    }
+    
+    if (filters?.dateRange) {
+      params.append('date_range', `${filters.dateRange[0].toISOString()},${filters.dateRange[1].toISOString()}`);
+    }
+    
+    if (filters?.sortBy) {
+      params.append('sort_by', filters.sortBy);
+      params.append('sort_order', filters.sortOrder || 'desc');
+    }
+    
+    if (filters?.page) {
+      params.append('page', filters.page.toString());
+    }
+    
+    if (filters?.perPage) {
+      params.append('per_page', filters.perPage.toString());
+    }
+
+    const response = await apiClient.get(`/workstation/subscriptions/history?${params.toString()}`);
+    return response.data.history;
   },
 }; 

@@ -98,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/plans', [WorkstationController::class, 'getPlans']);
             Route::post('/subscriptions', [WorkstationController::class, 'createSubscription']);
             Route::get('/subscription', [WorkstationController::class, 'getCurrentSubscription']);
+            Route::get('/subscriptions/history', [WorkstationController::class, 'getSubscriptionHistory']);
         });
     });
 });

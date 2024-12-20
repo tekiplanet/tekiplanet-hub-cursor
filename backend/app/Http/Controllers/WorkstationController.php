@@ -188,7 +188,7 @@ class WorkstationController extends Controller
         }
     }
 
-    public function cancelSubscription(WorkstationSubscription $subscription)
+    public function cancelSubscription(WorkstationSubscription $subscription, Request $request)
     {
         try {
             if ($subscription->user_id !== auth()->id()) {
@@ -203,9 +203,16 @@ class WorkstationController extends Controller
                 ], 400);
             }
 
+            $request->validate([
+                'reason' => 'required|string',
+                'feedback' => 'nullable|string'
+            ]);
+
             $subscription->update([
                 'status' => 'cancelled',
-                'cancelled_at' => now()
+                'cancelled_at' => now(),
+                'cancellation_reason' => $request->reason,
+                'cancellation_feedback' => $request->feedback
             ]);
 
             return response()->json([
@@ -215,6 +222,46 @@ class WorkstationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error cancelling subscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getSubscriptionHistory(Request $request)
+    {
+        try {
+            $query = WorkstationSubscription::with(['plan'])
+                ->where('user_id', auth()->id());
+
+            // Handle filtering
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('date_range')) {
+                $dates = explode(',', $request->date_range);
+                if (count($dates) === 2) {
+                    $query->whereBetween('created_at', $dates);
+                }
+            }
+
+            // Handle sorting
+            $sortField = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $allowedSortFields = ['created_at', 'start_date', 'end_date', 'total_amount'];
+            
+            if (in_array($sortField, $allowedSortFields)) {
+                $query->orderBy($sortField, $sortOrder);
+            }
+
+            $history = $query->paginate($request->get('per_page', 10));
+
+            return response()->json([
+                'history' => $history
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error fetching subscription history',
                 'error' => $e->getMessage()
             ], 500);
         }

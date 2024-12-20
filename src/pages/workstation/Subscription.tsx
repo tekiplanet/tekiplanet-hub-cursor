@@ -98,6 +98,8 @@ const Subscription = () => {
 
   const [isRenewing, setIsRenewing] = useState(false);
   const [isCancelling, setCancelling] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
 
   const handleRenewSubscription = async () => {
     try {
@@ -111,21 +113,6 @@ const Subscription = () => {
       });
     } finally {
       setIsRenewing(false);
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    try {
-      setCancelling(true);
-      await workstationService.cancelSubscription(subscription.id);
-      queryClient.invalidateQueries(['current-subscription']);
-      toast.success('Subscription cancelled successfully');
-    } catch (error: any) {
-      toast.error('Failed to cancel subscription', {
-        description: error.response?.data?.message || 'Please try again'
-      });
-    } finally {
-      setCancelling(false);
     }
   };
 
@@ -186,89 +173,37 @@ const Subscription = () => {
                     </div>
                     <Progress value={calculateProgress()} className="h-2" />
                   </div>
-                </div>
 
-                {/* Quick Actions */}
-                <div className="border-t grid grid-cols-2 divide-x">
-                  <Button 
-                    variant="ghost" 
-                    className="p-3 h-auto flex items-center justify-center gap-2 rounded-none"
-                    onClick={() => {
-                      toast.custom((t) => (
-                        <ConfirmDialog
-                          open={true}
-                          onOpenChange={() => toast.dismiss(t)}
-                          title="Renew Subscription"
-                          description="Are you sure you want to renew your subscription? This will extend your current plan for another period."
-                          actionLabel="Renew"
-                          onConfirm={handleRenewSubscription}
-                        />
-                      ));
-                    }}
-                    disabled={isRenewing}
-                  >
-                    {isRenewing ? (
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    <span>Renew</span>
-                  </Button>
+                  {/* Quick Actions */}
+                  <div className="border-t flex divide-x">
+                    <Button 
+                      variant="ghost" 
+                      className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none hover:bg-muted/50"
+                      onClick={() => setShowRenewDialog(true)}
+                      disabled={isRenewing}
+                    >
+                      {isRenewing ? (
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      <span className="font-medium">Renew</span>
+                    </Button>
 
-                  <Button 
-                    variant="ghost" 
-                    className="p-3 h-auto flex items-center justify-center gap-2 rounded-none text-destructive hover:text-destructive"
-                    onClick={() => {
-                      toast.custom((t) => (
-                        <ConfirmDialog
-                          open={true}
-                          onOpenChange={() => toast.dismiss(t)}
-                          title="Cancel Subscription"
-                          description="We're sorry to see you go. Please help us understand why you're cancelling."
-                          actionLabel="Cancel Subscription"
-                          variant="destructive"
-                          fields={[
-                            {
-                              type: 'select',
-                              name: 'reason',
-                              label: 'Reason for cancellation',
-                              placeholder: 'Select a reason',
-                              options: CANCELLATION_REASONS,
-                              required: true
-                            },
-                            {
-                              type: 'textarea',
-                              name: 'feedback',
-                              label: 'Additional feedback',
-                              placeholder: 'Please provide any additional feedback (optional)'
-                            }
-                          ]}
-                          onConfirm={async (data) => {
-                            try {
-                              setCancelling(true);
-                              await workstationService.cancelSubscription(subscription.id, data);
-                              queryClient.invalidateQueries(['current-subscription']);
-                              toast.success('Subscription cancelled successfully');
-                            } catch (error: any) {
-                              toast.error('Failed to cancel subscription', {
-                                description: error.response?.data?.message || 'Please try again'
-                              });
-                            } finally {
-                              setCancelling(false);
-                            }
-                          }}
-                        />
-                      ));
-                    }}
-                    disabled={isCancelling}
-                  >
-                    {isCancelling ? (
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                    <span>Cancel</span>
-                  </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none text-destructive hover:bg-destructive/5 hover:text-destructive"
+                      onClick={() => setShowCancelDialog(true)}
+                      disabled={isCancelling}
+                    >
+                      {isCancelling ? (
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                      <span className="font-medium">Cancel</span>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -557,6 +492,64 @@ const Subscription = () => {
           setSelectedPlan(null);
         }}
         onSubscribe={handlePlanChange}
+      />
+
+      <ConfirmDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Cancel Subscription"
+        description="We're sorry to see you go. Please help us understand why you're cancelling."
+        actionLabel="Cancel Subscription"
+        variant="destructive"
+        fields={[
+          {
+            type: 'select',
+            name: 'reason',
+            label: 'Reason for cancellation',
+            placeholder: 'Select a reason',
+            options: CANCELLATION_REASONS,
+            required: true
+          },
+          {
+            type: 'textarea',
+            name: 'feedback',
+            label: 'Additional feedback',
+            placeholder: 'Please provide any additional feedback (optional)'
+          }
+        ]}
+        onConfirm={async (data) => {
+          if (!data?.reason) {
+            toast.error('Please select a reason for cancellation');
+            return;
+          }
+
+          try {
+            setCancelling(true);
+            await workstationService.cancelSubscription(subscription.id, {
+              reason: data.reason,
+              feedback: data.feedback
+            });
+            
+            queryClient.invalidateQueries(['current-subscription']);
+            toast.success('Subscription cancelled successfully');
+            setShowCancelDialog(false);
+          } catch (error: any) {
+            toast.error('Failed to cancel subscription', {
+              description: error.response?.data?.message || 'Please try again'
+            });
+          } finally {
+            setCancelling(false);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={showRenewDialog}
+        onOpenChange={setShowRenewDialog}
+        title="Renew Subscription"
+        description="Are you sure you want to renew your subscription? This will extend your current plan for another period."
+        actionLabel="Renew"
+        onConfirm={handleRenewSubscription}
       />
     </div>
   );

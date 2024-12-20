@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 interface ConfirmDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onConfirm: (data?: any) => void;
   title: string;
   description: string;
@@ -33,8 +33,8 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  isOpen,
-  onClose,
+  open,
+  onOpenChange,
   onConfirm,
   title,
   description,
@@ -46,11 +46,11 @@ export function ConfirmDialog({
 
   const handleConfirm = () => {
     onConfirm(formData);
-    onClose();
+    onOpenChange(false);
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -102,7 +102,7 @@ export function ConfirmDialog({
           <AlertDialogAction 
             onClick={handleConfirm}
             className={cn(
-              variant === 'destructive' && 'bg-destructive hover:bg-destructive/90'
+              variant === 'destructive' && 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
             )}
           >
             {actionLabel}
