@@ -90,32 +90,37 @@ class WorkstationController extends Controller
 
                     // Determine start and end dates
                     if ($currentStartDate > $now) {
-                        // If start date is in future, keep it
                         $startDate = $currentStartDate;
                         $endDate = clone $currentEndDate;
                         $endDate->modify("+ {$plan->duration_days} days");
                     } elseif ($currentEndDate > $now) {
-                        // If only end date is in future
                         $startDate = $currentEndDate;
                         $endDate = clone $startDate;
                         $endDate->modify("+ {$plan->duration_days} days");
                     } else {
-                        // Both dates are past
                         $startDate = $now;
                         $endDate = clone $startDate;
                         $endDate->modify("+ {$plan->duration_days} days");
                     }
 
-                    // Adjust amount based on remaining value
-                    $finalAmount = max(0, $newAmount - $remainingValue);
+                    // Calculate final amount considering remaining value
+                    $finalAmount = $newAmount - $remainingValue;
 
-                    // Check wallet balance
-                    if ($user->wallet_balance < $finalAmount) {
-                        return response()->json([
-                            'message' => 'Insufficient wallet balance',
-                            'error' => 'Please top up your wallet to continue'
-                        ], 400);
+                    // Handle wallet adjustment
+                    if ($finalAmount > 0) {
+                        // For upgrades - check wallet balance and deduct
+                        if ($user->wallet_balance < $finalAmount) {
+                            return response()->json([
+                                'message' => 'Insufficient wallet balance',
+                                'error' => 'Please top up your wallet to continue'
+                            ], 400);
+                        }
+                        $user->wallet_balance -= $finalAmount;
+                    } else {
+                        // For downgrades - credit the difference back to wallet
+                        $user->wallet_balance += abs($finalAmount);
                     }
+                    $user->save();
 
                     // Update existing subscription
                     $currentSubscription->update([
@@ -128,42 +133,37 @@ class WorkstationController extends Controller
 
                     $subscription = $currentSubscription;
 
-                    // Only create payment and transaction if there's an amount to pay
-                    if ($finalAmount > 0) {
-                        // Deduct from wallet
-                        $user->wallet_balance -= $finalAmount;
-                        $user->save();
+                    // Create transaction record for the adjustment
+                    $transaction = Transaction::create([
+                        'user_id' => $user->id,
+                        'amount' => abs($finalAmount),
+                        'type' => $finalAmount > 0 ? 'debit' : 'credit',
+                        'description' => "Plan " . ($finalAmount > 0 ? "upgrade" : "downgrade") . " to {$plan->name}",
+                        'category' => 'workstation_subscription',
+                        'status' => 'completed',
+                        'payment_method' => 'wallet',
+                        'reference_number' => $subscription->tracking_code,
+                        'notes' => json_encode([
+                            'subscription_id' => $subscription->id,
+                            'old_plan' => $currentPlan->name,
+                            'new_plan' => $plan->name,
+                            'payment_type' => $request->payment_type,
+                            'duration' => $plan->duration_days . ' days',
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date' => $endDate->format('Y-m-d'),
+                            'remaining_value' => $remainingValue,
+                            'final_amount' => $finalAmount
+                        ])
+                    ]);
 
-                        // Create payment record
+                    // Create payment record only if there's a debit
+                    if ($finalAmount > 0) {
                         $payment = $subscription->payments()->create([
                             'amount' => $finalAmount,
                             'type' => $request->payment_type,
                             'installment_number' => $request->payment_type === 'installment' ? 1 : null,
                             'due_date' => now(),
                             'status' => 'paid'
-                        ]);
-
-                        // Create transaction record
-                        $transaction = Transaction::create([
-                            'user_id' => $user->id,
-                            'amount' => $finalAmount,
-                            'type' => 'debit',
-                            'description' => "Plan " . ($plan->price > $currentPlan->price ? "upgrade" : "downgrade") . " to {$plan->name}",
-                            'category' => 'workstation_subscription',
-                            'status' => 'completed',
-                            'payment_method' => 'wallet',
-                            'reference_number' => $subscription->tracking_code,
-                            'notes' => json_encode([
-                                'subscription_id' => $subscription->id,
-                                'old_plan' => $currentPlan->name,
-                                'new_plan' => $plan->name,
-                                'payment_type' => $request->payment_type,
-                                'duration' => $plan->duration_days . ' days',
-                                'start_date' => $startDate->format('Y-m-d'),
-                                'end_date' => $endDate->format('Y-m-d'),
-                                'remaining_value' => $remainingValue,
-                                'final_amount' => $finalAmount
-                            ])
                         ]);
                     }
                 } else {

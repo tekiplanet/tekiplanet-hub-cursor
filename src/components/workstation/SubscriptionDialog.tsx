@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { WorkstationPlan, WorkstationSubscription } from "@/services/workstationService";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, calculatePlanChange } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CreditCard, ArrowRight, Building2 } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -16,39 +16,13 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { comparePlans } from "@/lib/utils";
 
-const calculateRemainingValue = (subscription: WorkstationSubscription) => {
-  const now = new Date();
-  const endDate = new Date(subscription.end_date);
-  const startDate = new Date(subscription.start_date);
-  
-  // For future subscriptions, calculate from start date to end date
-  if (startDate > now) {
-    const totalDuration = endDate.getTime() - startDate.getTime();
-    const totalDays = totalDuration / (1000 * 60 * 60 * 24);
-    return subscription.total_amount; // Return full amount for future subscriptions
-  }
-  
-  // For current subscriptions, calculate remaining days from now
-  if (now <= endDate) {
-    const remainingDuration = endDate.getTime() - now.getTime();
-    const totalDuration = endDate.getTime() - startDate.getTime();
-    const remainingDays = remainingDuration / (1000 * 60 * 60 * 24);
-    const totalDays = totalDuration / (1000 * 60 * 60 * 24);
-    
-    // Calculate prorated amount based on remaining days
-    return (remainingDays / totalDays) * subscription.total_amount;
-  }
-  
-  // If subscription has ended, no remaining value
-  return 0;
-};
-
 interface SubscriptionDialogProps {
   plan: WorkstationPlan | null;
   currentSubscription?: WorkstationSubscription | null;
   isOpen: boolean;
   onClose: () => void;
   onSubscribe: (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => void;
+  action: 'upgrade' | 'downgrade' | 'subscribe' | 'change';
 }
 
 export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
@@ -56,7 +30,8 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   currentSubscription,
   isOpen,
   onClose,
-  onSubscribe
+  onSubscribe,
+  action
 }) => {
   const user = useAuthStore(state => state.user);
   const [step, setStep] = useState(1);
@@ -77,10 +52,6 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     { number: 2, title: "Payment Option", icon: CreditCard },
     { number: 3, title: "Start Date", icon: CalendarIcon },
   ];
-
-  const action = currentSubscription 
-    ? comparePlans(currentSubscription.plan.duration_days, plan?.duration_days || 0)
-    : 'subscribe';
 
   const isUpgrade = action === 'upgrade';
   const isDowngrade = action === 'downgrade';
@@ -129,26 +100,24 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     }
   };
 
-  // Use the function to calculate remaining value
-  const remainingValue = currentSubscription 
-    ? calculateRemainingValue(currentSubscription) 
-    : 0;
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {isUpgrade ? 'Upgrade to ' : isDowngrade ? 'Downgrade to ' : 'Subscribe to '} 
+            {currentSubscription ? (
+              action === 'upgrade' ? 'Upgrade to ' :
+              action === 'downgrade' ? 'Downgrade to ' : 
+              'Change to '
+            ) : 'Subscribe to '} 
             {plan?.name}
           </DialogTitle>
           <DialogDescription>
-            {isUpgrade 
-              ? 'Upgrade your current subscription for better features'
-              : isDowngrade 
-                ? 'Downgrade your subscription to a more basic plan'
-                : 'Complete the following steps to activate your subscription'
-            }
+            {currentSubscription ? (
+              action === 'upgrade' ? 'Upgrade your current subscription for better features' :
+              action === 'downgrade' ? 'Downgrade your subscription to a more basic plan' :
+              'Change your current subscription plan'
+            ) : 'Complete the following steps to activate your subscription'}
           </DialogDescription>
         </DialogHeader>
 
@@ -221,6 +190,35 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                       )}
                     </ul>
                   </div>
+
+                  {currentSubscription && plan && (
+                    <div className="p-4 rounded-lg border bg-muted/50">
+                      <h4 className="font-medium mb-3">Plan Change Calculation</h4>
+                      {(() => {
+                        const calculation = calculatePlanChange(currentSubscription, plan);
+                        return calculation ? (
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>New Plan Cost:</span>
+                              <span>{formatCurrency(calculation.newPlanCost)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Current Plan Remaining Value:</span>
+                              <span className="text-red-500">
+                                -{formatCurrency(calculation.remainingValue)}
+                              </span>
+                            </div>
+                            <div className="border-t pt-2 font-medium flex justify-between">
+                              <span>{calculation.finalAmount > 0 ? 'Amount to Pay:' : 'Amount to Refund:'}</span>
+                              <span className={calculation.finalAmount > 0 ? '' : 'text-green-500'}>
+                                {formatCurrency(Math.abs(calculation.finalAmount))}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -316,11 +314,17 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   <div className="mt-6 p-4 rounded-lg border bg-muted/50">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium">Wallet Balance:</span>
-                      <span className="font-medium">{formatCurrency(walletBalance)}</span>
+                      <span className="font-medium">{formatCurrency(user?.wallet_balance || 0)}</span>
                     </div>
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-sm font-medium">Payment Amount:</span>
-                      <span className="font-medium">{formatCurrency(paymentAmount || 0)}</span>
+                      <span className="text-sm font-medium">Amount to Pay:</span>
+                      <span className="font-medium">
+                        {formatCurrency(
+                          currentSubscription && plan
+                            ? Math.max(0, calculatePlanChange(currentSubscription, plan)?.finalAmount || 0)
+                            : paymentAmount || 0
+                        )}
+                      </span>
                     </div>
                     {!hasEnoughBalance && (
                       <div className="text-sm text-destructive flex items-center gap-2">
@@ -335,30 +339,6 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                       </div>
                     )}
                   </div>
-
-                  {currentSubscription && (
-                    <div className="space-y-4 mt-4">
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <h4 className="font-medium mb-2">Plan Change Calculation</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>New Plan Cost:</span>
-                            <span>{formatCurrency(paymentAmount || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Current Plan Remaining Value:</span>
-                            <span className="text-red-500">
-                              -{formatCurrency(remainingValue)}
-                            </span>
-                          </div>
-                          <div className="border-t pt-2 font-medium flex justify-between">
-                            <span>Amount to Pay:</span>
-                            <span>{formatCurrency(Math.max(0, (paymentAmount || 0) - remainingValue))}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </motion.div>
@@ -394,7 +374,13 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </>
             ) : (
               <>
-                {step === 3 ? 'Proceed to Payment' : 'Next'}
+                {step === 3 ? (
+                  currentSubscription ? (
+                    action === 'upgrade' ? 'Confirm Upgrade' :
+                    action === 'downgrade' ? 'Confirm Downgrade' :
+                    'Confirm Change'
+                  ) : 'Proceed to Payment'
+                ) : 'Next'}
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

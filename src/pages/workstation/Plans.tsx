@@ -304,12 +304,14 @@ const Plans = () => {
 
       <SubscriptionDialog 
         plan={plans?.find(p => p.id === selectedPlan) ?? null}
+        currentSubscription={currentSubscription}
         isOpen={showDialog}
         onClose={() => {
           setShowDialog(false);
           setSelectedPlan(null);
         }}
         onSubscribe={handleSubscribe}
+        action={selectedPlan ? getSubscriptionAction(plans?.find(p => p.id === selectedPlan)!) : 'subscribe'}
       />
     </div>
   );
