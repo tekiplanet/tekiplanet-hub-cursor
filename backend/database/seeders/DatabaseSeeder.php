@@ -45,6 +45,9 @@ class DatabaseSeeder extends Seeder
             ConsultingSettingsSeeder::class,
             ConsultingTimeSlotsSeeder::class,
             ProfessionalsTableSeeder::class,
+            ConsultingBookingsSeeder::class,
+            ConsultingReviewsSeeder::class,
+            ConsultingNotificationsSeeder::class
         ]);
     }
 }
