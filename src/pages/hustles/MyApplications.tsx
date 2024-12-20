@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { hustleService } from '@/services/hustleService';
 import { formatCurrency, formatDate, formatShortDate, cn } from '@/lib/utils';
+import WithdrawApplicationDialog from '@/components/hustles/WithdrawApplicationDialog';
 
 const MyApplications = () => {
   const navigate = useNavigate();
@@ -26,6 +27,16 @@ const MyApplications = () => {
   const { data: applications, isLoading } = useQuery({
     queryKey: ['my-applications'],
     queryFn: hustleService.getMyApplications
+  });
+
+  const [withdrawalDialog, setWithdrawalDialog] = React.useState<{
+    isOpen: boolean;
+    applicationId: string | null;
+    hustleTitle: string;
+  }>({
+    isOpen: false,
+    applicationId: null,
+    hustleTitle: ''
   });
 
   const withdrawMutation = useMutation({
@@ -38,6 +49,24 @@ const MyApplications = () => {
       toast.error('Failed to withdraw application');
     }
   });
+
+  const handleWithdraw = (applicationId: string, hustleTitle: string) => {
+    setWithdrawalDialog({
+      isOpen: true,
+      applicationId,
+      hustleTitle
+    });
+  };
+
+  const handleConfirmWithdraw = () => {
+    if (withdrawalDialog.applicationId) {
+      withdrawMutation.mutate(withdrawalDialog.applicationId, {
+        onSuccess: () => {
+          setWithdrawalDialog({ isOpen: false, applicationId: null, hustleTitle: '' });
+        }
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -144,18 +173,11 @@ const MyApplications = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => withdrawMutation.mutate(application.id)}
-                      disabled={withdrawMutation.isPending}
+                      onClick={() => handleWithdraw(application.id, application.hustle.title)}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      {withdrawMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Withdraw
-                        </>
-                      )}
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Withdraw
                     </Button>
                   )}
                 </div>
@@ -190,6 +212,14 @@ const MyApplications = () => {
           )}
         </div>
       </div>
+
+      <WithdrawApplicationDialog
+        isOpen={withdrawalDialog.isOpen}
+        onClose={() => setWithdrawalDialog({ isOpen: false, applicationId: null, hustleTitle: '' })}
+        onConfirm={handleConfirmWithdraw}
+        isLoading={withdrawMutation.isPending}
+        hustleTitle={withdrawalDialog.hustleTitle}
+      />
     </ScrollArea>
   );
 };
