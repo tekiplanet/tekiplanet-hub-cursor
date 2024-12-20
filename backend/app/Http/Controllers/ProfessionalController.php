@@ -40,7 +40,7 @@ class ProfessionalController extends Controller
                 'category_id' => 'required|exists:professional_categories,id',
                 'expertise_areas' => 'required|array',
                 'years_of_experience' => 'required|integer|min:0',
-                'hourly_rate' => 'required|numeric|min:0',
+                // 'hourly_rate' => 'required|numeric|min:0',
                 'bio' => 'nullable|string',
                 'certifications' => 'nullable|array',
                 'linkedin_url' => 'nullable|url',

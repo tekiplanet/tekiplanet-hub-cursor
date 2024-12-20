@@ -24,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
 import { professionalService } from "@/services/professionalService";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -48,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { useState as useHookState } from "react";
 import { Search } from "lucide-react";
 import { TagInput } from "@/components/ui/tag-input";
+import { toast } from "sonner";
 
 // Form schemas for each step
 const basicInfoSchema = z.object({
@@ -115,8 +115,8 @@ interface Category {
 const CreateProfileForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading, error } = useQuery<ProfessionalCategory[]>({
@@ -124,12 +124,8 @@ const CreateProfileForm = () => {
     queryFn: professionalCategoryService.getCategories,
     staleTime: 5 * 60 * 1000,
     select: (data) => data.filter(category => category.is_active),
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to load categories. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to load categories. Please try again.");
     }
   });
 
@@ -171,49 +167,39 @@ const CreateProfileForm = () => {
       await currentForm.trigger();
       
       if (!currentForm.formState.isValid) {
-        toast({
-          title: "Validation Error",
-          description: "Please fill in all required fields correctly before proceeding.",
-          variant: "destructive",
-        });
+        toast.error("Please fill in all required fields correctly before proceeding.");
         return;
       }
 
-    setFormData((prev) => ({ ...prev, ...data }));
-    
-    if (currentStep === steps.length - 1) {
-      try {
-        const completeData = {
-          ...formData,
-          ...data,
-          availability_status: "available",
-        };
+      setFormData((prev) => ({ ...prev, ...data }));
+      
+      if (currentStep === steps.length - 1) {
+        setIsSubmitting(true);
+        try {
+          const completeData = {
+            ...formData,
+            ...data,
+            availability_status: "available",
+          };
 
-        await professionalService.createProfile(completeData);
-        
-        toast({
-          title: "Profile Created",
-          description: "Your professional profile has been created successfully.",
-        });
-
-        navigate("/dashboard/professional");
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to create profile. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      setCurrentStep((prev) => prev + 1);
+          await professionalService.createProfile(completeData);
+          
+          toast.success("Professional profile created successfully! You can now access professional features.");
+          
+          navigate("/dashboard", { 
+            replace: true
+          });
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || "Failed to create profile. Please try again.");
+        } finally {
+          setIsSubmitting(false);
+        }
+      } else {
+        setCurrentStep((prev) => prev + 1);
       }
     } catch (error) {
       console.error('Form validation error:', error);
-      toast({
-        title: "Validation Error",
-        description: "Please check all required fields and try again.",
-        variant: "destructive",
-      });
+      toast.error("Please check all required fields and try again.");
     }
   };
 
@@ -646,8 +632,40 @@ const CreateProfileForm = () => {
                     >
                       Previous
                     </Button>
-                    <Button type="submit">
-                      {currentStep === steps.length - 1 ? "Create Profile" : "Next"}
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="min-w-[100px]"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Creating...
+                        </>
+                      ) : currentStep === steps.length - 1 ? (
+                        "Create Profile"
+                      ) : (
+                        "Next"
+                      )}
                     </Button>
                   </div>
                 </form>

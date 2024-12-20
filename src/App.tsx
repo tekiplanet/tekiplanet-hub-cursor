@@ -2,8 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from '@/store/useAuthStore';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from 'react-hot-toast';
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from 'sonner';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import PagePreloader from '@/components/ui/PagePreloader';
 import { LoadingProvider, useLoading } from '@/context/LoadingContext';
@@ -143,7 +142,6 @@ const AppContent = () => {
         </Routes>
       </Suspense>
       <Toaster />
-      <Sonner />
     </Router>
   );
 };
