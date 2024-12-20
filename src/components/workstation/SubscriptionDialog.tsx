@@ -303,6 +303,30 @@ export function SubscriptionDialog({
                       </div>
                     )}
                   </div>
+
+                  {currentSubscription && (
+                    <div className="space-y-4 mt-4">
+                      <div className="p-4 rounded-lg bg-muted/50">
+                        <h4 className="font-medium mb-2">Plan Change Calculation</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>New Plan Cost:</span>
+                            <span>{formatCurrency(paymentAmount || 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Current Plan Remaining Value:</span>
+                            <span className="text-red-500">
+                              -{formatCurrency(calculateRemainingValue(currentSubscription))}
+                            </span>
+                          </div>
+                          <div className="border-t pt-2 font-medium flex justify-between">
+                            <span>Amount to Pay:</span>
+                            <span>{formatCurrency(Math.max(0, (paymentAmount || 0) - calculateRemainingValue(currentSubscription)))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

@@ -15,18 +15,33 @@ import {
   ChevronRight,
   Building2,
   History,
-  Download
+  Download,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, comparePlans } from "@/lib/utils";
 import { workstationService } from "@/services/workstationService";
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
+import { SubscriptionDialog } from "@/components/workstation/SubscriptionDialog";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 const Subscription = () => {
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['workstation-subscription'],
     queryFn: workstationService.getCurrentSubscription
+  });
+
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: plans } = useQuery({
+    queryKey: ['workstation-plans'],
+    queryFn: workstationService.getPlans
   });
 
   const statusColors = {
@@ -44,6 +59,25 @@ const Subscription = () => {
     const now = new Date().getTime();
     const progress = ((now - start) / (end - start)) * 100;
     return Math.min(Math.max(progress, 0), 100);
+  };
+
+  const handlePlanChange = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => {
+    try {
+      const response = await workstationService.createSubscription(planId, paymentType, startDate, isUpgrade);
+      
+      setShowUpgradeDialog(false);
+      
+      toast.success(response.message || 'Plan updated successfully!', {
+        description: response.subscription.plan.name
+      });
+      
+      queryClient.invalidateQueries(['current-subscription']);
+    } catch (error: any) {
+      console.error('Plan change error:', error);
+      toast.error('Failed to change plan', {
+        description: error.response?.data?.message || 'Please try again'
+      });
+    }
   };
 
   if (isLoading) {
@@ -119,6 +153,40 @@ const Subscription = () => {
                     <Download className="h-4 w-4" />
                     <span className="text-xs">Invoice</span>
                   </Button>
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  {plans?.map(plan => {
+                    if (plan.duration_days === subscription.plan.duration_days) return null;
+                    
+                    const action = comparePlans(subscription.plan.duration_days, plan.duration_days);
+                    const isUpgrade = action === 'upgrade';
+                    
+                    return (
+                      <Button
+                        key={plan.id}
+                        variant={isUpgrade ? "default" : "outline"}
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          setSelectedPlan(plan.id);
+                          setShowUpgradeDialog(true);
+                        }}
+                      >
+                        {isUpgrade ? (
+                          <>
+                            <ArrowUpCircle className="w-4 h-4" />
+                            Upgrade to {plan.name}
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDownCircle className="w-4 h-4" />
+                            Downgrade to {plan.name}
+                          </>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -228,6 +296,17 @@ const Subscription = () => {
           </motion.div>
         </div>
       )}
+
+      <SubscriptionDialog 
+        plan={plans?.find(p => p.id === selectedPlan) ?? null}
+        currentSubscription={subscription}
+        isOpen={showUpgradeDialog}
+        onClose={() => {
+          setShowUpgradeDialog(false);
+          setSelectedPlan(null);
+        }}
+        onSubscribe={handlePlanChange}
+      />
     </div>
   );
 };
