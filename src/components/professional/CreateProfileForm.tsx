@@ -51,25 +51,36 @@ import { TagInput } from "@/components/ui/tag-input";
 
 // Form schemas for each step
 const basicInfoSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, "Professional title is required"),
   category_id: z.string().min(1, "Category is required"),
   specialization: z.string().min(1, "Specialization is required"),
-  years_of_experience: z.string().transform(Number),
-  bio: z.string().optional(),
+  years_of_experience: z.string()
+    .min(1, "Years of experience is required")
+    .transform(Number)
+    .refine((val) => val >= 0, "Years must be 0 or greater"),
+  bio: z.string().min(10, "Bio must be at least 10 characters long"),
 });
 
 const expertiseSchema = z.object({
-  expertise_areas: z.array(z.string()).min(1, "At least one expertise area is required"),
-  languages: z.array(z.string()).min(1, "At least one language is required"),
-  certifications: z.array(z.string()).optional(),
+  expertise_areas: z.array(z.string())
+    .min(1, "At least one area of expertise is required")
+    .refine((val) => val.length > 0, "Please add at least one expertise area"),
+  languages: z.array(z.string())
+    .min(1, "At least one language is required")
+    .refine((val) => val.length > 0, "Please add at least one language"),
+  certifications: z.array(z.string())
+    .min(1, "At least one certification is required")
+    .refine((val) => val.length > 0, "Please add at least one certification"),
 });
 
 const contactSchema = z.object({
-  preferred_contact_method: z.enum(["email", "phone", "whatsapp"]),
+  preferred_contact_method: z.enum(["email", "phone", "whatsapp"], {
+    required_error: "Please select a preferred contact method",
+  }),
   timezone: z.string().min(1, "Timezone is required"),
-  linkedin_url: z.string().url().optional().or(z.literal("")),
-  github_url: z.string().url().optional().or(z.literal("")),
-  portfolio_url: z.string().url().optional().or(z.literal("")),
+  portfolio_url: z.string().url("Please enter a valid URL").min(1, "Portfolio URL is required"),
+  linkedin_url: z.string().optional(),
+  github_url: z.string().optional(),
 });
 
 // Form steps
@@ -155,6 +166,19 @@ const CreateProfileForm = () => {
   });
 
   const handleNext = async (data: any) => {
+    try {
+      // Validate current step before proceeding
+      await currentForm.trigger();
+      
+      if (!currentForm.formState.isValid) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields correctly before proceeding.",
+          variant: "destructive",
+        });
+        return;
+      }
+
     setFormData((prev) => ({ ...prev, ...data }));
     
     if (currentStep === steps.length - 1) {
@@ -182,6 +206,14 @@ const CreateProfileForm = () => {
       }
     } else {
       setCurrentStep((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error('Form validation error:', error);
+      toast({
+        title: "Validation Error",
+        description: "Please check all required fields and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -263,7 +295,10 @@ const CreateProfileForm = () => {
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Professional Title</FormLabel>
+                            <FormLabel className="flex items-center gap-1">
+                              Professional Title
+                              <span className="text-destructive">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input placeholder="e.g. Senior Software Engineer" {...field} />
                             </FormControl>
