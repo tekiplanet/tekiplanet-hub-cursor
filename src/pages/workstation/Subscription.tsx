@@ -47,6 +47,8 @@ import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useNavigate } from "react-router-dom";
+import PagePreloader from "@/components/ui/PagePreloader";
 
 const CANCELLATION_REASONS = [
   { label: 'No longer need the service', value: 'no_need' },
@@ -128,10 +130,39 @@ const Subscription = () => {
     }
   };
 
+  const navigate = useNavigate();
+
   if (isLoading) {
+    return <PagePreloader />;
+  }
+
+  if (!subscription) {
     return (
-      <div className="container mx-auto p-4 animate-pulse">
-        {/* Add loading skeleton here */}
+      <div className="container mx-auto p-4 max-w-7xl">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg p-4 -mx-4 mb-6"
+        >
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Workstation</h1>
+          </div>
+        </motion.div>
+
+        <div className="text-center py-12">
+          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">No Active Subscription</h2>
+          <p className="text-muted-foreground mb-6">
+            You don't have an active workstation subscription. Choose a plan to get started.
+          </p>
+          <Button 
+            onClick={() => navigate('/dashboard/workstation/plans')} 
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Get Started
+          </Button>
+        </div>
       </div>
     );
   }

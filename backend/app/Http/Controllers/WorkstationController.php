@@ -63,85 +63,77 @@ class WorkstationController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if ($currentSubscription) {
-                // Handle upgrade/downgrade
-                $currentPlan = $currentSubscription->plan;
-                
-                // Calculate remaining value of current subscription
-                $remainingDays = now()->diffInDays($currentSubscription->end_date);
-                $dailyRate = $currentSubscription->total_amount / $currentPlan->duration_days;
-                $remainingValue = $dailyRate * $remainingDays;
+            \DB::beginTransaction();
+            try {
+                if ($currentSubscription) {
+                    // Handle upgrade/downgrade logic...
+                } else {
+                    // Create new subscription
+                    $startDate = $request->start_date ? new \DateTime($request->start_date) : now();
+                    $endDate = clone $startDate;
+                    $endDate->modify("+ {$plan->duration_days} days");
 
-                // Calculate new subscription cost
-                $newAmount = $request->payment_type === 'full' 
-                    ? $plan->price 
-                    : $plan->installment_amount;
+                    $amount = $request->payment_type === 'full' ? $plan->price : $plan->installment_amount;
 
-                // Adjust amount based on remaining value
-                $finalAmount = max(0, $newAmount - $remainingValue);
-
-                \DB::beginTransaction();
-                try {
-                    // Update existing subscription
-                    $currentSubscription->update([
+                    // Create subscription
+                    $subscription = WorkstationSubscription::create([
+                        'user_id' => $user->id,
                         'plan_id' => $plan->id,
-                        'total_amount' => $newAmount,
+                        'tracking_code' => Str::random(10),
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                        'total_amount' => $amount,
                         'payment_type' => $request->payment_type,
-                        'end_date' => $request->start_date 
-                            ? date('Y-m-d', strtotime($request->start_date . " + {$plan->duration_days} days"))
-                            : date('Y-m-d', strtotime("+ {$plan->duration_days} days")),
+                        'status' => 'active',
+                        'auto_renew' => false
                     ]);
 
-                    // Create payment record for the difference
-                    if ($finalAmount > 0) {
-                        // Deduct from wallet
-                        $user->wallet_balance -= $finalAmount;
-                        $user->save();
+                    // Deduct from wallet
+                    $user->wallet_balance -= $amount;
+                    $user->save();
 
-                        // Create payment record
-                        $payment = $currentSubscription->payments()->create([
-                            'amount' => $finalAmount,
-                            'type' => $request->payment_type,
-                            'installment_number' => $request->payment_type === 'installment' ? 1 : null,
-                            'due_date' => now(),
-                            'status' => 'paid'
-                        ]);
-
-                        // Create transaction record for the upgrade/downgrade
-                        Transaction::create([
-                            'user_id' => $user->id,
-                            'amount' => $finalAmount,
-                            'type' => 'debit',
-                            'description' => "Plan " . ($finalAmount > 0 ? "upgrade" : "downgrade") . " to {$plan->name}",
-                            'category' => 'workstation_subscription',
-                            'status' => 'completed',
-                            'payment_method' => 'wallet',
-                            'reference_number' => $currentSubscription->tracking_code,
-                            'notes' => json_encode([
-                                'subscription_id' => $currentSubscription->id,
-                                'old_plan' => $currentPlan->name,
-                                'new_plan' => $plan->name,
-                                'payment_type' => $request->payment_type,
-                                'duration' => $plan->duration_days . ' days',
-                                'start_date' => $currentSubscription->start_date,
-                                'end_date' => $currentSubscription->end_date
-                            ])
-                        ]);
-                    }
-
-                    \DB::commit();
-
-                    return response()->json([
-                        'message' => 'Subscription updated successfully',
-                        'subscription' => $currentSubscription->load('plan', 'payments')
+                    // Create payment record
+                    $payment = $subscription->payments()->create([
+                        'amount' => $amount,
+                        'type' => $request->payment_type,
+                        'installment_number' => $request->payment_type === 'installment' ? 1 : null,
+                        'due_date' => now(),
+                        'status' => 'paid'
                     ]);
-                } catch (\Exception $e) {
-                    \DB::rollBack();
-                    throw $e;
+
+                    // Create transaction record
+                    $transaction = Transaction::create([
+                        'user_id' => $user->id,
+                        'amount' => $amount,
+                        'type' => 'debit',
+                        'description' => "Workstation subscription - {$plan->name}",
+                        'category' => 'workstation_subscription',
+                        'status' => 'completed',
+                        'payment_method' => 'wallet',
+                        'reference_number' => $subscription->tracking_code,
+                        'notes' => json_encode([
+                            'subscription_id' => $subscription->id,
+                            'plan_name' => $plan->name,
+                            'payment_type' => $request->payment_type,
+                            'duration' => $plan->duration_days . ' days',
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date' => $endDate->format('Y-m-d')
+                        ])
+                    ]);
                 }
-            }
 
-            // Handle new subscription creation (existing code)
+                \DB::commit();
+
+                return response()->json([
+                    'message' => 'Subscription created successfully',
+                    'subscription' => $subscription->load('plan', 'payments'),
+                    'transaction_reference' => $transaction->reference_number
+                ]);
+
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                throw $e;
+            }
         } catch (\Exception $e) {
             \Log::error('Subscription creation failed:', [
                 'error' => $e->getMessage(),
@@ -173,7 +165,7 @@ class WorkstationController extends Controller
                 'duration' => 'nullable|string|in:same,3,6,12'
             ]);
 
-            // Calculate new end date based on duration
+            // Calculate new end date based on duration, starting from current end_date
             $durationDays = match($request->duration) {
                 '3' => 90,
                 '6' => 180,
@@ -181,14 +173,15 @@ class WorkstationController extends Controller
                 default => $subscription->plan->duration_days
             };
 
+            // Use end_date as the starting point for renewal
             $newEndDate = date('Y-m-d', strtotime($subscription->end_date . " + {$durationDays} days"));
 
             // Calculate price with discount
             $basePrice = $subscription->plan->price;
             $discount = match($request->duration) {
-                '3' => 0.10, // 10% off
-                '6' => 0.15, // 15% off
-                '12' => 0.20, // 20% off
+                '3' => 0.10,
+                '6' => 0.15,
+                '12' => 0.20,
                 default => 0
             };
             
@@ -200,7 +193,7 @@ class WorkstationController extends Controller
                 'status' => 'active'
             ]);
 
-            // Create a payment record for the renewal
+            // Create payment record
             $subscription->payments()->create([
                 'amount' => $finalPrice,
                 'type' => 'full',
