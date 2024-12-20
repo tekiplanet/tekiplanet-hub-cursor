@@ -80,8 +80,14 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
     if (step > 1) setStep(step - 1);
   };
 
+  const handleClose = () => {
+    if (!isProcessing) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Subscribe to {plan.name}</DialogTitle>

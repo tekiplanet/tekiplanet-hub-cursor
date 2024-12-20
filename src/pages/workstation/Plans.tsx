@@ -22,6 +22,11 @@ const Plans = () => {
     queryFn: workstationService.getPlans
   });
 
+  const { data: currentSubscription } = useQuery({
+    queryKey: ['current-subscription'],
+    queryFn: workstationService.getCurrentSubscription
+  });
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -39,7 +44,6 @@ const Plans = () => {
 
   const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => {
     try {
-      // Create subscription
       const response = await workstationService.createSubscription(planId, paymentType, startDate);
       
       // Only close dialog after successful subscription
@@ -52,10 +56,27 @@ const Plans = () => {
       navigate('/dashboard/workstation/subscription', {
         state: { transactionId: response.transaction.id }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Subscription error:', error);
-      // Don't close dialog, let user try again
-      throw error; // Re-throw to be handled by the dialog
+      
+      // Handle existing subscription error
+      if (error.response?.status === 400 && error.response?.data?.subscription) {
+        toast.error('Subscription Failed', {
+          description: error.response.data.message,
+          action: {
+            label: 'View Subscription',
+            onClick: () => navigate('/dashboard/workstation/subscription')
+          }
+        });
+        setShowDialog(false); // Close dialog as user already has a subscription
+      } else {
+        // For other errors, keep dialog open and show error
+        toast.error('Failed to process subscription', {
+          description: error.response?.data?.message || 'Please try again'
+        });
+      }
+      
+      throw error;
     }
   };
 
@@ -106,6 +127,25 @@ const Plans = () => {
             </p>
           </div>
         </motion.div>
+
+        {currentSubscription && (
+          <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Active Subscription</h3>
+                <p className="text-sm text-muted-foreground">
+                  You have an active {currentSubscription.plan.name} subscription
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/workstation/subscription')}
+              >
+                View Subscription
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Plans Grid */}
         <motion.div
@@ -181,11 +221,27 @@ const Plans = () => {
                   <Button 
                     className="w-full mt-6" 
                     onClick={() => {
-                      setSelectedPlan(plan.id);
-                      setShowDialog(true);
+                        const existingPlanOfSameType = currentSubscription && 
+                            currentSubscription.plan.duration_days === plan.duration_days;
+                            
+                        if (existingPlanOfSameType) {
+                            toast.error(`You already have an active ${currentSubscription.plan.name} subscription`, {
+                                action: {
+                                    label: "View Subscription",
+                                    onClick: () => navigate('/dashboard/workstation/subscription')
+                                }
+                            });
+                            return;
+                        }
+                        setSelectedPlan(plan.id);
+                        setShowDialog(true);
                     }}
+                    disabled={currentSubscription?.plan.duration_days === plan.duration_days}
                   >
-                    Subscribe Now
+                    {currentSubscription?.plan.duration_days === plan.duration_days 
+                        ? 'Already Subscribed' 
+                        : 'Subscribe Now'
+                    }
                   </Button>
                 </div>
 

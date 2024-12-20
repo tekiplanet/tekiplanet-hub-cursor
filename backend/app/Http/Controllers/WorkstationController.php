@@ -58,7 +58,22 @@ class WorkstationController extends Controller
 
             $user = auth()->user();
             $plan = WorkstationPlan::findOrFail($request->plan_id);
-            
+
+            // Check for existing active subscription of the same plan type
+            $existingSubscription = WorkstationSubscription::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->whereHas('plan', function($query) use ($plan) {
+                    $query->where('duration_days', $plan->duration_days);
+                })
+                ->first();
+
+            if ($existingSubscription) {
+                return response()->json([
+                    'message' => "You already have an active {$existingSubscription->plan->name} subscription",
+                    'subscription' => $existingSubscription->load('plan')
+                ], 400);
+            }
+
             // Calculate amount based on payment type
             $amount = $request->payment_type === 'full' 
                 ? $plan->price 
