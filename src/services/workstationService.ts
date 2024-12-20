@@ -83,4 +83,14 @@ export const workstationService = {
     });
     return response.data;
   },
+
+  renewSubscription: async (subscriptionId: string) => {
+    const response = await apiClient.post(`/workstation/subscriptions/${subscriptionId}/renew`);
+    return response.data;
+  },
+
+  cancelSubscription: async (subscriptionId: string) => {
+    const response = await apiClient.post(`/workstation/subscriptions/${subscriptionId}/cancel`);
+    return response.data;
+  },
 }; 

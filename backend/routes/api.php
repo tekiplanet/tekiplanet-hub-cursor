@@ -202,3 +202,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('bookings/{id}/review', [ConsultingController::class, 'getBookingReview']);
     });
 });
+
+Route::post('/workstation/subscriptions/{subscription}/renew', [WorkstationController::class, 'renewSubscription']);
+Route::post('/workstation/subscriptions/{subscription}/cancel', [WorkstationController::class, 'cancelSubscription']);

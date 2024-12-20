@@ -153,4 +153,70 @@ class WorkstationController extends Controller
             ], 500);
         }
     }
+
+    public function renewSubscription(WorkstationSubscription $subscription)
+    {
+        try {
+            if ($subscription->user_id !== auth()->id()) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+
+            if ($subscription->status !== 'active') {
+                return response()->json([
+                    'message' => 'Only active subscriptions can be renewed'
+                ], 400);
+            }
+
+            // Calculate new end date
+            $newEndDate = date('Y-m-d', strtotime($subscription->end_date . " + {$subscription->plan->duration_days} days"));
+
+            $subscription->update([
+                'end_date' => $newEndDate
+            ]);
+
+            return response()->json([
+                'message' => 'Subscription renewed successfully',
+                'subscription' => $subscription->load('plan')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error renewing subscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelSubscription(WorkstationSubscription $subscription)
+    {
+        try {
+            if ($subscription->user_id !== auth()->id()) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+
+            if ($subscription->status !== 'active') {
+                return response()->json([
+                    'message' => 'Only active subscriptions can be cancelled'
+                ], 400);
+            }
+
+            $subscription->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Subscription cancelled successfully',
+                'subscription' => $subscription->load('plan')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error cancelling subscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 
