@@ -58,8 +58,10 @@ const Plans = () => {
           description: response.subscription.plan.name
         });
       } else {
-        toast.success('Subscription created successfully!', {
-          description: `Transaction Reference: ${response.transaction?.reference_number}`
+        toast.success(response.message || 'Plan subscribed successfully!', {
+          description: response.transaction_reference 
+            ? `Carn Number: ${response.transaction_reference}`
+            : response.subscription.plan.name
         });
       }
       

@@ -65,8 +65,80 @@ class WorkstationController extends Controller
 
             \DB::beginTransaction();
             try {
+                $transaction = null; // Initialize transaction variable
+                $subscription = null; // Initialize subscription variable
+
                 if ($currentSubscription) {
                     // Handle upgrade/downgrade logic...
+                    $currentPlan = $currentSubscription->plan;
+                    
+                    // Calculate remaining value of current subscription
+                    $remainingDays = now()->diffInDays($currentSubscription->end_date);
+                    $dailyRate = $currentSubscription->total_amount / $currentPlan->duration_days;
+                    $remainingValue = $dailyRate * $remainingDays;
+
+                    // Calculate new subscription cost
+                    $newAmount = $request->payment_type === 'full' 
+                        ? $plan->price 
+                        : $plan->installment_amount;
+
+                    // Adjust amount based on remaining value
+                    $finalAmount = max(0, $newAmount - $remainingValue);
+
+                    // Update existing subscription
+                    $startDate = $request->start_date 
+                        ? new \DateTime($request->start_date)
+                        : new \DateTime($currentSubscription->start_date);
+
+                    $endDate = clone $startDate;
+                    $endDate->modify("+ {$plan->duration_days} days");
+
+                    $currentSubscription->update([
+                        'plan_id' => $plan->id,
+                        'total_amount' => $newAmount,
+                        'payment_type' => $request->payment_type,
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]);
+
+                    $subscription = $currentSubscription;
+
+                    // Only create payment and transaction if there's an amount to pay
+                    if ($finalAmount > 0) {
+                        // Deduct from wallet
+                        $user->wallet_balance -= $finalAmount;
+                        $user->save();
+
+                        // Create payment record
+                        $payment = $subscription->payments()->create([
+                            'amount' => $finalAmount,
+                            'type' => $request->payment_type,
+                            'installment_number' => $request->payment_type === 'installment' ? 1 : null,
+                            'due_date' => now(),
+                            'status' => 'paid'
+                        ]);
+
+                        // Create transaction record
+                        $transaction = Transaction::create([
+                            'user_id' => $user->id,
+                            'amount' => $finalAmount,
+                            'type' => 'debit',
+                            'description' => "Plan " . ($finalAmount > 0 ? "upgrade" : "downgrade") . " to {$plan->name}",
+                            'category' => 'workstation_subscription',
+                            'status' => 'completed',
+                            'payment_method' => 'wallet',
+                            'reference_number' => $subscription->tracking_code,
+                            'notes' => json_encode([
+                                'subscription_id' => $subscription->id,
+                                'old_plan' => $currentPlan->name,
+                                'new_plan' => $plan->name,
+                                'payment_type' => $request->payment_type,
+                                'duration' => $plan->duration_days . ' days',
+                                'start_date' => $startDate->format('Y-m-d'),
+                                'end_date' => $endDate->format('Y-m-d')
+                            ])
+                        ]);
+                    }
                 } else {
                     // Create new subscription
                     $startDate = $request->start_date ? new \DateTime($request->start_date) : now();
@@ -127,7 +199,7 @@ class WorkstationController extends Controller
                 return response()->json([
                     'message' => 'Subscription created successfully',
                     'subscription' => $subscription->load('plan', 'payments'),
-                    'transaction_reference' => $transaction->reference_number
+                    'transaction_reference' => $transaction ? $transaction->reference_number : null
                 ]);
 
             } catch (\Exception $e) {
