@@ -152,4 +152,12 @@ export const workstationService = {
     link.remove();
     window.URL.revokeObjectURL(url);
   },
+
+  reactivateSubscription: async (planId: string, paymentType: 'full' | 'installment' = 'full') => {
+    const response = await apiClient.post('/workstation/subscriptions/reactivate', {
+      plan_id: planId,
+      payment_type: paymentType
+    });
+    return response.data;
+  },
 }; 

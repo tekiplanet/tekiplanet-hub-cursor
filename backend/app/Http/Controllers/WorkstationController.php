@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Services\AccessCardGenerator;
+use Illuminate\Support\Facades\DB;
 
 class WorkstationController extends Controller
 {
@@ -400,23 +401,30 @@ class WorkstationController extends Controller
                 ], 400);
             }
 
-            $request->validate([
-                'reason' => 'required|string',
-                'feedback' => 'nullable|string'
-            ]);
+            DB::beginTransaction();
+            try {
+                // Delete related records first
+                $subscription->payments()->delete();
+                
+                // Then delete the subscription
+                $subscription->delete();
 
-            $subscription->update([
-                'status' => 'cancelled',
-                'cancelled_at' => now(),
-                'cancellation_reason' => $request->reason,
-                'cancellation_feedback' => $request->feedback
-            ]);
+                DB::commit();
 
-            return response()->json([
-                'message' => 'Subscription cancelled successfully',
-                'subscription' => $subscription->load('plan')
-            ]);
+                return response()->json([
+                    'message' => 'Subscription cancelled successfully'
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
         } catch (\Exception $e) {
+            \Log::error('Error cancelling subscription:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'message' => 'Error cancelling subscription',
                 'error' => $e->getMessage()
@@ -510,6 +518,71 @@ class WorkstationController extends Controller
             
             return response()->json([
                 'message' => 'Failed to process access card download',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reactivateSubscription(Request $request)
+    {
+        try {
+            $request->validate([
+                'plan_id' => 'required|exists:workstation_plans,id',
+                'payment_type' => 'required|in:full,installment'
+            ]);
+
+            $user = auth()->user();
+            $plan = WorkstationPlan::findOrFail($request->plan_id);
+
+            // Check if user has sufficient balance
+            if ($user->wallet_balance < $plan->price) {
+                return response()->json([
+                    'message' => 'Insufficient wallet balance',
+                    'error' => 'Please top up your wallet to continue'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+            try {
+                // Deduct from wallet
+                $user->wallet_balance -= $plan->price;
+                $user->save();
+
+                // Create new subscription
+                $subscription = WorkstationSubscription::create([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'tracking_code' => Str::random(10),
+                    'start_date' => now(),
+                    'end_date' => now()->addDays($plan->duration_days),
+                    'total_amount' => $plan->price,
+                    'payment_type' => $request->payment_type,
+                    'status' => 'active'
+                ]);
+
+                // Create transaction record
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'amount' => $plan->price,
+                    'type' => 'debit',
+                    'description' => "Workstation subscription reactivation - {$plan->name}",
+                    'status' => 'completed'
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Subscription reactivated successfully',
+                    'subscription' => $subscription->load('plan')
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to reactivate subscription',
                 'error' => $e->getMessage()
             ], 500);
         }

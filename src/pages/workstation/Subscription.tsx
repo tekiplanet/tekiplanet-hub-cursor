@@ -32,7 +32,8 @@ import {
   Percent,
   Key,
   Check,
-  ClipboardList
+  ClipboardList,
+  ArrowRight
 } from "lucide-react";
 import { formatCurrency, comparePlans } from "@/lib/utils";
 import { workstationService } from "@/services/workstationService";
@@ -48,6 +49,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useNavigate } from "react-router-dom";
 import PagePreloader from "@/components/ui/PagePreloader";
+import { Dialog, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const CANCELLATION_REASONS = [
   { label: 'No longer need the service', value: 'no_need' },
@@ -76,7 +78,6 @@ const Subscription = () => {
   const statusColors = {
     active: "bg-green-500/10 text-green-500 border-green-500/20",
     expired: "bg-red-500/10 text-red-500 border-red-500/20",
-    cancelled: "bg-orange-500/10 text-orange-500 border-orange-500/20",
     pending: "bg-blue-500/10 text-blue-500 border-blue-500/20"
   };
 
@@ -113,8 +114,46 @@ const Subscription = () => {
   const [isCancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const navigate = useNavigate();
+
+  const handleSubmit = async () => {
+    if (!selectedPlan) {
+      toast.error('Please select a plan');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      if (subscription?.status === 'cancelled') {
+        // Handle reactivation
+        const response = await workstationService.reactivateSubscription(selectedPlan, 'full');
+        toast.success(response.message || 'Subscription reactivated successfully!', {
+          description: response.subscription.plan.name
+        });
+      } else {
+        // Handle normal plan change
+        await handlePlanChange(
+          selectedPlan,
+          'full',
+          undefined,
+          subscription?.status !== 'cancelled'
+        );
+      }
+      
+      setShowUpgradeDialog(false);
+      setSelectedPlan(null);
+      queryClient.invalidateQueries(['current-subscription']);
+    } catch (error: any) {
+      toast.error('Failed to process subscription', {
+        description: error.response?.data?.message || 'Please try again'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (isLoading) {
     return <PagePreloader />;
@@ -574,7 +613,41 @@ const Subscription = () => {
           setSelectedPlan(null);
         }}
         onSubscribe={handlePlanChange}
-      />
+        action={selectedPlan ? 'upgrade' : 'subscribe'}
+      >
+        <DialogTitle>
+          {selectedPlan 
+            ? 'Change Plan' 
+            : 'New Subscription'
+          }
+        </DialogTitle>
+        <DialogDescription>
+          {selectedPlan
+            ? 'Review and confirm your plan change'
+            : 'Select a plan that best suits your needs'
+          }
+        </DialogDescription>
+        <Button 
+          disabled={isProcessing} 
+          onClick={handleSubmit}
+          className="w-full mt-4"
+        >
+          {isProcessing ? (
+            <>
+              <span className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              {selectedPlan 
+                ? 'Confirm Change' 
+                : 'Proceed to Payment'
+              }
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </Button>
+      </SubscriptionDialog>
 
       <ConfirmDialog
         open={showCancelDialog}
