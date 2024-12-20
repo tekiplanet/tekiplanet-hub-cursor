@@ -96,6 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Workstation routes
         Route::prefix('workstation')->group(function () {
             Route::get('/plans', [WorkstationController::class, 'getPlans']);
+            Route::post('/subscriptions', [WorkstationController::class, 'createSubscription']);
             Route::get('/subscription', [WorkstationController::class, 'getCurrentSubscription']);
         });
     });

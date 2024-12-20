@@ -39,11 +39,13 @@ const Plans = () => {
 
   const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => {
     try {
+      console.log('Subscription request:', { planId, paymentType, startDate });
       // Close dialog
       setShowDialog(false);
       
       // Create subscription
-      await workstationService.createSubscription(planId, paymentType, startDate);
+      const response = await workstationService.createSubscription(planId, paymentType, startDate);
+      console.log('Subscription response:', response);
       
       toast.success('Subscription created successfully!');
       navigate('/dashboard/workstation/subscription');

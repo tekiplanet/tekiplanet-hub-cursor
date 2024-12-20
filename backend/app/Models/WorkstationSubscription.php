@@ -2,60 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkstationSubscription extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
-    protected $fillable = [
-        'user_id',
-        'plan_id',
-        'tracking_code',
-        'start_date',
-        'end_date',
-        'total_amount',
-        'payment_type',
-        'status',
-        'auto_renew',
-        'last_check_in',
-        'last_check_out',
-        'cancelled_at',
-        'cancellation_reason',
-        'refund_amount'
-    ];
+    protected $guarded = [];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'auto_renew' => 'boolean',
         'last_check_in' => 'datetime',
         'last_check_out' => 'datetime',
-        'cancelled_at' => 'datetime',
-        'total_amount' => 'decimal:2',
-        'refund_amount' => 'decimal:2',
-        'auto_renew' => 'boolean'
+        'total_amount' => 'decimal:2'
     ];
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function plan(): BelongsTo
+    public function plan()
     {
-        return $this->belongsTo(WorkstationPlan::class, 'plan_id');
+        return $this->belongsTo(WorkstationPlan::class);
     }
 
-    public function payments(): HasMany
+    public function payments()
     {
-        return $this->hasMany(SubscriptionPayment::class, 'subscription_id');
-    }
-
-    public function accessCards(): HasMany
-    {
-        return $this->hasMany(AccessCard::class, 'subscription_id');
+        return $this->hasMany(WorkstationPayment::class);
     }
 } 
