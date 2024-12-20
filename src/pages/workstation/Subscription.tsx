@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { workstationService } from "@/services/workstationService";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from 'qrcode.react';
 
 const Subscription = () => {
   const { data: subscription, isLoading } = useQuery({
@@ -64,7 +64,7 @@ const Subscription = () => {
             <div className="grid md:grid-cols-2 gap-8">
               {/* QR Code */}
               <div className="flex flex-col items-center space-y-4 p-6 bg-card/50 rounded-lg">
-                <QRCode 
+                <QRCodeSVG 
                   value={subscription.accessCards[0].qr_code}
                   size={200}
                   level="H"
