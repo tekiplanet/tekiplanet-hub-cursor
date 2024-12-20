@@ -65,16 +65,27 @@ const Hustles = () => {
     <ScrollArea className="h-[calc(100vh-4rem)]">
       <div className="container mx-auto p-4 space-y-6">
         {/* Header Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
-          <h1 className="text-2xl font-bold tracking-tight">Explore Hustles</h1>
-          <p className="text-muted-foreground">
-            Find and apply for exciting opportunities in your field
-          </p>
-        </motion.div>
+        <div className="space-y-4">
+          {/* Title and Description */}
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">Explore Hustles</h1>
+            <p className="text-muted-foreground">
+              Find and apply for exciting opportunities in your field
+            </p>
+          </div>
+
+          {/* My Applications Button - Full width on mobile */}
+          <div className="w-full sm:flex sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard/hustles/applications')}
+              className="w-full sm:w-auto"
+            >
+              <Briefcase className="h-4 w-4 mr-2" />
+              My Applications
+            </Button>
+          </div>
+        </div>
 
         {/* Search and Filter Section */}
         <motion.div 

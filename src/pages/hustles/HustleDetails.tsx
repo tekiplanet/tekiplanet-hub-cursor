@@ -221,7 +221,7 @@ const HustleDetails = () => {
                     <Button 
                       size="lg"
                       onClick={() => setIsApplyDialogOpen(true)}
-                      disabled={!applicationStatus.can_apply}
+                      disabled={!applicationStatus.can_apply || applyMutation.isPending}
                       className={cn(
                         "relative",
                         applicationStatus.can_apply 
@@ -229,14 +229,34 @@ const HustleDetails = () => {
                           : "bg-muted"
                       )}
                     >
-                      <UserCheck className="h-5 w-5 mr-2" />
-                      {applicationStatus.can_apply ? 'Apply for Hustle' : (
-                        hustle.application_status === 'pending' ? 'Application Pending' :
-                        hustle.application_status === 'approved' ? 'Application Approved' :
-                        hustle.application_status === 'rejected' ? 'Application Rejected' :
-                        'Cannot Apply'
+                      {applyMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Submitting Application...
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="h-5 w-5 mr-2" />
+                          {applicationStatus.can_apply ? 'Apply for Hustle' : (
+                            hustle.application_status === 'pending' ? 'Application Pending' :
+                            hustle.application_status === 'approved' ? 'Application Approved' :
+                            hustle.application_status === 'rejected' ? 'Application Rejected' :
+                            'Cannot Apply'
+                          )}
+                        </>
                       )}
                     </Button>
+
+                    <ApplyHustleDialog
+                      isOpen={isApplyDialogOpen}
+                      onClose={() => setIsApplyDialogOpen(false)}
+                      onConfirm={() => {
+                        applyMutation.mutate(id!);
+                        setIsApplyDialogOpen(false);
+                      }}
+                      isLoading={applyMutation.isPending}
+                      hustleTitle={hustle.title}
+                    />
 
                     {/* Status Badge */}
                     {hustle.application_status && (

@@ -55,6 +55,13 @@ interface ProfileCheckResponse {
   profile: Professional | null;
 }
 
+export interface HustleApplication {
+  id: string;
+  hustle: Hustle;
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+  created_at: string;
+}
+
 export const hustleService = {
   getHustles: async (params?: { 
     category_id?: string;
@@ -87,5 +94,10 @@ export const hustleService = {
   checkProfessionalProfile: async () => {
     const { data } = await api.get('/professional/profile/check');
     return data;
+  },
+
+  getMyApplications: async () => {
+    const { data } = await api.get('/hustle-applications');
+    return data.applications;
   }
 }; 
