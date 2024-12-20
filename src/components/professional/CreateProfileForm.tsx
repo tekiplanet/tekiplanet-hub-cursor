@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +47,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState as useHookState } from "react";
 import { Search } from "lucide-react";
+import { TagInput } from "@/components/ui/tag-input";
 
 // Form schemas for each step
 const basicInfoSchema = z.object({
@@ -395,26 +397,24 @@ const CreateProfileForm = () => {
                         )}
                       />
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={basicInfoForm.control}
-                          name="years_of_experience"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Years of Experience</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="0" 
-                                  placeholder="e.g. 5" 
-                                  {...field} 
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="years_of_experience"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Years of Experience</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                placeholder="e.g. 5" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={basicInfoForm.control}
@@ -476,7 +476,7 @@ const CreateProfileForm = () => {
                               />
                             </FormControl>
                             <FormDescription>
-                              Enter the programming languages you're proficient in
+                              Enter languages you can communicate in (e.g., English, French, Yoruba, Hausa)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
