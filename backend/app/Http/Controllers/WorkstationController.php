@@ -71,15 +71,15 @@ class WorkstationController extends Controller
 
             \DB::beginTransaction();
             try {
-                $transaction = null; // Initialize transaction variable
-                $subscription = null; // Initialize subscription variable
-
                 if ($currentSubscription) {
-                    // Handle upgrade/downgrade logic...
+                    // Handle upgrade/downgrade logic
                     $currentPlan = $currentSubscription->plan;
-                    
-                    // Calculate remaining value of current subscription
-                    $remainingDays = now()->diffInDays($currentSubscription->end_date);
+                    $now = now();
+                    $currentStartDate = new \DateTime($currentSubscription->start_date);
+                    $currentEndDate = new \DateTime($currentSubscription->end_date);
+
+                    // Calculate remaining value
+                    $remainingDays = $now->diffInDays($currentEndDate);
                     $dailyRate = $currentSubscription->total_amount / $currentPlan->duration_days;
                     $remainingValue = $dailyRate * $remainingDays;
 
@@ -88,17 +88,36 @@ class WorkstationController extends Controller
                         ? $plan->price 
                         : $plan->installment_amount;
 
+                    // Determine start and end dates
+                    if ($currentStartDate > $now) {
+                        // If start date is in future, keep it
+                        $startDate = $currentStartDate;
+                        $endDate = clone $currentEndDate;
+                        $endDate->modify("+ {$plan->duration_days} days");
+                    } elseif ($currentEndDate > $now) {
+                        // If only end date is in future
+                        $startDate = $currentEndDate;
+                        $endDate = clone $startDate;
+                        $endDate->modify("+ {$plan->duration_days} days");
+                    } else {
+                        // Both dates are past
+                        $startDate = $now;
+                        $endDate = clone $startDate;
+                        $endDate->modify("+ {$plan->duration_days} days");
+                    }
+
                     // Adjust amount based on remaining value
                     $finalAmount = max(0, $newAmount - $remainingValue);
 
+                    // Check wallet balance
+                    if ($user->wallet_balance < $finalAmount) {
+                        return response()->json([
+                            'message' => 'Insufficient wallet balance',
+                            'error' => 'Please top up your wallet to continue'
+                        ], 400);
+                    }
+
                     // Update existing subscription
-                    $startDate = $request->start_date 
-                        ? new \DateTime($request->start_date)
-                        : new \DateTime($currentSubscription->start_date);
-
-                    $endDate = clone $startDate;
-                    $endDate->modify("+ {$plan->duration_days} days");
-
                     $currentSubscription->update([
                         'plan_id' => $plan->id,
                         'total_amount' => $newAmount,
@@ -129,7 +148,7 @@ class WorkstationController extends Controller
                             'user_id' => $user->id,
                             'amount' => $finalAmount,
                             'type' => 'debit',
-                            'description' => "Plan " . ($finalAmount > 0 ? "upgrade" : "downgrade") . " to {$plan->name}",
+                            'description' => "Plan " . ($plan->price > $currentPlan->price ? "upgrade" : "downgrade") . " to {$plan->name}",
                             'category' => 'workstation_subscription',
                             'status' => 'completed',
                             'payment_method' => 'wallet',
@@ -141,7 +160,9 @@ class WorkstationController extends Controller
                                 'payment_type' => $request->payment_type,
                                 'duration' => $plan->duration_days . ' days',
                                 'start_date' => $startDate->format('Y-m-d'),
-                                'end_date' => $endDate->format('Y-m-d')
+                                'end_date' => $endDate->format('Y-m-d'),
+                                'remaining_value' => $remainingValue,
+                                'final_amount' => $finalAmount
                             ])
                         ]);
                     }
@@ -203,9 +224,9 @@ class WorkstationController extends Controller
                 \DB::commit();
 
                 return response()->json([
-                    'message' => 'Subscription created successfully',
+                    'message' => 'Subscription ' . ($currentSubscription ? 'updated' : 'created') . ' successfully',
                     'subscription' => $subscription->load('plan', 'payments'),
-                    'transaction_reference' => $transaction ? $transaction->reference_number : null
+                    'transaction_reference' => isset($transaction) ? $transaction->reference_number : null
                 ]);
 
             } catch (\Exception $e) {

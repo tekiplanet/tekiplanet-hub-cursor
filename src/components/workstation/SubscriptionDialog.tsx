@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { WorkstationPlan } from "@/services/workstationService";
+import { WorkstationPlan, WorkstationSubscription } from "@/services/workstationService";
 import { formatCurrency } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CreditCard, ArrowRight, Building2 } from "lucide-react";
@@ -16,21 +16,48 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { comparePlans } from "@/lib/utils";
 
+const calculateRemainingValue = (subscription: WorkstationSubscription) => {
+  const now = new Date();
+  const endDate = new Date(subscription.end_date);
+  const startDate = new Date(subscription.start_date);
+  
+  // For future subscriptions, calculate from start date to end date
+  if (startDate > now) {
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const totalDays = totalDuration / (1000 * 60 * 60 * 24);
+    return subscription.total_amount; // Return full amount for future subscriptions
+  }
+  
+  // For current subscriptions, calculate remaining days from now
+  if (now <= endDate) {
+    const remainingDuration = endDate.getTime() - now.getTime();
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const remainingDays = remainingDuration / (1000 * 60 * 60 * 24);
+    const totalDays = totalDuration / (1000 * 60 * 60 * 24);
+    
+    // Calculate prorated amount based on remaining days
+    return (remainingDays / totalDays) * subscription.total_amount;
+  }
+  
+  // If subscription has ended, no remaining value
+  return 0;
+};
+
 interface SubscriptionDialogProps {
   plan: WorkstationPlan | null;
+  currentSubscription?: WorkstationSubscription | null;
   isOpen: boolean;
   onClose: () => void;
-  currentSubscription?: any;
   onSubscribe: (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => void;
 }
 
-export function SubscriptionDialog({ 
-  plan, 
-  isOpen, 
-  onClose, 
+export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
+  plan,
   currentSubscription,
-  onSubscribe 
-}: SubscriptionDialogProps) {
+  isOpen,
+  onClose,
+  onSubscribe
+}) => {
   const user = useAuthStore(state => state.user);
   const [step, setStep] = useState(1);
   const [paymentType, setPaymentType] = useState<'full' | 'installment'>('full');
@@ -101,6 +128,11 @@ export function SubscriptionDialog({
       onClose();
     }
   };
+
+  // Use the function to calculate remaining value
+  const remainingValue = currentSubscription 
+    ? calculateRemainingValue(currentSubscription) 
+    : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -316,12 +348,12 @@ export function SubscriptionDialog({
                           <div className="flex justify-between">
                             <span>Current Plan Remaining Value:</span>
                             <span className="text-red-500">
-                              -{formatCurrency(calculateRemainingValue(currentSubscription))}
+                              -{formatCurrency(remainingValue)}
                             </span>
                           </div>
                           <div className="border-t pt-2 font-medium flex justify-between">
                             <span>Amount to Pay:</span>
-                            <span>{formatCurrency(Math.max(0, (paymentAmount || 0) - calculateRemainingValue(currentSubscription)))}</span>
+                            <span>{formatCurrency(Math.max(0, (paymentAmount || 0) - remainingValue))}</span>
                           </div>
                         </div>
                       </div>
