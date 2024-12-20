@@ -26,4 +26,9 @@ class ProfessionalCategory extends Model
     {
         return $this->hasMany(Professional::class, 'category_id');
     }
+
+    public function hustles()
+    {
+        return $this->hasMany(Hustle::class, 'category_id');
+    }
 } 

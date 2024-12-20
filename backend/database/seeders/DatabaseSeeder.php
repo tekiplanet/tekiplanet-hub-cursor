@@ -51,5 +51,7 @@ class DatabaseSeeder extends Seeder
             WorkstationPlansSeeder::class,
             ProfessionalCategorySeeder::class,
         ]);
+
+        $this->call(HustleSeeder::class);
     }
 }

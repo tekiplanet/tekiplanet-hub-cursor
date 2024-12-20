@@ -96,4 +96,44 @@ class Professional extends Model
     {
         return $this->belongsTo(ProfessionalCategory::class);
     }
+
+    // Add these relationships to the existing Professional model
+
+    public function hustleApplications()
+    {
+        return $this->hasMany(HustleApplication::class);
+    }
+
+    public function assignedHustles()
+    {
+        return $this->hasMany(Hustle::class, 'assigned_professional_id');
+    }
+
+    public function hustlePayments()
+    {
+        return $this->hasMany(HustlePayment::class);
+    }
+
+    // Helper method to check if professional can apply for a hustle
+    public function canApplyForHustle(Hustle $hustle): bool
+    {
+        // Check if professional's category matches hustle category
+        if ($this->category_id !== $hustle->category_id) {
+            return false;
+        }
+
+        // Check if professional has already applied
+        if ($this->hustleApplications()
+            ->where('hustle_id', $hustle->id)
+            ->exists()) {
+            return false;
+        }
+
+        // Check if hustle is still open
+        if ($hustle->status !== 'open') {
+            return false;
+        }
+
+        return true;
+    }
 } 
