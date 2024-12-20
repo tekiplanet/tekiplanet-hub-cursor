@@ -219,40 +219,70 @@ const Subscription = () => {
 
                   {/* Quick Actions */}
                   <div className="border-t flex divide-x">
-                    <Button 
-                      variant="ghost" 
-                      className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none hover:bg-muted/50"
-                      onClick={() => setShowRenewDialog(true)}
-                      disabled={isRenewing}
-                    >
-                      {isRenewing ? (
-                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                      <span className="font-medium">Renew</span>
-                    </Button>
-
                     {subscription.status === 'active' && (
-                      <Button 
-                        variant="ghost" 
-                        className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none text-destructive hover:bg-destructive/5 hover:text-destructive"
-                        onClick={() => setShowCancelDialog(true)}
-                        disabled={isCancelling}
-                      >
-                        {isCancelling ? (
-                          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                        <span className="font-medium">Cancel</span>
-                      </Button>
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none hover:bg-muted/50"
+                          onClick={() => setShowRenewDialog(true)}
+                          disabled={isRenewing}
+                        >
+                          {isRenewing ? (
+                            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          <span className="font-medium">Renew</span>
+                        </Button>
+
+                        <Button 
+                          variant="ghost" 
+                          className="flex-1 h-12 flex items-center justify-center gap-2 rounded-none text-destructive hover:bg-destructive/5 hover:text-destructive"
+                          onClick={() => setShowCancelDialog(true)}
+                          disabled={isCancelling}
+                        >
+                          {isCancelling ? (
+                            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                          <span className="font-medium">Cancel</span>
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Move Expired Warning here - right after the overview card */}
+          {subscription.status === 'expired' && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/20 rounded-lg p-4"
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium text-red-500">Subscription Expired</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your subscription expired on {format(new Date(subscription.end_date), "MMMM d, yyyy")}. 
+                    Renew now to continue accessing workspace facilities.
+                  </p>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => setShowRenewDialog(true)}
+                  >
+                    Renew Subscription
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Tabs Section */}
           <Tabs defaultValue="details" className="space-y-6">
@@ -743,33 +773,6 @@ const Subscription = () => {
           </div>
         </div>
       </ConfirmDialog>
-
-      {subscription.status === 'expired' && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6"
-        >
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-medium text-red-500">Subscription Expired</p>
-              <p className="text-sm text-muted-foreground">
-                Your subscription expired on {format(new Date(subscription.end_date), "MMMM d, yyyy")}. 
-                Renew now to continue accessing workspace facilities.
-              </p>
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="mt-2"
-                onClick={() => setShowRenewDialog(true)}
-              >
-                Renew Subscription
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
