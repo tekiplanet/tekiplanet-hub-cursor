@@ -16,6 +16,13 @@ export interface Hustle {
   can_apply: boolean;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 export const hustleService = {
   getHustles: async (params?: { 
     category_id?: string;
@@ -23,6 +30,11 @@ export const hustleService = {
   }) => {
     const { data } = await api.get('/hustles', { params });
     return data;
+  },
+
+  getCategories: async () => {
+    const { data } = await api.get('/professional/categories');
+    return data.categories;
   },
 
   getHustleDetails: async (id: string) => {

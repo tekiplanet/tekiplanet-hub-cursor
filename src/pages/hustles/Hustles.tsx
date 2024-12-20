@@ -2,15 +2,21 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Briefcase, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Search, Filter, Briefcase, Calendar, Users, ArrowRight, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDebounce } from '@/hooks/useDebounce';
-import { hustleService, type Hustle } from '@/services/hustleService';
+import { hustleService, type Hustle, type Category } from '@/services/hustleService';
 import { formatCurrency } from '@/lib/utils';
 
 const container = {
@@ -31,15 +37,28 @@ const item = {
 const Hustles = () => {
   const navigate = useNavigate();
   const [search, setSearch] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
   const debouncedSearch = useDebounce(search, 500);
 
   const { data: hustles, isLoading } = useQuery({
-    queryKey: ['hustles', debouncedSearch],
-    queryFn: () => hustleService.getHustles({ search: debouncedSearch })
+    queryKey: ['hustles', debouncedSearch, selectedCategory?.id],
+    queryFn: () => hustleService.getHustles({ 
+      search: debouncedSearch,
+      category_id: selectedCategory?.id 
+    })
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ['professional-categories'],
+    queryFn: hustleService.getCategories
   });
 
   const handleHustleClick = (id: string) => {
     navigate(`/dashboard/hustles/${id}`);
+  };
+
+  const clearFilters = () => {
+    setSelectedCategory(null);
   };
 
   return (
@@ -73,11 +92,79 @@ const Hustles = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="sm:w-auto">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="sm:w-auto">
+                <Filter className="h-4 w-4 mr-2" />
+                {selectedCategory ? selectedCategory.name : 'Filter'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {categories?.map((category: Category) => (
+                <DropdownMenuItem
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category)}
+                  className="cursor-pointer"
+                >
+                  {category.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {selectedCategory && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={clearFilters}
+              className="hidden sm:flex"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </motion.div>
+
+        {/* Active Filters */}
+        {(selectedCategory || search) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap gap-2"
+          >
+            {selectedCategory && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {selectedCategory.name}
+                <X 
+                  className="h-3 w-3 cursor-pointer" 
+                  onClick={clearFilters}
+                />
+              </Badge>
+            )}
+            {search && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Search: {search}
+                <X 
+                  className="h-3 w-3 cursor-pointer" 
+                  onClick={() => setSearch('')}
+                />
+              </Badge>
+            )}
+          </motion.div>
+        )}
+
+        {/* No Results Message */}
+        {!isLoading && hustles?.data.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12"
+          >
+            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hustles found</h3>
+            <p className="text-muted-foreground">
+              Try adjusting your filters or search terms
+            </p>
+          </motion.div>
+        )}
 
         {/* Hustles Grid */}
         <AnimatePresence mode="wait">
