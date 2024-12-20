@@ -60,5 +60,10 @@ export const hustleService = {
   applyForHustle: async (hustleId: string) => {
     const { data } = await api.post(`/hustles/${hustleId}/apply`);
     return data;
+  },
+
+  withdrawApplication: async (applicationId: string) => {
+    const { data } = await api.post(`/hustle-applications/${applicationId}/withdraw`);
+    return data;
   }
 }; 

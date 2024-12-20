@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { hustleService } from '@/services/hustleService';
 import { formatCurrency } from '@/lib/utils';
+import ApplyHustleDialog from '@/components/hustles/ApplyHustleDialog';
 
 const container = {
   hidden: { opacity: 0 },
@@ -45,6 +46,8 @@ const HustleDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = React.useState(false);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['hustle', id],
     queryFn: () => hustleService.getHustleDetails(id!),
@@ -52,6 +55,13 @@ const HustleDetails = () => {
   });
 
   const hustle = data?.hustle;
+
+  console.log('Hustle Data:', {
+    data,
+    hustle,
+    can_apply: hustle?.can_apply,
+    status: hustle?.status
+  });
 
   const applyMutation = useMutation({
     mutationFn: hustleService.applyForHustle,
@@ -113,56 +123,22 @@ const HustleDetails = () => {
                 <h1 className="text-2xl md:text-3xl font-bold">{hustle.title}</h1>
               </div>
               <div className="flex items-center gap-2">
-                {hustle.can_apply ? (
-                  <Button 
-                    size="lg"
-                    onClick={() => applyMutation.mutate(id!)}
-                    disabled={applyMutation.isPending}
-                    className="relative overflow-hidden group"
-                  >
-                    <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/20 group-hover:opacity-80 transition-opacity" />
-                    {applyMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Applying...
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Apply Now
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <AnimatePresence mode="wait">
-                    {hustle.application_status === 'pending' && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Badge variant="secondary">Application Pending</Badge>
-                      </motion.div>
-                    )}
-                    {hustle.application_status === 'approved' && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Badge variant="success">Application Approved</Badge>
-                      </motion.div>
-                    )}
-                    {hustle.application_status === 'rejected' && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Badge variant="destructive">Application Rejected</Badge>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                <Button 
+                  size="lg"
+                  onClick={() => setIsApplyDialogOpen(true)}
+                  className="bg-primary text-white hover:bg-primary/90"
+                >
+                  <UserCheck className="h-5 w-5 mr-2" />
+                  Apply for Hustle
+                </Button>
+                {hustle.application_status && (
+                  <Badge variant={
+                    hustle.application_status === 'approved' ? 'success' :
+                    hustle.application_status === 'rejected' ? 'destructive' :
+                    'secondary'
+                  }>
+                    {hustle.application_status.toUpperCase()}
+                  </Badge>
                 )}
               </div>
             </div>
