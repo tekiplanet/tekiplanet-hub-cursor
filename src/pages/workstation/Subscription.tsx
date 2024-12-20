@@ -338,9 +338,20 @@ const Subscription = () => {
                           />
                         </div>
                         {subscription.status === 'active' ? (
-                          <Button variant="outline" size="sm" className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download QR Code
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await workstationService.downloadAccessCard(subscription.id);
+                              } catch (error) {
+                                toast.error('Failed to download access card');
+                              }
+                            }}
+                            className="w-full"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download Access Card
                           </Button>
                         ) : (
                           <p className="text-sm text-muted-foreground text-center">

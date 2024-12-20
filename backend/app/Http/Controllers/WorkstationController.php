@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Services\AccessCardGenerator;
 
 class WorkstationController extends Controller
 {
@@ -458,6 +459,57 @@ class WorkstationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error fetching subscription history',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadAccessCard(WorkstationSubscription $subscription)
+    {
+        try {
+            // Check if subscription belongs to authenticated user
+            if ($subscription->user_id !== auth()->id()) {
+                return response()->json([
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            // Debug logging
+            \Log::info('Starting access card generation', [
+                'subscription_id' => $subscription->id,
+                'user_id' => auth()->id()
+            ]);
+
+            $generator = new AccessCardGenerator();
+            
+            try {
+                $imageData = $generator->generate($subscription);
+                
+                \Log::info('Access card generated successfully');
+
+                return response($imageData)
+                    ->header('Content-Type', 'image/jpeg')
+                    ->header('Content-Disposition', 'attachment; filename="access-card-' . $subscription->tracking_code . '.jpg"');
+            } catch (\Exception $e) {
+                \Log::error('Access card generation failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return response()->json([
+                    'message' => 'Failed to generate access card',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Access card download failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to process access card download',
                 'error' => $e->getMessage()
             ], 500);
         }

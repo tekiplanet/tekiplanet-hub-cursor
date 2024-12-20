@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/subscriptions/history', [WorkstationController::class, 'getSubscriptionHistory']);
             Route::post('/subscriptions/{subscription}/renew', [WorkstationController::class, 'renewSubscription']);
             Route::post('/subscriptions/{subscription}/cancel', [WorkstationController::class, 'cancelSubscription']);
+            Route::get('/subscriptions/{subscription}/access-card', [WorkstationController::class, 'downloadAccessCard']);
         });
     });
 });

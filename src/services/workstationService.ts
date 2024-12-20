@@ -135,4 +135,21 @@ export const workstationService = {
     const response = await apiClient.get(`/workstation/subscriptions/history?${params.toString()}`);
     return response.data.history;
   },
+
+  downloadAccessCard: async (subscriptionId: string) => {
+    const response = await apiClient.get(
+      `/workstation/subscriptions/${subscriptionId}/access-card`,
+      { responseType: 'blob' }
+    );
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `access-card-${subscriptionId}.jpg`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 }; 
