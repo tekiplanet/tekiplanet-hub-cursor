@@ -32,4 +32,23 @@ class ProjectTeamMember extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function scopeConsultingExperts($query)
+    {
+        return $query->where('role', 'consulting_expert')
+                     ->where('status', 'active');
+    }
+
+    public function consultingBookings()
+    {
+        return $this->hasMany(ConsultingBooking::class, 'assigned_expert_id');
+    }
+
+    public function isAvailableForBooking($date, $time)
+    {
+        return !$this->consultingBookings()
+            ->where('selected_date', $date)
+            ->where('selected_time', $time)
+            ->exists();
+    }
 } 
