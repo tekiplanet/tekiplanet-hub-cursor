@@ -53,7 +53,6 @@ const basicInfoSchema = z.object({
   category_id: z.string().min(1, "Category is required"),
   specialization: z.string().min(1, "Specialization is required"),
   years_of_experience: z.string().transform(Number),
-  hourly_rate: z.string().transform(Number),
   bio: z.string().optional(),
 });
 
@@ -129,7 +128,6 @@ const CreateProfileForm = () => {
       category_id: "",
       specialization: "",
       years_of_experience: "",
-      hourly_rate: "",
       bio: "",
     },
   });
@@ -380,7 +378,226 @@ const CreateProfileForm = () => {
                         }}
                       />
 
-                      {/* Add other basic info fields */}
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="specialization"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Specialization</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g. Frontend Development, Cloud Architecture" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="years_of_experience"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Years of Experience</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min="0" 
+                                  placeholder="e.g. 5" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="bio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Professional Bio</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Tell us about your professional background and expertise..." 
+                                className="resize-none"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Step 2: Expertise */}
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <FormField
+                        control={expertiseForm.control}
+                        name="expertise_areas"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Areas of Expertise</FormLabel>
+                            <FormControl>
+                              <TagInput
+                                placeholder="Add expertise (press enter)"
+                                tags={field.value}
+                                className="sm:min-h-[120px]"
+                                onTagsChange={(tags) => field.onChange(tags)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter your key areas of expertise (e.g., React, Node.js, AWS)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={expertiseForm.control}
+                        name="languages"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Languages</FormLabel>
+                            <FormControl>
+                              <TagInput
+                                placeholder="Add languages (press enter)"
+                                tags={field.value}
+                                className="sm:min-h-[120px]"
+                                onTagsChange={(tags) => field.onChange(tags)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter the programming languages you're proficient in
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={expertiseForm.control}
+                        name="certifications"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Certifications</FormLabel>
+                            <FormControl>
+                              <TagInput
+                                placeholder="Add certifications (press enter)"
+                                tags={field.value}
+                                className="sm:min-h-[120px]"
+                                onTagsChange={(tags) => field.onChange(tags)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter any relevant certifications you hold
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Step 3: Contact */}
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <FormField
+                        control={contactForm.control}
+                        name="preferred_contact_method"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Preferred Contact Method</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select contact method" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="email">Email</SelectItem>
+                                <SelectItem value="phone">Phone</SelectItem>
+                                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={contactForm.control}
+                        name="timezone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Timezone</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select your timezone" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Africa/Lagos">Africa/Lagos (WAT)</SelectItem>
+                                {/* Add more timezones as needed */}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-4">
+                        <FormField
+                          control={contactForm.control}
+                          name="linkedin_url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>LinkedIn Profile</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://linkedin.com/in/..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={contactForm.control}
+                          name="github_url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>GitHub Profile</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://github.com/..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={contactForm.control}
+                          name="portfolio_url"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Portfolio Website</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   )}
 
