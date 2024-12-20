@@ -9,13 +9,24 @@ export interface ConsultingExpert {
   id: string;
   user: {
     id: string;
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     avatar?: string;
   };
-  role: string;
-  expertise_areas?: string[];
-  status: string;
+  title: string;
+  specialization: string;
+  expertise_areas: string[];
+  years_of_experience: number;
+  hourly_rate: number;
+  bio: string;
+  certifications: string[];
+  languages: string[];
+  rating: number;
+  total_sessions: number;
+  github_url?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
 }
 
 export interface ConsultingBooking {
@@ -92,5 +103,12 @@ export const consultingService = {
   getBookingDetails: async (bookingId: string): Promise<ConsultingBooking> => {
     const response = await apiClient.get(`/consulting/bookings/${bookingId}`);
     return response.data.booking;
+  },
+
+  assignExpert: async (bookingId: string, expertId: string) => {
+    const response = await apiClient.post(`/consulting/bookings/${bookingId}/assign-expert`, {
+      expert_id: expertId
+    });
+    return response.data;
   }
 }; 

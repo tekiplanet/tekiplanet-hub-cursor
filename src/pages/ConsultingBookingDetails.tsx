@@ -19,7 +19,10 @@ import {
   CircleDot,
   ChevronRight,
   Users,
-  Mail
+  Mail,
+  Github,
+  Linkedin,
+  Globe
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -191,41 +194,57 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   );
 };
 
-const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => {
-  console.log('Booking Expert Data:', {
-    expert: expert,
-    user: expert?.user,
-    assigned_id: expert?.assigned_expert_id
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          Assigned Expert
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={expert.user?.avatar} />
-            <AvatarFallback>
-              {expert.user?.name 
-                ? expert.user.name.split(' ').map(n => n[0]).join('')
-                : 'EX'
-              }
-            </AvatarFallback>
-          </Avatar>
-          <div className="space-y-1">
-            <h3 className="font-medium">{expert.user?.name || 'Expert'}</h3>
-            <p className="text-sm text-muted-foreground">{expert.role}</p>
+const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Users className="h-5 w-5 text-primary" />
+        Assigned Expert
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-6">
+      {/* Expert Profile Header */}
+      <div className="flex items-start gap-4">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={expert.user?.avatar} />
+          <AvatarFallback>
+            {expert.user?.first_name?.[0]}{expert.user?.last_name?.[0]}
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-1">
+          <h3 className="font-medium">
+            {expert.user?.first_name} {expert.user?.last_name}
+          </h3>
+          <p className="text-sm text-muted-foreground">{expert.title}</p>
+          <div className="flex items-center gap-1 text-sm">
+            <Users className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">
+              {expert.total_sessions} completed sessions
+            </span>
           </div>
         </div>
+      </div>
 
+      <Separator />
+
+      {/* Expertise & Experience */}
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-medium mb-2">Specialization</h4>
+          <p className="text-sm text-muted-foreground">{expert.specialization}</p>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-medium mb-2">Experience</h4>
+          <p className="text-sm text-muted-foreground">
+            {expert.years_of_experience} years of experience
+          </p>
+        </div>
+
+        {/* Expertise Areas */}
         {expert.expertise_areas && expert.expertise_areas.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Expertise Areas</p>
+          <div>
+            <h4 className="text-sm font-medium mb-2">Expertise Areas</h4>
             <div className="flex flex-wrap gap-2">
               {expert.expertise_areas.map(area => (
                 <Badge key={area} variant="secondary">
@@ -236,20 +255,93 @@ const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => {
           </div>
         )}
 
-        <Separator />
+        {/* Certifications */}
+        {expert.certifications && expert.certifications.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Certifications</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {expert.certifications.map(cert => (
+                <li key={cert} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  {cert}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        {expert.user?.email && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-primary" />
-              <span>{expert.user.email}</span>
+        {/* Languages */}
+        {expert.languages && expert.languages.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Languages</h4>
+            <div className="flex flex-wrap gap-2">
+              {expert.languages.map(lang => (
+                <Badge key={lang} variant="outline">
+                  {lang}
+                </Badge>
+              ))}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
-};
+      </div>
+
+      <Separator />
+
+      {/* Professional Bio */}
+      <div>
+        <h4 className="text-sm font-medium mb-2">About</h4>
+        <p className="text-sm text-muted-foreground">{expert.bio}</p>
+      </div>
+
+      {/* Professional Links */}
+      <div className="flex flex-wrap gap-3">
+        {expert.github_url && (
+          <a 
+            href={expert.github_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+          >
+            <Github className="h-4 w-4" />
+            GitHub
+          </a>
+        )}
+        {expert.linkedin_url && (
+          <a 
+            href={expert.linkedin_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+          >
+            <Linkedin className="h-4 w-4" />
+            LinkedIn
+          </a>
+        )}
+        {expert.portfolio_url && (
+          <a 
+            href={expert.portfolio_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+          >
+            <Globe className="h-4 w-4" />
+            Portfolio
+          </a>
+        )}
+      </div>
+
+      {/* Contact Info */}
+      {expert.user?.email && (
+        <div className="bg-muted p-3 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            <Mail className="h-4 w-4 text-primary" />
+            <span>{expert.user.email}</span>
+          </div>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
 
 export default function ConsultingBookingDetails() {
   const { id } = useParams();
@@ -369,111 +461,212 @@ export default function ConsultingBookingDetails() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="container mx-auto p-4 max-w-4xl space-y-6"
+      className="container mx-auto p-4 max-w-5xl space-y-8"
     >
+      {/* Status Header - Full Width */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-xl p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Badge 
+              variant="secondary" 
+              className={`${statusColors[booking.status]} px-3 py-1.5 text-sm`}
+            >
+              <StatusIcon className="w-4 h-4 mr-2" />
+              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+            </Badge>
+            <h1 className="text-2xl font-bold">IT Consulting Session</h1>
+            {isUpcoming && (
+              <div className="flex items-center gap-2 text-sm bg-background/50 px-3 py-2 rounded-lg w-fit">
+                <CalendarClock className="w-4 h-4 text-primary" />
+                <CountdownTimer targetDate={sessionDate} />
+              </div>
+            )}
+          </div>
 
-      {/* Status Card */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <Badge 
-                variant="secondary" 
-                className={`${statusColors[booking.status]} px-2 py-1`}
-              >
-                <StatusIcon className="w-4 h-4 mr-1" />
-                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-              </Badge>
-              <h2 className="text-2xl font-bold">IT Consulting Session</h2>
-              {isUpcoming && <CountdownTimer targetDate={sessionDate} />}
-            </div>
+          <div className="flex gap-2">
+            {canBeReviewed && (
+              <Button className="gap-2" onClick={() => setShowReviewDialog(true)}>
+                <Star className="w-4 h-4" />
+                Leave Review
+              </Button>
+            )}
+            {canBeCancelled && (
+              <Button variant="destructive" className="gap-2" onClick={() => setShowCancelDialog(true)}>
+                <XCircle className="w-4 h-4" />
+                Cancel Booking
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
 
-            <div className="flex gap-2">
-              {canBeReviewed && (
-                <Button 
-                  className="gap-2"
-                  onClick={() => setShowReviewDialog(true)}
-                >
-                  <Star className="w-4 h-4" />
-                  Leave Review
-                </Button>
-              )}
-              {canBeCancelled && (
-                <Button 
-                  variant="destructive" 
-                  className="gap-2"
-                  onClick={() => setShowCancelDialog(true)}
-                >
-                  <XCircle className="w-4 h-4" />
-                  Cancel Booking
-                </Button>
-              )}
+      {/* Expert Section - Full Width when assigned */}
+      {booking.assigned_expert_id && booking.expert ? (
+        <div className="bg-card rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-primary/5 border-b p-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Your Expert
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid md:grid-cols-[300px,1fr] gap-8">
+              {/* Expert Profile Column */}
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={booking.expert.user?.avatar} />
+                    <AvatarFallback className="text-lg">
+                      {booking.expert.user?.first_name?.[0]}{booking.expert.user?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-medium">
+                      {booking.expert.user?.first_name} {booking.expert.user?.last_name}
+                    </h3>
+                    <p className="text-muted-foreground">{booking.expert.title}</p>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span>{booking.expert.total_sessions} completed sessions</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact & Social Links */}
+                <div className="space-y-3">
+                  {booking.expert.user?.email && (
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                      <Mail className="h-4 w-4" />
+                      {booking.expert.user.email}
+                    </Button>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    {booking.expert.github_url && (
+                      <Button variant="outline" size="icon" asChild>
+                        <a href={booking.expert.github_url} target="_blank" rel="noopener noreferrer">
+                          <Github className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    {booking.expert.linkedin_url && (
+                      <Button variant="outline" size="icon" asChild>
+                        <a href={booking.expert.linkedin_url} target="_blank" rel="noopener noreferrer">
+                          <Linkedin className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    {booking.expert.portfolio_url && (
+                      <Button variant="outline" size="icon" asChild>
+                        <a href={booking.expert.portfolio_url} target="_blank" rel="noopener noreferrer">
+                          <Globe className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expert Details Column */}
+              <div className="space-y-6">
+                {/* Bio Section */}
+                <div className="space-y-2">
+                  <h4 className="font-medium">About</h4>
+                  <p className="text-muted-foreground">{booking.expert.bio}</p>
+                </div>
+
+                {/* Expertise Grid */}
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Specialization</h4>
+                    <p className="text-muted-foreground">{booking.expert.specialization}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Experience</h4>
+                    <p className="text-muted-foreground">
+                      {booking.expert.years_of_experience} years
+                    </p>
+                  </div>
+                </div>
+
+                {/* Expertise Areas */}
+                {booking.expert.expertise_areas?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Expertise Areas</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {booking.expert.expertise_areas.map(area => (
+                        <Badge key={area} variant="secondary">
+                          {area}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Certifications */}
+                {booking.expert.certifications?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Certifications</h4>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {booking.expert.certifications.map(cert => (
+                        <div key={cert} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          {cert}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Languages */}
+                {booking.expert.languages?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Languages</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {booking.expert.languages.map(lang => (
+                        <Badge key={lang} variant="outline">
+                          {lang}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Content Grid */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Timeline - Left Column */}
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Booking Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {timelineSteps.map((step, index) => (
-                <TimelineItem
-                  key={index}
-                  {...step}
-                />
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Requirements Card */}
-          {booking.requirements && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Session Requirements</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{booking.requirements}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Review Card */}
-          {booking.review && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Review</CardTitle>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={cn(
-                        "w-4 h-4",
-                        i < booking.review.rating
-                          ? "text-yellow-400 fill-current"
-                          : "text-gray-300"
-                      )}
-                    />
-                  ))}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {booking.review.comment && (
-                  <p className="text-muted-foreground">{booking.review.comment}</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center text-center space-y-2">
+              <Users className="h-8 w-8 text-muted-foreground" />
+              <p className="font-medium">Expert Assignment Pending</p>
+              <p className="text-sm text-muted-foreground">
+                An expert will be assigned to your session soon
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Details Cards - Right Column */}
+      {/* Rest of the content in a grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Timeline Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {timelineSteps.map((step, index) => (
+              <TimelineItem key={index} {...step} />
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Session Details */}
         <div className="space-y-6">
-          {/* Session Details */}
           <Card>
             <CardHeader>
               <CardTitle>Session Details</CardTitle>
@@ -508,26 +701,6 @@ export default function ConsultingBookingDetails() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Expert Card - Show only if expert is assigned */}
-          {booking.assigned_expert_id && booking.expert && (
-            <ExpertCard expert={booking.expert} />
-          )}
-
-          {/* Show message if no expert assigned yet */}
-          {!booking.assigned_expert_id && isUpcoming && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <Users className="h-8 w-8 text-muted-foreground" />
-                  <p className="font-medium">Expert Assignment Pending</p>
-                  <p className="text-sm text-muted-foreground">
-                    An expert will be assigned to your session soon
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Payment Details */}
           <Card>

@@ -6,6 +6,7 @@ use App\Models\ConsultingBooking;
 use App\Models\ConsultingTimeSlot;
 use App\Models\ConsultingSetting;
 use App\Models\Transaction;
+use App\Models\Professional;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -245,6 +246,40 @@ class ConsultingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to fetch review',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function assignExpert(Request $request, ConsultingBooking $booking)
+    {
+        try {
+            $validated = $request->validate([
+                'expert_id' => 'required|exists:professionals,id'
+            ]);
+
+            // Check if expert is available
+            $expert = Professional::available()
+                ->findOrFail($validated['expert_id']);
+
+            if (!$expert->isAvailableForBooking($booking->selected_date, $booking->selected_time)) {
+                return response()->json([
+                    'message' => 'Expert is not available for this time slot'
+                ], 422);
+            }
+
+            $booking->update([
+                'assigned_expert_id' => $expert->id,
+                'expert_assigned_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Expert assigned successfully',
+                'booking' => $booking->load('expert.user')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to assign expert',
                 'error' => $e->getMessage()
             ], 500);
         }
