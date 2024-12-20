@@ -22,7 +22,7 @@ interface SubscriptionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubscribe: (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => void;
-  action: 'upgrade' | 'downgrade' | 'subscribe' | 'change';
+  action: 'upgrade' | 'downgrade' | 'subscribe' | 'current';
 }
 
 export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
@@ -192,31 +192,33 @@ export const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   </div>
 
                   {currentSubscription && plan && (
-                    <div className="p-4 rounded-lg border bg-muted/50">
-                      <h4 className="font-medium mb-3">Plan Change Calculation</h4>
-                      {(() => {
-                        const calculation = calculatePlanChange(currentSubscription, plan);
-                        return calculation ? (
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>New Plan Cost:</span>
-                              <span>{formatCurrency(calculation.newPlanCost)}</span>
+                    <div className="space-y-4 mt-4">
+                      <div className="p-4 rounded-lg bg-muted/50">
+                        <h4 className="font-medium mb-2">Plan Change Calculation</h4>
+                        {(() => {
+                          const calculation = calculatePlanChange(currentSubscription, plan);
+                          return calculation ? (
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>New Plan Cost:</span>
+                                <span>{formatCurrency(calculation.newPlanCost)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Current Plan Remaining Value:</span>
+                                <span className="text-red-500">
+                                  -{formatCurrency(calculation.remainingValue)}
+                                </span>
+                              </div>
+                              <div className="border-t pt-2 font-medium flex justify-between">
+                                <span>{calculation.finalAmount > 0 ? 'Amount to Pay:' : 'Amount to Refund:'}</span>
+                                <span className={calculation.finalAmount > 0 ? '' : 'text-green-500'}>
+                                  {formatCurrency(Math.abs(calculation.finalAmount))}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex justify-between">
-                              <span>Current Plan Remaining Value:</span>
-                              <span className="text-red-500">
-                                -{formatCurrency(calculation.remainingValue)}
-                              </span>
-                            </div>
-                            <div className="border-t pt-2 font-medium flex justify-between">
-                              <span>{calculation.finalAmount > 0 ? 'Amount to Pay:' : 'Amount to Refund:'}</span>
-                              <span className={calculation.finalAmount > 0 ? '' : 'text-green-500'}>
-                                {formatCurrency(Math.abs(calculation.finalAmount))}
-                              </span>
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
+                          ) : null;
+                        })()}
+                      </div>
                     </div>
                   )}
                 </div>

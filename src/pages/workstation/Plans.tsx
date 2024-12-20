@@ -311,7 +311,18 @@ const Plans = () => {
           setSelectedPlan(null);
         }}
         onSubscribe={handleSubscribe}
-        action={selectedPlan ? getSubscriptionAction(plans?.find(p => p.id === selectedPlan)!) : 'subscribe'}
+        action={(() => {
+          if (!selectedPlan || !plans) return 'subscribe';
+          const selectedPlanData = plans.find(p => p.id === selectedPlan);
+          if (!selectedPlanData) return 'subscribe';
+          
+          if (!currentSubscription) return 'subscribe';
+          
+          return comparePlans(
+            currentSubscription.plan.duration_days,
+            selectedPlanData.duration_days
+          );
+        })()}
       />
     </div>
   );
