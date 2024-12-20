@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\WorkstationSubscription;
 use App\Models\WorkstationPlan;
 use App\Models\User;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -56,10 +57,7 @@ class WorkstationController extends Controller
             ]);
 
             $user = auth()->user();
-            \Log::info('User found:', ['user_id' => $user->id, 'wallet_balance' => $user->wallet_balance]);
-
             $plan = WorkstationPlan::findOrFail($request->plan_id);
-            \Log::info('Plan found:', $plan->toArray());
             
             // Calculate amount based on payment type
             $amount = $request->payment_type === 'full' 
@@ -68,10 +66,6 @@ class WorkstationController extends Controller
 
             // Check wallet balance
             if ($user->wallet_balance < $amount) {
-                \Log::warning('Insufficient balance', [
-                    'required' => $amount,
-                    'available' => $user->wallet_balance
-                ]);
                 return response()->json([
                     'message' => 'Insufficient wallet balance'
                 ], 400);
@@ -98,8 +92,6 @@ class WorkstationController extends Controller
                     'auto_renew' => false,
                 ]);
 
-                \Log::info('Subscription created:', $subscription->toArray());
-
                 // Create payment record
                 $payment = $subscription->payments()->create([
                     'amount' => $amount,
@@ -109,13 +101,32 @@ class WorkstationController extends Controller
                     'status' => 'paid'
                 ]);
 
-                \Log::info('Payment created:', $payment->toArray());
+                // Create transaction record
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'amount' => $amount,
+                    'type' => 'debit',
+                    'description' => "Payment for {$plan->name} Workstation Plan",
+                    'category' => 'workstation_subscription',
+                    'status' => 'completed',
+                    'payment_method' => 'wallet',
+                    'reference_number' => $subscription->tracking_code,
+                    'notes' => json_encode([
+                        'subscription_id' => $subscription->id,
+                        'plan_name' => $plan->name,
+                        'payment_type' => $request->payment_type,
+                        'duration' => $plan->duration_days . ' days',
+                        'start_date' => $subscription->start_date,
+                        'end_date' => $subscription->end_date
+                    ])
+                ]);
 
                 \DB::commit();
 
                 return response()->json([
                     'message' => 'Subscription created successfully',
-                    'subscription' => $subscription->load('plan', 'payments')
+                    'subscription' => $subscription->load('plan', 'payments'),
+                    'transaction' => Transaction::where('reference_number', $subscription->tracking_code)->first()
                 ]);
             } catch (\Exception $e) {
                 \DB::rollBack();

@@ -29,6 +29,7 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
   const [startType, setStartType] = useState<'immediate' | 'later'>('immediate');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const walletBalance = user?.wallet_balance || 0;
   const paymentAmount = paymentType === 'full' ? plan?.price : plan?.installment_amount;
@@ -42,7 +43,7 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
     { number: 3, title: "Start Date", icon: CalendarIcon },
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
@@ -62,11 +63,16 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
         return;
       }
 
-      onSubscribe(
-        plan!.id, 
-        paymentType, 
-        startType === 'later' ? selectedDate : undefined
-      );
+      try {
+        setIsProcessing(true);
+        await onSubscribe(
+          plan!.id, 
+          paymentType, 
+          startType === 'later' ? selectedDate : undefined
+        );
+      } catch (error) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -281,6 +287,7 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
                 variant="outline" 
                 onClick={handleBack}
                 className="w-full sm:w-auto"
+                disabled={isProcessing}
               >
                 Back
               </Button>
@@ -289,10 +296,22 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
           <Button 
             onClick={handleNext} 
             className="flex items-center justify-center gap-2 w-full sm:w-auto"
-            disabled={step === 3 && (!hasEnoughBalance || (startType === 'later' && !selectedDate))}
+            disabled={
+              isProcessing || 
+              (step === 3 && (!hasEnoughBalance || (startType === 'later' && !selectedDate)))
+            }
           >
-            {step === 3 ? 'Proceed to Payment' : 'Next'}
-            <ArrowRight className="w-4 h-4" />
+            {isProcessing ? (
+              <>
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                {step === 3 ? 'Proceed to Payment' : 'Next'}
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

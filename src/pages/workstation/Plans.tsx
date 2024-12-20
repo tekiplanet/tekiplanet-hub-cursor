@@ -39,19 +39,23 @@ const Plans = () => {
 
   const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => {
     try {
-      console.log('Subscription request:', { planId, paymentType, startDate });
-      // Close dialog
-      setShowDialog(false);
-      
       // Create subscription
       const response = await workstationService.createSubscription(planId, paymentType, startDate);
-      console.log('Subscription response:', response);
       
-      toast.success('Subscription created successfully!');
-      navigate('/dashboard/workstation/subscription');
+      // Only close dialog after successful subscription
+      setShowDialog(false);
+      
+      toast.success('Subscription created successfully!', {
+        description: `Transaction Reference: ${response.transaction.reference_number}`
+      });
+      
+      navigate('/dashboard/workstation/subscription', {
+        state: { transactionId: response.transaction.id }
+      });
     } catch (error) {
       console.error('Subscription error:', error);
-      toast.error('Failed to process subscription');
+      // Don't close dialog, let user try again
+      throw error; // Re-throw to be handled by the dialog
     }
   };
 
