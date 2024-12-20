@@ -201,9 +201,19 @@ class ConsultingController extends Controller
     public function getBookingDetails($id)
     {
         try {
-            $booking = ConsultingBooking::with(['review', 'expert.user'])
+            $booking = ConsultingBooking::with([
+                'review',
+                'expert.user'
+            ])
                 ->where('user_id', auth()->id())
                 ->findOrFail($id);
+
+            \Log::info('Booking Expert Data:', [
+                'booking_id' => $id,
+                'expert_id' => $booking->assigned_expert_id,
+                'expert' => $booking->expert,
+                'expert_user' => $booking->expert?->user
+            ]);
 
             return response()->json([
                 'booking' => $booking

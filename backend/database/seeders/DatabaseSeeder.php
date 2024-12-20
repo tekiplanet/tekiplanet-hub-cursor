@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
             CouponSeeder::class,
             ConsultingSettingsSeeder::class,
             ConsultingTimeSlotsSeeder::class,
+            ProfessionalsTableSeeder::class,
         ]);
     }
 }

@@ -191,57 +191,65 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   );
 };
 
-const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Users className="h-5 w-5 text-primary" />
-        Assigned Expert
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="flex items-start gap-4">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={expert.user?.avatar} />
-          <AvatarFallback>
-            {expert.user?.name 
-              ? expert.user.name.split(' ').map(n => n[0]).join('')
-              : 'EX'
-            }
-          </AvatarFallback>
-        </Avatar>
-        <div className="space-y-1">
-          <h3 className="font-medium">{expert.user?.name || 'Expert'}</h3>
-          <p className="text-sm text-muted-foreground">{expert.role}</p>
-        </div>
-      </div>
+const ExpertCard = ({ expert }: { expert: ConsultingExpert }) => {
+  console.log('Booking Expert Data:', {
+    expert: expert,
+    user: expert?.user,
+    assigned_id: expert?.assigned_expert_id
+  });
 
-      {expert.expertise_areas && expert.expertise_areas.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Expertise Areas</p>
-          <div className="flex flex-wrap gap-2">
-            {expert.expertise_areas.map(area => (
-              <Badge key={area} variant="secondary">
-                {area}
-              </Badge>
-            ))}
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          Assigned Expert
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-start gap-4">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={expert.user?.avatar} />
+            <AvatarFallback>
+              {expert.user?.name 
+                ? expert.user.name.split(' ').map(n => n[0]).join('')
+                : 'EX'
+              }
+            </AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <h3 className="font-medium">{expert.user?.name || 'Expert'}</h3>
+            <p className="text-sm text-muted-foreground">{expert.role}</p>
           </div>
         </div>
-      )}
 
-      <Separator />
-
-      {expert.user?.email && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="h-4 w-4 text-primary" />
-            <span>{expert.user.email}</span>
+        {expert.expertise_areas && expert.expertise_areas.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Expertise Areas</p>
+            <div className="flex flex-wrap gap-2">
+              {expert.expertise_areas.map(area => (
+                <Badge key={area} variant="secondary">
+                  {area}
+                </Badge>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
+        )}
+
+        <Separator />
+
+        {expert.user?.email && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-primary" />
+              <span>{expert.user.email}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function ConsultingBookingDetails() {
   const { id } = useParams();

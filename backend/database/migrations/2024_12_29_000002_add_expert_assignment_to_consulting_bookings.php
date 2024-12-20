@@ -13,7 +13,7 @@ return new class extends Migration
             $table->timestamp('expert_assigned_at')->nullable()->after('assigned_expert_id');
             $table->foreign('assigned_expert_id')
                   ->references('id')
-                  ->on('project_team_members')
+                  ->on('professionals')
                   ->onDelete('set null');
         });
     }

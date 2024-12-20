@@ -76,7 +76,7 @@ class ConsultingBooking extends Model
 
     public function expert()
     {
-        return $this->belongsTo(ProjectTeamMember::class, 'assigned_expert_id')
+        return $this->belongsTo(Professional::class, 'assigned_expert_id')
             ->with('user');
     }
 } 
