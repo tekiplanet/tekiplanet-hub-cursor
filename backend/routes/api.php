@@ -27,6 +27,9 @@ use App\Http\Controllers\ConsultingReviewController;
 use App\Http\Controllers\WorkstationController;
 use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\ProfessionalCategoryController;
+use App\Http\Controllers\HustleController;
+use App\Http\Controllers\HustleApplicationController;
+use App\Http\Controllers\HustleMessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,4 +226,22 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/professional/categories', [ProfessionalCategoryController::class, 'index']);
     Route::get('/professional/categories/{id}', [ProfessionalCategoryController::class, 'show']);
+});
+
+// Hustle Routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Hustle listing and details
+    Route::get('/hustles', [HustleController::class, 'index']);
+    Route::get('/hustles/{id}', [HustleController::class, 'show']);
+
+    // Hustle applications
+    Route::get('/hustle-applications', [HustleApplicationController::class, 'index']);
+    Route::post('/hustles/{hustleId}/apply', [HustleApplicationController::class, 'store']);
+    Route::post('/hustle-applications/{id}/withdraw', [HustleApplicationController::class, 'withdraw']);
+    Route::get('/my-hustles', [HustleApplicationController::class, 'getMyHustles']);
+
+    // Hustle messages
+    Route::get('/hustles/{hustleId}/messages', [HustleMessageController::class, 'getMessages']);
+    Route::post('/hustles/{hustleId}/messages', [HustleMessageController::class, 'sendMessage']);
+    Route::post('/hustles/{hustleId}/messages/mark-read', [HustleMessageController::class, 'markMessagesAsRead']);
 });

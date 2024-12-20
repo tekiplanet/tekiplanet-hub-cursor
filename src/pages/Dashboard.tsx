@@ -280,6 +280,12 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
           icon: <CreditCard className="h-4 w-4" />
         }
       ]
+    },
+    {
+      label: "Hustles",
+      path: "/dashboard/hustles",
+      icon: <Briefcase className="h-4 w-4" />,
+      badge: "New"
     }
   ];
 

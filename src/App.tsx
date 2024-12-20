@@ -58,6 +58,7 @@ const ProjectDetailsPage = React.lazy(() => import('@/pages/ProjectDetails'));
 const WorkstationPlans = React.lazy(() => import('@/pages/workstation/Plans'));
 const WorkstationSubscription = React.lazy(() => import('@/pages/workstation/Subscription'));
 const DashboardHome = React.lazy(() => import('@/pages/DashboardHome'));
+const Hustles = React.lazy(() => import('@/pages/hustles/Hustles'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -115,6 +116,7 @@ const AppContent = () => {
               <Route path="subscription" element={<WorkstationSubscription />} />
             </Route>
             <Route path="professional/profile/create" element={<CreateProfileForm />} />
+            <Route path="hustles" element={<Hustles />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
