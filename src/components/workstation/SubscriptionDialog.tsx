@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, CreditCard, ArrowRight, Building2 } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
@@ -77,7 +76,7 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Subscribe to {plan.name}</DialogTitle>
           <DialogDescription>
@@ -113,172 +112,183 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-4 py-4"
-          >
-            {step === 1 && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg border bg-muted/50">
-                  <h4 className="font-medium mb-3">Plan Features</h4>
-                  <ul className="space-y-3">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{plan.duration_days} days access</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{plan.meeting_room_hours}hr meeting room</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{plan.print_pages_limit} print pages</span>
-                    </li>
-                    {plan.has_locker && (
+        {/* Make this section scrollable */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-4 py-4"
+            >
+              {step === 1 && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg border bg-muted/50">
+                    <h4 className="font-medium mb-3">Plan Features</h4>
+                    <ul className="space-y-3">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary" />
-                        <span className="text-sm">Personal locker</span>
+                        <span className="text-sm">{plan.duration_days} days access</span>
                       </li>
-                    )}
-                    {plan.has_dedicated_support && (
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary" />
-                        <span className="text-sm">Dedicated support</span>
+                        <span className="text-sm">{plan.meeting_room_hours}hr meeting room</span>
                       </li>
-                    )}
-                  </ul>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span className="text-sm">{plan.print_pages_limit} print pages</span>
+                      </li>
+                      {plan.has_locker && (
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Personal locker</span>
+                        </li>
+                      )}
+                      {plan.has_dedicated_support && (
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Dedicated support</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {step === 2 && (
-              <div className="space-y-4">
-                <h4 className="font-medium">Select Payment Option</h4>
-                <RadioGroup value={paymentType} onValueChange={(v) => setPaymentType(v as 'full' | 'installment')}>
-                  <div className="grid gap-4">
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
-                      <RadioGroupItem value="full" id="full" />
-                      <div className="flex-1">
-                        <Label htmlFor="full" className="font-medium">Full Payment</Label>
-                        <p className="text-sm text-muted-foreground">
-                          One-time payment of {formatCurrency(plan.price)}
-                        </p>
-                      </div>
-                    </div>
-                    {plan.allows_installments && (
+              {step === 2 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium">Select Payment Option</h4>
+                  <RadioGroup value={paymentType} onValueChange={(v) => setPaymentType(v as 'full' | 'installment')}>
+                    <div className="grid gap-4">
                       <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
-                        <RadioGroupItem value="installment" id="installment" />
+                        <RadioGroupItem value="full" id="full" />
                         <div className="flex-1">
-                          <Label htmlFor="installment" className="font-medium">Monthly Installments</Label>
+                          <Label htmlFor="full" className="font-medium">Full Payment</Label>
                           <p className="text-sm text-muted-foreground">
-                            {plan.installment_months} payments of {formatCurrency(plan.installment_amount)}/month
+                            One-time payment of {formatCurrency(plan.price)}
                           </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </RadioGroup>
-              </div>
-            )}
+                      {plan.allows_installments && (
+                        <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                          <RadioGroupItem value="installment" id="installment" />
+                          <div className="flex-1">
+                            <Label htmlFor="installment" className="font-medium">Monthly Installments</Label>
+                            <p className="text-sm text-muted-foreground">
+                              {plan.installment_months} payments of {formatCurrency(plan.installment_amount)}/month
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
 
-            {step === 3 && (
-              <div className="space-y-4">
-                <h4 className="font-medium">Choose Start Date</h4>
-                <RadioGroup value={startType} onValueChange={(v) => setStartType(v as 'immediate' | 'later')}>
-                  <div className="grid gap-4">
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
-                      <RadioGroupItem value="immediate" id="immediate" />
-                      <div className="flex-1">
-                        <Label htmlFor="immediate" className="font-medium">Start Immediately</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Access your workspace right after payment
-                        </p>
+              {step === 3 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium">Choose Start Date</h4>
+                  <RadioGroup value={startType} onValueChange={(v) => setStartType(v as 'immediate' | 'later')}>
+                    <div className="grid gap-4">
+                      <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                        <RadioGroupItem value="immediate" id="immediate" />
+                        <div className="flex-1">
+                          <Label htmlFor="immediate" className="font-medium">Start Immediately</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Access your workspace right after payment
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                        <RadioGroupItem value="later" id="later" />
+                        <div className="flex-1">
+                          <Label htmlFor="later" className="font-medium">Start Later</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Schedule your access for a future date
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
-                      <RadioGroupItem value="later" id="later" />
-                      <div className="flex-1">
-                        <Label htmlFor="later" className="font-medium">Start Later</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Schedule your access for a future date
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </RadioGroup>
+                  </RadioGroup>
 
-                {/* Date Picker */}
-                {startType === 'later' && (
-                  <div className="mt-4">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                  {/* Date Picker */}
+                  {startType === 'later' && (
+                    <div className="mt-4 space-y-4">
+                      <div className="border rounded-lg p-4">
                         <Calendar
                           mode="single"
                           selected={selectedDate}
                           onSelect={setSelectedDate}
-                          disabled={(date) => date < new Date()}
+                          disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            return date < today;
+                          }}
                           initialFocus
+                          fromDate={new Date()}
+                          toDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)}
+                          className="rounded-md border"
                         />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                )}
-
-                {/* Payment Information */}
-                <div className="mt-6 p-4 rounded-lg border bg-muted/50">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Wallet Balance:</span>
-                    <span className="font-medium">{formatCurrency(walletBalance)}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-medium">Payment Amount:</span>
-                    <span className="font-medium">{formatCurrency(paymentAmount || 0)}</span>
-                  </div>
-                  {!hasEnoughBalance && (
-                    <div className="text-sm text-destructive flex items-center gap-2">
-                      <span>Insufficient balance</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate("/dashboard/wallet")}
-                      >
-                        Fund Wallet
-                      </Button>
+                      </div>
+                      {selectedDate && (
+                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                          <span className="text-sm text-muted-foreground">
+                            Selected start date:
+                          </span>
+                          <span className="font-medium">
+                            {format(selectedDate, "MMMM d, yyyy")}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
 
-        <DialogFooter className="flex justify-between mt-6">
-          <div className="flex gap-2">
+                  {/* Payment Information */}
+                  <div className="mt-6 p-4 rounded-lg border bg-muted/50">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Wallet Balance:</span>
+                      <span className="font-medium">{formatCurrency(walletBalance)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm font-medium">Payment Amount:</span>
+                      <span className="font-medium">{formatCurrency(paymentAmount || 0)}</span>
+                    </div>
+                    {!hasEnoughBalance && (
+                      <div className="text-sm text-destructive flex items-center gap-2">
+                        <span>Insufficient balance</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate("/dashboard/wallet")}
+                        >
+                          Fund Wallet
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Keep footer outside scrollable area */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row justify-between gap-2 mt-6 border-t pt-4">
+          <div>
             {step > 1 && (
-              <Button variant="outline" onClick={handleBack}>
+              <Button 
+                variant="outline" 
+                onClick={handleBack}
+                className="w-full sm:w-auto"
+              >
                 Back
               </Button>
             )}
           </div>
           <Button 
             onClick={handleNext} 
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto"
             disabled={step === 3 && (!hasEnoughBalance || (startType === 'later' && !selectedDate))}
           >
             {step === 3 ? 'Proceed to Payment' : 'Next'}
