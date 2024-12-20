@@ -99,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/subscriptions', [WorkstationController::class, 'createSubscription']);
             Route::get('/subscription', [WorkstationController::class, 'getCurrentSubscription']);
             Route::get('/subscriptions/history', [WorkstationController::class, 'getSubscriptionHistory']);
+            Route::post('/subscriptions/{subscription}/renew', [WorkstationController::class, 'renewSubscription']);
+            Route::post('/subscriptions/{subscription}/cancel', [WorkstationController::class, 'cancelSubscription']);
         });
     });
 });
@@ -203,6 +205,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('bookings/{id}/review', [ConsultingController::class, 'getBookingReview']);
     });
 });
-
-Route::post('/workstation/subscriptions/{subscription}/renew', [WorkstationController::class, 'renewSubscription']);
-Route::post('/workstation/subscriptions/{subscription}/cancel', [WorkstationController::class, 'cancelSubscription']);

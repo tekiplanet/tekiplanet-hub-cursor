@@ -21,6 +21,21 @@ class WorkstationSubscription extends Model
         'total_amount' => 'decimal:2'
     ];
 
+    protected $fillable = [
+        'user_id',
+        'plan_id',
+        'tracking_code',
+        'start_date',
+        'end_date',
+        'total_amount',
+        'payment_type',
+        'status',
+        'auto_renew',
+        'cancelled_at',
+        'cancellation_reason',
+        'cancellation_feedback'
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -154,7 +154,7 @@ class WorkstationController extends Controller
         }
     }
 
-    public function renewSubscription(WorkstationSubscription $subscription)
+    public function renewSubscription(WorkstationSubscription $subscription, Request $request)
     {
         try {
             if ($subscription->user_id !== auth()->id()) {
@@ -169,16 +169,48 @@ class WorkstationController extends Controller
                 ], 400);
             }
 
-            // Calculate new end date
-            $newEndDate = date('Y-m-d', strtotime($subscription->end_date . " + {$subscription->plan->duration_days} days"));
+            $request->validate([
+                'duration' => 'nullable|string|in:same,3,6,12'
+            ]);
+
+            // Calculate new end date based on duration
+            $durationDays = match($request->duration) {
+                '3' => 90,
+                '6' => 180,
+                '12' => 365,
+                default => $subscription->plan->duration_days
+            };
+
+            $newEndDate = date('Y-m-d', strtotime($subscription->end_date . " + {$durationDays} days"));
+
+            // Calculate price with discount
+            $basePrice = $subscription->plan->price;
+            $discount = match($request->duration) {
+                '3' => 0.10, // 10% off
+                '6' => 0.15, // 15% off
+                '12' => 0.20, // 20% off
+                default => 0
+            };
+            
+            $finalPrice = $basePrice * (1 - $discount);
 
             $subscription->update([
-                'end_date' => $newEndDate
+                'end_date' => $newEndDate,
+                'total_amount' => $finalPrice,
+                'status' => 'active'
+            ]);
+
+            // Create a payment record for the renewal
+            $subscription->payments()->create([
+                'amount' => $finalPrice,
+                'type' => 'full',
+                'status' => 'paid',
+                'due_date' => now(),
             ]);
 
             return response()->json([
                 'message' => 'Subscription renewed successfully',
-                'subscription' => $subscription->load('plan')
+                'subscription' => $subscription->load('plan', 'payments')
             ]);
         } catch (\Exception $e) {
             return response()->json([
