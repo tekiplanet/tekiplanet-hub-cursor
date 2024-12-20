@@ -11,11 +11,14 @@ import { formatCurrency } from "@/lib/utils";
 import { SubscriptionDialog } from "@/components/workstation/SubscriptionDialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { comparePlans } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Plans = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: plans, isLoading, error } = useQuery({
     queryKey: ['workstation-plans'],
@@ -42,20 +45,29 @@ const Plans = () => {
     show: { opacity: 1, y: 0 }
   };
 
-  const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => {
+  const handleSubscribe = async (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => {
     try {
-      const response = await workstationService.createSubscription(planId, paymentType, startDate);
+      const response = await workstationService.createSubscription(planId, paymentType, startDate, isUpgrade);
       
       // Only close dialog after successful subscription
       setShowDialog(false);
       
-      toast.success('Subscription created successfully!', {
-        description: `Transaction Reference: ${response.transaction.reference_number}`
-      });
+      // Handle different response structures for new vs upgrade
+      if (isUpgrade) {
+        toast.success(response.message || 'Plan updated successfully!', {
+          description: response.subscription.plan.name
+        });
+      } else {
+        toast.success('Subscription created successfully!', {
+          description: `Transaction Reference: ${response.transaction?.reference_number}`
+        });
+      }
       
-      navigate('/dashboard/workstation/subscription', {
-        state: { transactionId: response.transaction.id }
-      });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['current-subscription']);
+      
+      // Navigate to subscription page
+      navigate('/dashboard/workstation/subscription');
     } catch (error: any) {
       console.error('Subscription error:', error);
       
@@ -68,7 +80,7 @@ const Plans = () => {
             onClick: () => navigate('/dashboard/workstation/subscription')
           }
         });
-        setShowDialog(false); // Close dialog as user already has a subscription
+        setShowDialog(false);
       } else {
         // For other errors, keep dialog open and show error
         toast.error('Failed to process subscription', {
@@ -78,6 +90,17 @@ const Plans = () => {
       
       throw error;
     }
+  };
+
+  const getSubscriptionAction = (plan: WorkstationPlan) => {
+    if (!currentSubscription) return 'subscribe';
+    
+    const action = comparePlans(
+      currentSubscription.plan.duration_days,
+      plan.duration_days
+    );
+    
+    return action;
   };
 
   if (error) {
@@ -220,28 +243,38 @@ const Plans = () => {
                   {/* Action Button */}
                   <Button 
                     className="w-full mt-6" 
+                    variant={getSubscriptionAction(plan) === 'current' ? 'outline' : 'default'}
                     onClick={() => {
-                        const existingPlanOfSameType = currentSubscription && 
-                            currentSubscription.plan.duration_days === plan.duration_days;
-                            
-                        if (existingPlanOfSameType) {
-                            toast.error(`You already have an active ${currentSubscription.plan.name} subscription`, {
-                                action: {
-                                    label: "View Subscription",
-                                    onClick: () => navigate('/dashboard/workstation/subscription')
-                                }
-                            });
-                            return;
-                        }
-                        setSelectedPlan(plan.id);
-                        setShowDialog(true);
+                      const action = getSubscriptionAction(plan);
+                      
+                      if (action === 'current') {
+                        toast.info("You're currently subscribed to this plan", {
+                          action: {
+                            label: "View Subscription",
+                            onClick: () => navigate('/dashboard/workstation/subscription')
+                          }
+                        });
+                        return;
+                      }
+                      
+                      setSelectedPlan(plan.id);
+                      setShowDialog(true);
                     }}
-                    disabled={currentSubscription?.plan.duration_days === plan.duration_days}
+                    disabled={getSubscriptionAction(plan) === 'current'}
                   >
-                    {currentSubscription?.plan.duration_days === plan.duration_days 
-                        ? 'Already Subscribed' 
-                        : 'Subscribe Now'
-                    }
+                    {(() => {
+                      const action = getSubscriptionAction(plan);
+                      switch (action) {
+                        case 'current':
+                          return 'Current Plan';
+                        case 'upgrade':
+                          return 'Upgrade Plan';
+                        case 'downgrade':
+                          return 'Downgrade Plan';
+                        default:
+                          return 'Subscribe Now';
+                      }
+                    })()}
                   </Button>
                 </div>
 

@@ -72,12 +72,14 @@ export const workstationService = {
   createSubscription: async (
     planId: string, 
     paymentType: 'full' | 'installment',
-    startDate?: Date
+    startDate?: Date,
+    isUpgrade?: boolean
   ) => {
     const response = await apiClient.post('/workstation/subscriptions', {
       plan_id: planId,
       payment_type: paymentType,
-      start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined
+      start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+      is_upgrade: isUpgrade
     });
     return response.data;
   },

@@ -14,15 +14,23 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { comparePlans } from "@/lib/utils";
 
 interface SubscriptionDialogProps {
   plan: WorkstationPlan | null;
   isOpen: boolean;
   onClose: () => void;
-  onSubscribe: (planId: string, paymentType: 'full' | 'installment', startDate?: Date) => void;
+  currentSubscription?: any;
+  onSubscribe: (planId: string, paymentType: 'full' | 'installment', startDate?: Date, isUpgrade?: boolean) => void;
 }
 
-export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: SubscriptionDialogProps) {
+export function SubscriptionDialog({ 
+  plan, 
+  isOpen, 
+  onClose, 
+  currentSubscription,
+  onSubscribe 
+}: SubscriptionDialogProps) {
   const user = useAuthStore(state => state.user);
   const [step, setStep] = useState(1);
   const [paymentType, setPaymentType] = useState<'full' | 'installment'>('full');
@@ -42,6 +50,13 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
     { number: 2, title: "Payment Option", icon: CreditCard },
     { number: 3, title: "Start Date", icon: CalendarIcon },
   ];
+
+  const action = currentSubscription 
+    ? comparePlans(currentSubscription.plan.duration_days, plan?.duration_days || 0)
+    : 'subscribe';
+
+  const isUpgrade = action === 'upgrade';
+  const isDowngrade = action === 'downgrade';
 
   const handleNext = async () => {
     if (step < 3) {
@@ -68,7 +83,8 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
         await onSubscribe(
           plan!.id, 
           paymentType, 
-          startType === 'later' ? selectedDate : undefined
+          startType === 'later' ? selectedDate : undefined,
+          isUpgrade
         );
       } catch (error) {
         setIsProcessing(false);
@@ -90,9 +106,17 @@ export function SubscriptionDialog({ plan, isOpen, onClose, onSubscribe }: Subsc
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Subscribe to {plan.name}</DialogTitle>
+          <DialogTitle>
+            {isUpgrade ? 'Upgrade to ' : isDowngrade ? 'Downgrade to ' : 'Subscribe to '} 
+            {plan?.name}
+          </DialogTitle>
           <DialogDescription>
-            Complete the following steps to activate your subscription
+            {isUpgrade 
+              ? 'Upgrade your current subscription for better features'
+              : isDowngrade 
+                ? 'Downgrade your subscription to a more basic plan'
+                : 'Complete the following steps to activate your subscription'
+            }
           </DialogDescription>
         </DialogHeader>
 

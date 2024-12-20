@@ -48,109 +48,100 @@ class WorkstationController extends Controller
     public function createSubscription(Request $request)
     {
         try {
-            \Log::info('Creating subscription with data:', $request->all());
-
             $request->validate([
                 'plan_id' => 'required|exists:workstation_plans,id',
                 'payment_type' => 'required|in:full,installment',
                 'start_date' => 'nullable|date|after_or_equal:today',
+                'is_upgrade' => 'boolean'
             ]);
 
             $user = auth()->user();
             $plan = WorkstationPlan::findOrFail($request->plan_id);
 
-            // Check for existing active subscription of the same plan type
-            $existingSubscription = WorkstationSubscription::where('user_id', $user->id)
+            // Get current subscription if exists
+            $currentSubscription = WorkstationSubscription::where('user_id', $user->id)
                 ->where('status', 'active')
-                ->whereHas('plan', function($query) use ($plan) {
-                    $query->where('duration_days', $plan->duration_days);
-                })
                 ->first();
 
-            if ($existingSubscription) {
-                return response()->json([
-                    'message' => "You already have an active {$existingSubscription->plan->name} subscription",
-                    'subscription' => $existingSubscription->load('plan')
-                ], 400);
-            }
+            if ($currentSubscription) {
+                // Handle upgrade/downgrade
+                $currentPlan = $currentSubscription->plan;
+                
+                // Calculate remaining value of current subscription
+                $remainingDays = now()->diffInDays($currentSubscription->end_date);
+                $dailyRate = $currentSubscription->total_amount / $currentPlan->duration_days;
+                $remainingValue = $dailyRate * $remainingDays;
 
-            // Calculate amount based on payment type
-            $amount = $request->payment_type === 'full' 
-                ? $plan->price 
-                : $plan->installment_amount;
+                // Calculate new subscription cost
+                $newAmount = $request->payment_type === 'full' 
+                    ? $plan->price 
+                    : $plan->installment_amount;
 
-            // Check wallet balance
-            if ($user->wallet_balance < $amount) {
-                return response()->json([
-                    'message' => 'Insufficient wallet balance'
-                ], 400);
-            }
+                // Adjust amount based on remaining value
+                $finalAmount = max(0, $newAmount - $remainingValue);
 
-            \DB::beginTransaction();
-            try {
-                // Deduct from wallet
-                $user->wallet_balance -= $amount;
-                $user->save();
-
-                // Create subscription
-                $subscription = WorkstationSubscription::create([
-                    'user_id' => $user->id,
-                    'plan_id' => $plan->id,
-                    'tracking_code' => strtoupper(Str::random(10)),
-                    'start_date' => $request->start_date ?? now(),
-                    'end_date' => $request->start_date 
-                        ? date('Y-m-d', strtotime($request->start_date . " + {$plan->duration_days} days"))
-                        : date('Y-m-d', strtotime("+ {$plan->duration_days} days")),
-                    'total_amount' => $plan->price,
-                    'payment_type' => $request->payment_type,
-                    'status' => 'active',
-                    'auto_renew' => false,
-                ]);
-
-                // Create payment record
-                $payment = $subscription->payments()->create([
-                    'amount' => $amount,
-                    'type' => $request->payment_type,
-                    'installment_number' => $request->payment_type === 'installment' ? 1 : null,
-                    'due_date' => now(),
-                    'status' => 'paid'
-                ]);
-
-                // Create transaction record
-                Transaction::create([
-                    'user_id' => $user->id,
-                    'amount' => $amount,
-                    'type' => 'debit',
-                    'description' => "Payment for {$plan->name} Workstation Plan",
-                    'category' => 'workstation_subscription',
-                    'status' => 'completed',
-                    'payment_method' => 'wallet',
-                    'reference_number' => $subscription->tracking_code,
-                    'notes' => json_encode([
-                        'subscription_id' => $subscription->id,
-                        'plan_name' => $plan->name,
+                \DB::beginTransaction();
+                try {
+                    // Update existing subscription
+                    $currentSubscription->update([
+                        'plan_id' => $plan->id,
+                        'total_amount' => $newAmount,
                         'payment_type' => $request->payment_type,
-                        'duration' => $plan->duration_days . ' days',
-                        'start_date' => $subscription->start_date,
-                        'end_date' => $subscription->end_date
-                    ])
-                ]);
+                        'end_date' => $request->start_date 
+                            ? date('Y-m-d', strtotime($request->start_date . " + {$plan->duration_days} days"))
+                            : date('Y-m-d', strtotime("+ {$plan->duration_days} days")),
+                    ]);
 
-                \DB::commit();
+                    // Create payment record for the difference
+                    if ($finalAmount > 0) {
+                        // Deduct from wallet
+                        $user->wallet_balance -= $finalAmount;
+                        $user->save();
 
-                return response()->json([
-                    'message' => 'Subscription created successfully',
-                    'subscription' => $subscription->load('plan', 'payments'),
-                    'transaction' => Transaction::where('reference_number', $subscription->tracking_code)->first()
-                ]);
-            } catch (\Exception $e) {
-                \DB::rollBack();
-                \Log::error('Transaction failed:', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                throw $e;
+                        // Create payment record
+                        $payment = $currentSubscription->payments()->create([
+                            'amount' => $finalAmount,
+                            'type' => $request->payment_type,
+                            'installment_number' => $request->payment_type === 'installment' ? 1 : null,
+                            'due_date' => now(),
+                            'status' => 'paid'
+                        ]);
+
+                        // Create transaction record for the upgrade/downgrade
+                        Transaction::create([
+                            'user_id' => $user->id,
+                            'amount' => $finalAmount,
+                            'type' => 'debit',
+                            'description' => "Plan " . ($finalAmount > 0 ? "upgrade" : "downgrade") . " to {$plan->name}",
+                            'category' => 'workstation_subscription',
+                            'status' => 'completed',
+                            'payment_method' => 'wallet',
+                            'reference_number' => $currentSubscription->tracking_code,
+                            'notes' => json_encode([
+                                'subscription_id' => $currentSubscription->id,
+                                'old_plan' => $currentPlan->name,
+                                'new_plan' => $plan->name,
+                                'payment_type' => $request->payment_type,
+                                'duration' => $plan->duration_days . ' days',
+                                'start_date' => $currentSubscription->start_date,
+                                'end_date' => $currentSubscription->end_date
+                            ])
+                        ]);
+                    }
+
+                    \DB::commit();
+
+                    return response()->json([
+                        'message' => 'Subscription updated successfully',
+                        'subscription' => $currentSubscription->load('plan', 'payments')
+                    ]);
+                } catch (\Exception $e) {
+                    \DB::rollBack();
+                    throw $e;
+                }
             }
+
+            // Handle new subscription creation (existing code)
         } catch (\Exception $e) {
             \Log::error('Subscription creation failed:', [
                 'error' => $e->getMessage(),
