@@ -1,7 +1,1 @@
-import { CreateProfileForm as ProfileForm } from "@/components/professional/CreateProfileForm";
-
-const CreateProfileForm = () => {
-  return <ProfileForm />;
-};
-
-export default CreateProfileForm; 
+// This file can be deleted as we're using the component directly in routes 

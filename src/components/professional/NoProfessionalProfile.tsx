@@ -33,7 +33,6 @@ const NoProfessionalProfile = () => {
               </p>
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li>• Showcase your expertise and skills</li>
-                <li>• Set your availability and rates</li>
                 <li>• Connect with potential clients</li>
                 <li>• Access professional tools and features</li>
               </ul>

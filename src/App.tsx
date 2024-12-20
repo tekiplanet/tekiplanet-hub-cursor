@@ -21,6 +21,7 @@ import { queryClient } from '@/lib/queryClient';
 import ITConsulting from '@/pages/ITConsulting';
 import ConsultingBookings from "@/pages/ConsultingBookings";
 import ConsultingBookingDetails from "@/pages/ConsultingBookingDetails";
+import CreateProfileForm from '@/components/professional/CreateProfileForm';
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -114,6 +115,7 @@ const AppContent = () => {
               <Route path="plans" element={<WorkstationPlans />} />
               <Route path="subscription" element={<WorkstationSubscription />} />
             </Route>
+            <Route path="professional/profile/create" element={<CreateProfileForm />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
