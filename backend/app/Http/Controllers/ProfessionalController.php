@@ -76,7 +76,7 @@ class ProfessionalController extends Controller
                 'timezone' => $validatedData['timezone'],
                 'languages' => $validatedData['languages'],
                 'availability_status' => $validatedData['availability_status'],
-                'status' => 'active',
+                'status' => 'inactive',
                 'rating' => null,
                 'total_sessions' => 0
             ]);

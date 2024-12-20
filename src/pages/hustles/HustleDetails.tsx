@@ -103,16 +103,20 @@ const HustleDetails = () => {
       };
     }
 
-    // Check if professional profile is active
-    if (profileData?.profile?.status !== 'active') {
+    // Check if professional profile exists and is active
+    if (!profileData?.profile || profileData.profile.status !== 'active') {
       return {
         can_apply: false,
-        reason: 'Your professional profile must be active to apply for hustles'
+        reason: profileData?.profile?.status === 'inactive' 
+          ? 'Your professional profile is inactive. Please activate it to apply for hustles.'
+          : profileData?.profile?.status === 'suspended'
+          ? 'Your professional profile is suspended. Please contact support.'
+          : 'Your professional profile must be active to apply for hustles'
       };
     }
 
     // Check if professional's category matches the hustle category
-    if (profileData?.profile?.category_id !== hustle.category.id) {
+    if (profileData.profile.category_id !== hustle.category.id) {
       return {
         can_apply: false,
         reason: 'This hustle is for a different professional category'
@@ -212,43 +216,45 @@ const HustleDetails = () => {
               </div>
               <div className="flex items-center gap-2">
                 {/* Apply Button with Status */}
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="lg"
-                    onClick={() => setIsApplyDialogOpen(true)}
-                    disabled={!applicationStatus.can_apply}
-                    className={cn(
-                      "relative",
-                      applicationStatus.can_apply 
-                        ? "bg-primary text-white hover:bg-primary/90" 
-                        : "bg-muted"
-                    )}
-                  >
-                    <UserCheck className="h-5 w-5 mr-2" />
-                    {applicationStatus.can_apply ? 'Apply for Hustle' : (
-                      hustle.application_status === 'pending' ? 'Application Pending' :
-                      hustle.application_status === 'approved' ? 'Application Approved' :
-                      hustle.application_status === 'rejected' ? 'Application Rejected' :
-                      'Cannot Apply'
-                    )}
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="lg"
+                      onClick={() => setIsApplyDialogOpen(true)}
+                      disabled={!applicationStatus.can_apply}
+                      className={cn(
+                        "relative",
+                        applicationStatus.can_apply 
+                          ? "bg-primary text-white hover:bg-primary/90" 
+                          : "bg-muted"
+                      )}
+                    >
+                      <UserCheck className="h-5 w-5 mr-2" />
+                      {applicationStatus.can_apply ? 'Apply for Hustle' : (
+                        hustle.application_status === 'pending' ? 'Application Pending' :
+                        hustle.application_status === 'approved' ? 'Application Approved' :
+                        hustle.application_status === 'rejected' ? 'Application Rejected' :
+                        'Cannot Apply'
+                      )}
+                    </Button>
 
-                  {/* Show reason why user can't apply */}
+                    {/* Status Badge */}
+                    {hustle.application_status && (
+                      <Badge variant={
+                        hustle.application_status === 'approved' ? 'success' :
+                        hustle.application_status === 'rejected' ? 'destructive' :
+                        'secondary'
+                      }>
+                        {hustle.application_status.toUpperCase()}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Reason - Now on its own line */}
                   {!applicationStatus.can_apply && (
                     <p className="text-sm text-muted-foreground">
                       {applicationStatus.reason}
                     </p>
-                  )}
-
-                  {/* Show application status badge */}
-                  {hustle.application_status && (
-                    <Badge variant={
-                      hustle.application_status === 'approved' ? 'success' :
-                      hustle.application_status === 'rejected' ? 'destructive' :
-                      'secondary'
-                    }>
-                      {hustle.application_status.toUpperCase()}
-                    </Badge>
                   )}
                 </div>
               </div>

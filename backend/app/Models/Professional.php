@@ -118,6 +118,11 @@ class Professional extends Model
     // Helper method to check if professional can apply for a hustle
     public function canApplyForHustle(Hustle $hustle): bool
     {
+        // Check if professional's profile is active
+        if ($this->status !== 'active') {
+            return false;
+        }
+
         // Check if professional's category matches hustle category
         if ($this->category_id !== $hustle->category_id) {
             return false;

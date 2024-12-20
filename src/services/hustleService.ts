@@ -43,6 +43,18 @@ export interface Category {
   icon: string;
 }
 
+interface Professional {
+  id: string;
+  category_id: string;
+  status: 'active' | 'inactive' | 'suspended';
+  // ... other fields
+}
+
+interface ProfileCheckResponse {
+  has_profile: boolean;
+  profile: Professional | null;
+}
+
 export const hustleService = {
   getHustles: async (params?: { 
     category_id?: string;

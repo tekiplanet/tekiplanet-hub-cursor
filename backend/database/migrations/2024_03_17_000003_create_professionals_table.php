@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('professionals', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained()->onDelete('cascade');
+            $table->foreignUuid('category_id')->constrained('professional_categories');
             $table->string('title');
             $table->string('specialization');
             $table->json('expertise_areas')->nullable();
