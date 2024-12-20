@@ -25,6 +25,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ConsultingController;
 use App\Http\Controllers\ConsultingReviewController;
 use App\Http\Controllers\WorkstationController;
+use App\Http\Controllers\ProfessionalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -209,3 +210,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::post('/workstation/subscriptions/reactivate', [WorkstationController::class, 'reactivateSubscription'])
     ->middleware('auth:sanctum');
+
+// Professional Profile Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/professional/profile/check', [ProfessionalController::class, 'checkProfile']);
+    Route::post('/professional/profile', [ProfessionalController::class, 'store']);
+    Route::put('/professional/profile', [ProfessionalController::class, 'update']);
+});

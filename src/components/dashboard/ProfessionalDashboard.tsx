@@ -15,7 +15,7 @@ import {
   ArrowUpRight,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   AreaChart, 
   Area, 
@@ -28,6 +28,9 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
+import { professionalService } from "@/services/professionalService";
+import NoProfessionalProfile from "../professional/NoProfessionalProfile";
 
 // Animation variants
 const container = {
@@ -121,7 +124,12 @@ const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
   const navigate = useNavigate();
   const [selectedStat, setSelectedStat] = useState<string | null>(null);
 
-  if (isLoading) {
+  const { data: profileData, isLoading: profileLoading } = useQuery({
+    queryKey: ['professional-profile'],
+    queryFn: professionalService.checkProfile
+  });
+
+  if (isLoading || profileLoading) {
     return (
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col space-y-2">
@@ -136,6 +144,11 @@ const ProfessionalDashboard = ({ isLoading = false }: DashboardProps) => {
         <Skeleton className="h-[300px]" />
       </div>
     );
+  }
+
+  // If no profile exists, show the NoProfessionalProfile component
+  if (!profileData?.has_profile) {
+    return <NoProfessionalProfile />;
   }
 
   return (
