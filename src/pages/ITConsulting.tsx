@@ -38,6 +38,7 @@ import type { TimeSlot, ConsultingSettings } from '@/services/consultingService'
 interface SlotData {
   id: string;
   time: string;
+  available_slots: number;
 }
 
 const formatTime = (time: string) => {
@@ -241,11 +242,9 @@ export default function ITConsulting() {
                             >
                               <div className="text-sm">
                                 <p className="font-medium">{slot.time}</p>
-                                {isDisabled && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Not available
-                                  </p>
-                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  {slot.available_slots} slot{slot.available_slots !== 1 ? 's' : ''} left
+                                </p>
                               </div>
                             </Button>
                           );

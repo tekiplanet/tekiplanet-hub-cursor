@@ -18,7 +18,7 @@ class ConsultingController extends Controller
             $settings = ConsultingSetting::first();
             $slots = ConsultingTimeSlot::where('date', '>=', now()->toDateString())
                 ->where('is_available', true)
-                ->where('is_booked', false)
+                ->whereRaw('booked_slots < capacity')
                 ->orderBy('date')
                 ->orderBy('time')
                 ->get()
@@ -27,7 +27,9 @@ class ConsultingController extends Controller
                     return $dateSlots->map(function ($slot) {
                         return [
                             'id' => $slot->id,
-                            'time' => Carbon::parse($slot->time)->format('h:i A')
+                            'time' => Carbon::parse($slot->time)->format('h:i A'),
+                            'capacity' => $slot->capacity,
+                            'available_slots' => $slot->capacity - $slot->booked_slots
                         ];
                     });
                 });
@@ -58,10 +60,10 @@ class ConsultingController extends Controller
 
             DB::beginTransaction();
 
-            // Check if slot is available
             $slot = ConsultingTimeSlot::where('id', $request->slot_id)
                 ->where('is_available', true)
-                ->where('is_booked', false)
+                ->whereRaw('booked_slots < capacity')
+                ->lockForUpdate()
                 ->first();
 
             if (!$slot) {
@@ -98,10 +100,10 @@ class ConsultingController extends Controller
             ]);
 
             // Update slot status
-            $slot->update([
-                'is_booked' => true,
-                'booking_id' => $booking->id
-            ]);
+            $slot->increment('booked_slots');
+            if ($slot->is_full) {
+                $slot->update(['is_available' => false]);
+            }
 
             // Process payment
             $user->decrement('wallet_balance', $totalCost);

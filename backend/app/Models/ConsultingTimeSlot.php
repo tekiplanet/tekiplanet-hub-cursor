@@ -14,8 +14,8 @@ class ConsultingTimeSlot extends Model
         'date',
         'time',
         'is_available',
-        'is_booked',
-        'booking_id'
+        'capacity',
+        'booked_slots'
     ];
 
     protected $casts = [
@@ -39,5 +39,10 @@ class ConsultingTimeSlot extends Model
     public function scopeFutureSlots($query)
     {
         return $query->where('date', '>=', now()->toDateString());
+    }
+
+    public function getIsFullAttribute()
+    {
+        return $this->booked_slots >= $this->capacity;
     }
 } 
