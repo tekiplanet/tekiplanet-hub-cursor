@@ -500,7 +500,89 @@ export default function ConsultingBookingDetails() {
         </div>
       </div>
 
-      {/* Expert Section - Full Width when assigned */}
+      {/* Timeline and Details Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Timeline Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {timelineSteps.map((step, index) => (
+              <TimelineItem key={index} {...step} />
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Session Details */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    {format(sessionDate, 'EEEE, MMMM d, yyyy', {
+                      timeZone: 'Africa/Lagos'
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Clock className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    {new Intl.DateTimeFormat('en-NG', {
+                      hour: 'numeric',
+                      minute: 'numeric',
+                      hour12: true,
+                      timeZone: 'Africa/Lagos'
+                    }).format(sessionDate)}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Timer className="h-4 w-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    {booking.hours} hour{booking.hours > 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Rate per Hour</span>
+                  <span>{formatCurrency(booking.total_cost / booking.hours)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Duration</span>
+                  <span>{booking.hours} hour{booking.hours > 1 ? 's' : ''}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>Total Paid</span>
+                  <span>{formatCurrency(booking.total_cost)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                <Wallet className="h-4 w-4" />
+                <span>Paid via Wallet</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Expert Section - Now at the bottom */}
       {booking.assigned_expert_id && booking.expert ? (
         <div className="bg-card rounded-xl shadow-sm overflow-hidden">
           <div className="bg-primary/5 border-b p-6">
@@ -650,88 +732,6 @@ export default function ConsultingBookingDetails() {
           </CardContent>
         </Card>
       )}
-
-      {/* Rest of the content in a grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Timeline Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Timeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {timelineSteps.map((step, index) => (
-              <TimelineItem key={index} {...step} />
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Session Details */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Session Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">
-                    {format(sessionDate, 'EEEE, MMMM d, yyyy', {
-                      timeZone: 'Africa/Lagos'
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">
-                    {new Intl.DateTimeFormat('en-NG', {
-                      hour: 'numeric',
-                      minute: 'numeric',
-                      hour12: true,
-                      timeZone: 'Africa/Lagos'
-                    }).format(sessionDate)}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Timer className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">
-                    {booking.hours} hour{booking.hours > 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Rate per Hour</span>
-                  <span>{formatCurrency(booking.total_cost / booking.hours)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Duration</span>
-                  <span>{booking.hours} hour{booking.hours > 1 ? 's' : ''}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-medium">
-                  <span>Total Paid</span>
-                  <span>{formatCurrency(booking.total_cost)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                <Wallet className="h-4 w-4" />
-                <span>Paid via Wallet</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Cancel Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
