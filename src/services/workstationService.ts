@@ -96,9 +96,9 @@ export const workstationService = {
     return response.data;
   },
 
-  renewSubscription: async (subscriptionId: string, duration?: string) => {
+  renewSubscription: async (subscriptionId: string, planId: string) => {
     const response = await apiClient.post(`/workstation/subscriptions/${subscriptionId}/renew`, {
-      duration
+      plan_id: planId
     });
     return response.data;
   },

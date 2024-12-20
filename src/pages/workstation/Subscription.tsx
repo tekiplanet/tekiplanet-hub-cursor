@@ -711,22 +711,24 @@ const Subscription = () => {
         fields={[
           {
             type: 'select',
-            name: 'duration',
-            label: 'Choose Renewal Duration',
-            placeholder: 'Select duration',
-            options: [
-              { label: 'Same as current plan', value: 'same' },
-              { label: '3 Months (10% off)', value: '3' },
-              { label: '6 Months (15% off)', value: '6' },
-              { label: '12 Months (20% off)', value: '12' }
-            ],
+            name: 'plan_id',
+            label: 'Choose Plan',
+            placeholder: 'Select plan',
+            options: plans?.map(plan => ({
+              label: `${plan.name} (${plan.duration_days} days) - ${formatCurrency(plan.price)}`,
+              value: plan.id
+            })) || [],
             required: true
           }
         ]}
         onConfirm={async (data) => {
           try {
             setIsRenewing(true);
-            await workstationService.renewSubscription(subscription.id, data.duration);
+            if (!data.plan_id) {
+              toast.error('Please select a plan');
+              return;
+            }
+            await workstationService.renewSubscription(subscription.id, data.plan_id);
             queryClient.invalidateQueries(['current-subscription']);
             toast.success('Subscription renewed successfully');
             setShowRenewDialog(false);

@@ -241,16 +241,19 @@ class WorkstationController extends Controller
             }
 
             $request->validate([
-                'duration' => 'nullable|string|in:same,3,6,12'
+                'plan_id' => 'required|exists:workstation_plans,id'
             ]);
 
-            // Calculate duration
-            $durationDays = match($request->duration) {
-                '3' => 90,
-                '6' => 180,
-                '12' => 365,
-                default => $subscription->plan->duration_days
-            };
+            $plan = WorkstationPlan::findOrFail($request->plan_id);
+            $user = auth()->user();
+
+            // Check wallet balance
+            if ($user->wallet_balance < $plan->price) {
+                return response()->json([
+                    'message' => 'Insufficient wallet balance',
+                    'error' => 'Please top up your wallet to renew subscription'
+                ], 400);
+            }
 
             $now = now();
             $currentStartDate = new \DateTime($subscription->start_date);
@@ -259,60 +262,83 @@ class WorkstationController extends Controller
             // Determine start and end dates
             if ($subscription->status === 'active') {
                 if ($currentStartDate > $now) {
-                    // If start date is in future, keep it
                     $startDate = $currentStartDate;
-                    // Calculate new end date from current end date
                     $endDate = clone $currentEndDate;
-                    $endDate->modify("+ {$durationDays} days");
+                    $endDate->modify("+ {$plan->duration_days} days");
                 } elseif ($currentEndDate > $now) {
-                    // If only end date is in future
                     $startDate = $currentEndDate;
                     $endDate = clone $startDate;
-                    $endDate->modify("+ {$durationDays} days");
+                    $endDate->modify("+ {$plan->duration_days} days");
                 } else {
-                    // Both dates are in past
                     $startDate = $now;
                     $endDate = clone $startDate;
-                    $endDate->modify("+ {$durationDays} days");
+                    $endDate->modify("+ {$plan->duration_days} days");
                 }
             } else {
-                // For expired subscriptions, start fresh from today
                 $startDate = $now;
                 $endDate = clone $startDate;
-                $endDate->modify("+ {$durationDays} days");
+                $endDate->modify("+ {$plan->duration_days} days");
             }
 
-            // Calculate price with discount
-            $basePrice = $subscription->plan->price;
-            $discount = match($request->duration) {
-                '3' => 0.10,
-                '6' => 0.15,
-                '12' => 0.20,
-                default => 0
-            };
-            
-            $finalPrice = $basePrice * (1 - $discount);
+            \DB::beginTransaction();
+            try {
+                // Update subscription
+                $subscription->update([
+                    'plan_id' => $plan->id,
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                    'total_amount' => $plan->price,
+                    'status' => 'active'
+                ]);
 
-            $subscription->update([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
-                'total_amount' => $finalPrice,
-                'status' => 'active'
-            ]);
+                // Deduct from wallet
+                $user->wallet_balance -= $plan->price;
+                $user->save();
 
-            // Create payment record
-            $subscription->payments()->create([
-                'amount' => $finalPrice,
-                'type' => 'full',
-                'status' => 'paid',
-                'due_date' => now(),
-            ]);
+                // Create payment record
+                $payment = $subscription->payments()->create([
+                    'amount' => $plan->price,
+                    'type' => 'full',
+                    'status' => 'paid',
+                    'due_date' => now(),
+                ]);
 
-            return response()->json([
-                'message' => 'Subscription renewed successfully',
-                'subscription' => $subscription->load('plan', 'payments')
-            ]);
+                // Create transaction record
+                $transaction = Transaction::create([
+                    'user_id' => $user->id,
+                    'amount' => $plan->price,
+                    'type' => 'debit',
+                    'description' => "Subscription renewal - {$plan->name}",
+                    'category' => 'workstation_subscription',
+                    'status' => 'completed',
+                    'payment_method' => 'wallet',
+                    'reference_number' => $subscription->tracking_code,
+                    'notes' => json_encode([
+                        'subscription_id' => $subscription->id,
+                        'plan_name' => $plan->name,
+                        'duration' => $plan->duration_days . ' days',
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d')
+                    ])
+                ]);
+
+                \DB::commit();
+
+                return response()->json([
+                    'message' => 'Subscription renewed successfully',
+                    'subscription' => $subscription->load('plan', 'payments')
+                ]);
+
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                throw $e;
+            }
         } catch (\Exception $e) {
+            \Log::error('Subscription renewal failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'message' => 'Error renewing subscription',
                 'error' => $e->getMessage()
