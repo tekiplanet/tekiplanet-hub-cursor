@@ -49,6 +49,7 @@ class DatabaseSeeder extends Seeder
             ConsultingReviewsSeeder::class,
             ConsultingNotificationsSeeder::class,
             WorkstationPlansSeeder::class,
+            ProfessionalCategorySeeder::class,
         ]);
     }
 }
