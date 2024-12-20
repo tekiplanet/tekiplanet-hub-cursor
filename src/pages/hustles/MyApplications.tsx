@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { hustleService } from '@/services/hustleService';
 import { formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 const MyApplications = () => {
   const navigate = useNavigate();
@@ -63,50 +64,81 @@ const MyApplications = () => {
           {applications?.map((application) => (
             <Card 
               key={application.id}
-              className="p-6 hover:shadow-md transition-shadow"
+              className="relative overflow-hidden group hover:shadow-lg transition-all duration-300"
             >
-              <div className="space-y-4">
-                {/* Status Badge */}
+              {/* Status Indicator Line */}
+              <div 
+                className={cn(
+                  "absolute top-0 left-0 w-full h-1",
+                  application.status === 'approved' ? "bg-green-500" :
+                  application.status === 'rejected' ? "bg-red-500" :
+                  application.status === 'withdrawn' ? "bg-gray-500" :
+                  "bg-blue-500"
+                )}
+              />
+
+              <div className="p-6 space-y-4">
+                {/* Header Section */}
                 <div className="flex justify-between items-start">
-                  <Badge variant={
-                    application.status === 'approved' ? 'success' :
-                    application.status === 'rejected' ? 'destructive' :
-                    application.status === 'withdrawn' ? 'secondary' :
-                    'default'
-                  }>
-                    {application.status.toUpperCase()}
-                  </Badge>
-                  <p className="text-sm text-muted-foreground">
-                    Applied on {new Date(application.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="space-y-1">
+                    <Badge variant={
+                      application.status === 'approved' ? 'success' :
+                      application.status === 'rejected' ? 'destructive' :
+                      application.status === 'withdrawn' ? 'secondary' :
+                      'default'
+                    } className="rounded-md">
+                      {application.status.toUpperCase()}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">
+                      Applied on {new Date(application.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-background">
+                      {application.hustle.category}
+                    </Badge>
+                  </div>
                 </div>
 
-                {/* Hustle Details */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">
+                {/* Hustle Title */}
+                <div>
+                  <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                     {application.hustle.title}
                   </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Deadline: {new Date(application.hustle.deadline).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatCurrency(application.hustle.budget)}</span>
-                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Deadline
+                    </p>
+                    <p className="text-sm font-medium">
+                      {new Date(application.hustle.deadline).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      Budget
+                    </p>
+                    <p className="text-sm font-medium">
+                      {formatCurrency(application.hustle.budget)}
+                    </p>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-between items-center pt-4">
+                <div className="flex items-center justify-between pt-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => navigate(`/dashboard/hustles/${application.hustle.id}`)}
+                    className="group/button"
                   >
                     View Details
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
                   </Button>
 
                   {application.status === 'pending' && (
@@ -115,7 +147,7 @@ const MyApplications = () => {
                       size="sm"
                       onClick={() => withdrawMutation.mutate(application.id)}
                       disabled={withdrawMutation.isPending}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       {withdrawMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -133,15 +165,28 @@ const MyApplications = () => {
           ))}
 
           {applications?.length === 0 && (
-            <div className="col-span-full text-center py-12">
-              <Briefcase className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                You haven't applied to any hustles yet.
-              </p>
-              <Button onClick={() => navigate('/dashboard/hustles')}>
-                Browse Hustles
-              </Button>
+            <div className="col-span-full">
+              <Card className="p-12">
+                <div className="text-center">
+                  <div className="relative w-24 h-24 mx-auto mb-6">
+                    <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping" />
+                    <div className="relative flex items-center justify-center w-24 h-24 bg-primary/5 rounded-full">
+                      <Briefcase className="h-12 w-12 text-primary/50" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">No Applications Yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    You haven't applied to any hustles yet. Start exploring opportunities!
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/dashboard/hustles')}
+                    className="gap-2"
+                  >
+                    Browse Hustles
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
             </div>
           )}
         </div>
