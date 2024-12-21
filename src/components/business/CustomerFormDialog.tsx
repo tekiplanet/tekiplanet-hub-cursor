@@ -93,6 +93,22 @@ export default function CustomerFormDialog({
     }
   }, [form.watch('country')]);
 
+  useEffect(() => {
+    if (customer && mode === 'edit') {
+      form.reset({
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        country: customer.country || '',
+        notes: customer.notes || '',
+        tags: customer.tags || []
+      });
+    }
+  }, [customer, mode]);
+
   const handleAddTag = () => {
     if (tagInput.trim()) {
       const currentTags = form.getValues('tags') || [];
@@ -113,7 +129,9 @@ export default function CustomerFormDialog({
         await businessService.createCustomer(values);
         toast.success('Customer created successfully');
       } else {
-        // Add edit logic here when needed
+        if (!customer?.id) return;
+        await businessService.updateCustomer(customer.id, values);
+        toast.success('Customer updated successfully');
       }
       queryClient.invalidateQueries({ queryKey: ['business-customers'] });
       onOpenChange(false);
@@ -136,7 +154,9 @@ export default function CustomerFormDialog({
             {mode === 'create' ? 'Add New Customer' : 'Edit Customer'}
           </DialogTitle>
           <DialogDescription>
-            Add a new customer to your business profile. Fill in the details below.
+            {mode === 'create' 
+              ? 'Add a new customer to your business profile.' 
+              : 'Update customer information.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -369,7 +389,10 @@ export default function CustomerFormDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onOpenChange(false);
+              form.reset();
+            }}
           >
             Cancel
           </Button>
@@ -378,7 +401,12 @@ export default function CustomerFormDialog({
             disabled={isSubmitting}
             onClick={form.handleSubmit(onSubmit)}
           >
-            {isSubmitting ? 'Saving...' : mode === 'create' ? 'Add Customer' : 'Save Changes'}
+            {isSubmitting 
+              ? 'Saving...' 
+              : mode === 'create' 
+                ? 'Add Customer' 
+                : 'Save Changes'
+            }
           </Button>
         </div>
       </DialogContent>

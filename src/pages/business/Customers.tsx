@@ -34,7 +34,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/utils";
 import CustomerFormDialog from '@/components/business/CustomerFormDialog';
 
-const CustomerCard = ({ customer }) => (
+const CustomerCard = ({ 
+  customer, 
+  onEdit 
+}: { 
+  customer: Customer; 
+  onEdit: (customer: Customer) => void;
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -68,7 +74,9 @@ const CustomerCard = ({ customer }) => (
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem>View Details</DropdownMenuItem>
-                  <DropdownMenuItem>Edit Customer</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(customer)}>
+                    Edit Customer
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -132,6 +140,7 @@ const EmptyState = ({ onAddCustomer }: { onAddCustomer: () => void }) => (
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['business-customers'],
@@ -228,15 +237,23 @@ export default function Customers() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {customers.map((customer) => (
-            <CustomerCard key={customer.id} customer={customer} />
+            <CustomerCard 
+              key={customer.id} 
+              customer={customer} 
+              onEdit={setCustomerToEdit}
+            />
           ))}
         </div>
       )}
 
       <CustomerFormDialog 
-        open={isCustomerFormOpen}
-        onOpenChange={setIsCustomerFormOpen}
-        mode="create"
+        open={isCustomerFormOpen || !!customerToEdit}
+        onOpenChange={(open) => {
+          setIsCustomerFormOpen(open);
+          if (!open) setCustomerToEdit(null);
+        }}
+        mode={customerToEdit ? 'edit' : 'create'}
+        customer={customerToEdit}
       />
     </div>
   );

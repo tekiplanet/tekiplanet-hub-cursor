@@ -147,7 +147,16 @@ class BusinessCustomerController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $customer = BusinessCustomer::where('business_id', Auth::id())
+            // Get the business profile first
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
+
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+
+            $customer = BusinessCustomer::where('business_id', $businessProfile->id)
                 ->where('id', $id)
                 ->firstOrFail();
 
@@ -173,13 +182,23 @@ class BusinessCustomerController extends Controller
 
             $customer->update($request->all());
 
+            \Log::info('Customer updated successfully:', $customer->toArray());
+
             return response()->json([
                 'message' => 'Customer updated successfully',
                 'customer' => $customer
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update customer'], 500);
+            \Log::error('Error updating customer:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to update customer',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
