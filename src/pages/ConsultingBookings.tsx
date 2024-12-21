@@ -261,18 +261,29 @@ export default function ConsultingBookings() {
 
   if (bookings.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-          <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">No Bookings Yet</h3>
-          <p className="text-muted-foreground mb-4">
-            You haven't booked any consulting sessions yet
-          </p>
-          <Button onClick={() => navigate('/dashboard/it-consulting')}>
-            Book a Session
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+        <Card className="border-dashed max-w-md w-full mx-auto">
+          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="relative w-24 h-24 mb-6">
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping" />
+              <div className="relative flex items-center justify-center w-24 h-24 bg-primary/5 rounded-full">
+                <Calendar className="h-12 w-12 text-primary/50" />
+              </div>
+            </div>
+            <h3 className="font-semibold text-xl mb-2">No Bookings Yet</h3>
+            <p className="text-muted-foreground mb-6">
+              You haven't booked any consulting sessions yet
+            </p>
+            <Button 
+              onClick={() => navigate('/dashboard/it-consulting')}
+              className="gap-2"
+            >
+              Book a Session
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
