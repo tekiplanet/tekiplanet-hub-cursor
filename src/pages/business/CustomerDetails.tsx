@@ -31,6 +31,15 @@ import CustomerFormDialog from '@/components/business/CustomerFormDialog';
 import { DeleteConfirmDialog } from '@/components/business/DeleteConfirmDialog';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import InvoiceFormDialog from '@/components/business/InvoiceFormDialog';
 
 const CustomerDetailsSkeleton = () => (
   <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-8">
@@ -106,10 +115,17 @@ export default function CustomerDetails() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false);
 
   const { data: customer, isLoading } = useQuery({
     queryKey: ['customer', customerId],
     queryFn: () => businessService.getCustomer(customerId!),
+    enabled: !!customerId
+  });
+
+  const { data: invoices, isLoading: isLoadingInvoices } = useQuery({
+    queryKey: ['customer-invoices', customerId],
+    queryFn: () => businessService.getCustomerInvoices(customerId!),
     enabled: !!customerId
   });
 
@@ -319,17 +335,90 @@ export default function CustomerDetails() {
         <TabsContent value="invoices" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Invoices</h3>
-            <Button size="sm">
+            <Button 
+              size="sm"
+              onClick={() => setIsInvoiceFormOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice
             </Button>
           </div>
           <Card>
             <CardContent className="p-0">
-              {/* Add invoices table/list here */}
-              <div className="p-8 text-center text-muted-foreground">
-                No invoices found
-              </div>
+              {isLoadingInvoices ? (
+                <div className="p-8 flex items-center justify-center">
+                  <div className="space-y-4 w-full max-w-md">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-full animate-pulse" />
+                        <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : !invoices?.length ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  No invoices found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">
+                          {invoice.invoice_number}
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(invoice.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(invoice.due_date)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {formatCurrency(invoice.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              invoice.status === 'paid' 
+                                ? 'success' 
+                                : invoice.status === 'overdue'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                          >
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              // Add view invoice action
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -384,6 +473,13 @@ export default function CustomerDetails() {
         isDeleting={isDeleting}
         title={`Delete ${customer.name}?`}
         description="Are you sure you want to delete this customer? This action cannot be undone."
+      />
+
+      {/* Add Invoice Form Dialog */}
+      <InvoiceFormDialog 
+        open={isInvoiceFormOpen}
+        onOpenChange={setIsInvoiceFormOpen}
+        customerId={customerId!}
       />
     </div>
   );

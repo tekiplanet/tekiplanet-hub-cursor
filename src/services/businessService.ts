@@ -40,5 +40,15 @@ export const businessService = {
     return data;
   },
 
+  createInvoice: async (data: CreateInvoiceDto) => {
+    const { data: response } = await api.post('/business/invoices', data);
+    return response;
+  },
+
+  getCustomerInvoices: async (customerId: string) => {
+    const { data } = await api.get(`/business/customers/${customerId}/invoices`);
+    return data;
+  },
+
   // Add other business-related API calls
 }; 
