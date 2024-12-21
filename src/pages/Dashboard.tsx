@@ -70,7 +70,6 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
   const { user, updateUserType } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const { data: cartCount = 0 } = useQuery({
     queryKey: ['cartCount'],
@@ -189,14 +188,6 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
     }
   };
 
-  const toggleSubmenu = (path: string) => {
-    setExpandedMenus(current => 
-      current.includes(path) 
-        ? current.filter(p => p !== path)
-        : [...current, path]
-    );
-  };
-
   const menuItems: MenuItem[] = [
     {
       label: "Home",
@@ -265,21 +256,9 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       icon: <Calendar className="h-5 w-5" />
     },
     {
-      label: "Workstation",
-      path: "/dashboard/workstation/plans",
+      path: '/dashboard/workstation/plans',
+      label: 'Workstation',
       icon: <Building2 className="h-5 w-5" />,
-      submenu: [
-        {
-          label: "Plans",
-          path: "/dashboard/workstation/plans",
-          icon: <LayoutDashboard className="h-4 w-4" />
-        },
-        {
-          label: "My Subscription",
-          path: "/dashboard/workstation/subscription",
-          icon: <CreditCard className="h-4 w-4" />
-        }
-      ]
     },
     {
       label: "Hustles",
@@ -348,7 +327,6 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                       )}
                       onClick={() => {
                         if (item.submenu) {
-                          toggleSubmenu(item.path);
                         } else {
                           navigate(item.path);
                         }
@@ -364,45 +342,8 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                             {item.badge}
                           </Badge>
                         )}
-                        {item.submenu && (
-                          <ChevronDown 
-                            className={cn(
-                              "h-4 w-4 ml-auto transition-transform duration-200",
-                              expandedMenus.includes(item.path) ? "rotate-180" : ""
-                            )} 
-                          />
-                        )}
                       </div>
                     </Button>
-
-                    {/* Submenu Items */}
-                    {item.submenu && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ 
-                          height: expandedMenus.includes(item.path) ? "auto" : 0,
-                          opacity: expandedMenus.includes(item.path) ? 1 : 0
-                        }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="ml-4 space-y-1 pt-1">
-                          {item.submenu.map((subItem) => (
-                            <Button
-                              key={subItem.path}
-                              variant={location.pathname === subItem.path ? "secondary" : "ghost"}
-                              className="w-full justify-start pl-6"
-                              onClick={() => navigate(subItem.path)}
-                            >
-                              <div className="flex items-center">
-                                {subItem.icon}
-                                <span className="ml-3">{subItem.label}</span>
-                              </div>
-                            </Button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
                   </div>
                 ))}
               </nav>
@@ -521,82 +462,22 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                         {menuItems.map((item) => (
                           <div key={item.path}>
                             {/* Main Menu Item */}
-                            {item.submenu ? (
-                              // Items with submenu
-                              <>
-                                <Button
-                                  variant={location.pathname === item.path ? "default" : "ghost"}
-                                  className="w-full justify-start gap-2"
-                                  onClick={() => toggleSubmenu(item.path)}
-                                >
-                                  <div className="flex items-center justify-between w-full">
-                                    <div className="flex items-center">
-                                      {item.icon}
-                                      <span className="ml-2">{item.label}</span>
-                                    </div>
-                                    {item.badge && (
-                                      <Badge variant="secondary" className="ml-auto mr-2">
-                                        {item.badge}
-                                      </Badge>
-                                    )}
-                                    <ChevronDown 
-                                      className={cn(
-                                        "h-4 w-4 transition-transform duration-200",
-                                        expandedMenus.includes(item.path) ? "rotate-180" : ""
-                                      )} 
-                                    />
-                                  </div>
-                                </Button>
-
-                                {/* Submenu Items */}
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ 
-                                    height: expandedMenus.includes(item.path) ? "auto" : 0,
-                                    opacity: expandedMenus.includes(item.path) ? 1 : 0
-                                  }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="ml-4 space-y-1 pt-1">
-                                    {item.submenu.map((subItem) => (
-                                      <Button
-                                        key={subItem.path}
-                                        variant={location.pathname === subItem.path ? "secondary" : "ghost"}
-                                        className="w-full justify-start pl-6"
-                                        onClick={() => {
-                                          navigate(subItem.path);
-                                          setIsSheetOpen(false);
-                                        }}
-                                      >
-                                        <div className="flex items-center">
-                                          {subItem.icon}
-                                          <span className="ml-3">{subItem.label}</span>
-                                        </div>
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              </>
-                            ) : (
-                              // Regular menu items without submenu
-                              <Button
-                                variant={location.pathname === item.path ? "default" : "ghost"}
-                                className="w-full justify-start gap-2"
-                                onClick={() => {
-                                  navigate(item.path);
-                                  setIsSheetOpen(false);
-                                }}
-                              >
-                                {item.icon}
-                                <span>{item.label}</span>
-                                {item.badge && (
-                                  <Badge variant="secondary" className="ml-auto">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </Button>
-                            )}
+                            <Button
+                              variant={location.pathname === item.path ? "default" : "ghost"}
+                              className="w-full justify-start gap-2"
+                              onClick={() => {
+                                navigate(item.path);
+                                setIsSheetOpen(false);
+                              }}
+                            >
+                              {item.icon}
+                              <span>{item.label}</span>
+                              {item.badge && (
+                                <Badge variant="secondary" className="ml-auto">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </Button>
                           </div>
                         ))}
                       </nav>
