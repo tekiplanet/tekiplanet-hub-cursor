@@ -30,6 +30,7 @@ use App\Http\Controllers\ProfessionalCategoryController;
 use App\Http\Controllers\HustleController;
 use App\Http\Controllers\HustleApplicationController;
 use App\Http\Controllers\HustleMessageController;
+use App\Http\Controllers\BusinessProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -244,4 +245,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/hustles/{hustleId}/messages', [HustleMessageController::class, 'getMessages']);
     Route::post('/hustles/{hustleId}/messages', [HustleMessageController::class, 'sendMessage']);
     Route::post('/hustles/{hustleId}/messages/mark-read', [HustleMessageController::class, 'markMessagesAsRead']);
+});
+
+// Business Profile Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/business/profile/check', [BusinessProfileController::class, 'checkProfile']);
+    Route::post('/business/profile', [BusinessProfileController::class, 'store']);
+    Route::put('/business/profile', [BusinessProfileController::class, 'update']);
 });

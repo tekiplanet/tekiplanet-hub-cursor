@@ -12,6 +12,9 @@ import {
   Calendar, ChevronRight, BookOpen, Gift 
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { businessService } from '@/services/businessService';
+import NoBusinessProfile from '../business/NoBusinessProfile';
 
 // Mock Data (to be replaced with actual backend data)
 const businessProfile = {
@@ -54,6 +57,46 @@ const promotions = [
 export default function BusinessDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+
+  const { data: profileData, isLoading: profileLoading, error } = useQuery({
+    queryKey: ['business-profile'],
+    queryFn: businessService.checkProfile,
+    retry: false
+  });
+
+  if (profileLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="animate-pulse space-y-6">
+          {/* Avatar and Welcome Section */}
+          <div className="flex items-center space-x-4">
+            <div className="h-16 w-16 rounded-full bg-muted" />
+            <div className="space-y-2">
+              <div className="h-6 w-48 bg-muted rounded" />
+              <div className="h-4 w-32 bg-muted rounded" />
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-muted rounded-lg" />
+            ))}
+          </div>
+
+          {/* Other sections */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="h-64 bg-muted rounded-lg" />
+            <div className="h-64 bg-muted rounded-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileData?.has_profile) {
+    return <NoBusinessProfile />;
+  }
 
   const quickActions = [
     {
