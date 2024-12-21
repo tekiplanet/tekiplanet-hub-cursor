@@ -235,7 +235,7 @@ const HustleDetails = () => {
                     {hustle.application_status.toUpperCase()}
                   </Badge>
                   {!applicationStatus.can_apply && (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-primary">
                       {applicationStatus.reason}
                     </span>
                   )}
@@ -250,8 +250,10 @@ const HustleDetails = () => {
                 className={cn(
                   "w-full",
                   applicationStatus.can_apply 
-                    ? "bg-primary text-white hover:bg-primary/90" 
-                    : "bg-muted"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                    : hustle.application_status === 'approved'
+                      ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-700"
+                      : "bg-muted text-muted-foreground"
                 )}
               >
                 {applyMutation.isPending ? (
