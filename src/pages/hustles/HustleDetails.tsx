@@ -126,21 +126,26 @@ const HustleDetails = () => {
       };
     }
 
-    // Rest of the existing checks...
-    if (hustle.status !== 'open') {
+    // Check if this hustle is assigned to the current professional
+    if (hustle.assigned_professional_id === profileData.profile.id) {
       return {
         can_apply: false,
-        reason: 'This hustle is no longer accepting applications'
+        reason: 'Hustle assigned to you. Please complete within the time frame'
       };
     }
 
-    if (hustle.assigned_professional_id) {
+    // Check application status
+    if (hustle.application_status) {
       return {
         can_apply: false,
-        reason: 'A professional has already been assigned to this hustle'
+        reason: hustle.application_status === 'pending' ? 'Your application is under review' :
+               hustle.application_status === 'approved' ? 'Your application has been approved' :
+               hustle.application_status === 'rejected' ? 'Your application was not successful' :
+               'You have withdrawn your application'
       };
     }
 
+    // Check deadline
     const currentDate = new Date();
     const deadlineDate = new Date(hustle.deadline);
     if (deadlineDate < currentDate) {
@@ -150,13 +155,13 @@ const HustleDetails = () => {
       };
     }
 
-    if (hustle.application_status) {
+    // Check if hustle is open and not assigned
+    if (hustle.status !== 'open' || hustle.assigned_professional_id) {
       return {
         can_apply: false,
-        reason: hustle.application_status === 'pending' ? 'Your application is under review' :
-               hustle.application_status === 'approved' ? 'Your application has been approved' :
-               hustle.application_status === 'rejected' ? 'Your application was not successful' :
-               'You have withdrawn your application'
+        reason: hustle.assigned_professional_id 
+          ? 'A professional has already been assigned to this hustle'
+          : 'This hustle is no longer accepting applications'
       };
     }
 
