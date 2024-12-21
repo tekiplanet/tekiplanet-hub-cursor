@@ -47,7 +47,8 @@ class BusinessProfileController extends Controller
                 'registration_number' => 'nullable|string',
                 'tax_number' => 'nullable|string',
                 'website' => 'nullable|url',
-                'description' => 'required|string|min:20'
+                'description' => 'required|string|min:20',
+                'logo' => 'required|image|max:2048' // Max 2MB
             ]);
 
             if ($validator->fails()) {
@@ -57,15 +58,13 @@ class BusinessProfileController extends Controller
                 ], 422);
             }
 
-            // Check if profile already exists
-            $existingProfile = BusinessProfile::where('user_id', Auth::id())->first();
-            if ($existingProfile) {
-                return response()->json([
-                    'message' => 'Business profile already exists'
-                ], 422);
+            // Handle logo upload
+            $logoPath = null;
+            if ($request->hasFile('logo')) {
+                $logoPath = $request->file('logo')->store('business-logos', 'public');
             }
 
-            // Create new profile
+            // Create business profile
             $profile = BusinessProfile::create([
                 'user_id' => Auth::id(),
                 'business_name' => $request->business_name,
@@ -80,7 +79,8 @@ class BusinessProfileController extends Controller
                 'tax_number' => $request->tax_number,
                 'website' => $request->website,
                 'description' => $request->description,
-                'status' => 'active', // You might want to change this based on your requirements
+                'logo' => $logoPath,
+                'status' => 'inactive', // Set status to inactive by default
                 'is_verified' => false
             ]);
 

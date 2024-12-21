@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import NoBusinessProfile from '../business/NoBusinessProfile';
+import InactiveBusinessProfile from '../business/InactiveBusinessProfile';
 
 // Mock Data (to be replaced with actual backend data)
 const businessProfile = {
@@ -96,6 +97,10 @@ export default function BusinessDashboard() {
 
   if (!profileData?.has_profile) {
     return <NoBusinessProfile />;
+  }
+
+  if (profileData?.profile?.status === 'inactive') {
+    return <InactiveBusinessProfile />;
   }
 
   const quickActions = [

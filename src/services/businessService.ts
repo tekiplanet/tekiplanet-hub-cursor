@@ -6,8 +6,12 @@ export const businessService = {
     return data;
   },
 
-  createProfile: async (profileData: any) => {
-    const { data } = await api.post('/business/profile', profileData);
+  createProfile: async (formData: FormData) => {
+    const { data } = await api.post('/business/profile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return data;
   },
 
