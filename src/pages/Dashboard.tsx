@@ -251,11 +251,6 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       icon: <BrainCircuit className="h-5 w-5" />
     },
     {
-      label: 'My Bookings',
-      path: '/dashboard/consulting/bookings',
-      icon: <Calendar className="h-5 w-5" />
-    },
-    {
       path: '/dashboard/workstation/plans',
       label: 'Workstation',
       icon: <Building2 className="h-5 w-5" />,

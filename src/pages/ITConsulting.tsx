@@ -275,15 +275,30 @@ export default function ITConsulting() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-primary/10 to-primary/5 p-6 md:p-8">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="relative space-y-4">
-          <div className="flex items-center gap-2">
-            <BrainCircuit className="h-8 w-8 text-primary" />
-            <Badge variant="secondary">Expert Consultation</Badge>
+          {/* Title Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <BrainCircuit className="h-8 w-8 text-primary" />
+              <Badge variant="secondary">Expert Consultation</Badge>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold">Book an IT Consulting Session</h1>
+            <p className="text-muted-foreground max-w-2xl">
+              Get personalized guidance from our expert consultants. Whether you need 
+              technical advice, project planning, or strategic insights, we're here to help.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold">Book an IT Consulting Session</h1>
-          <p className="text-muted-foreground max-w-2xl">
-            Get personalized guidance from our expert consultants. Whether you need 
-            technical advice, project planning, or strategic insights, we're here to help.
-          </p>
+
+          {/* My Bookings Button - Full width on mobile */}
+          <div className="w-full sm:flex sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard/consulting/bookings')}
+              className="w-full sm:w-auto gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              My Bookings
+            </Button>
+          </div>
         </div>
       </div>
 
