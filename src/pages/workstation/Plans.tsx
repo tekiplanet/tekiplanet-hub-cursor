@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Info } from "lucide-react";
+import { Check, Info, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { workstationService } from "@/services/workstationService";
@@ -141,15 +141,28 @@ const Plans = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start justify-between"
+          className="space-y-4"
         >
-          <div>
+          {/* Title and Description */}
+          <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground">
               Workstation Plans 🏢
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               Choose the perfect workspace plan for your needs
             </p>
+          </div>
+
+          {/* My Subscription Button - Full width on mobile */}
+          <div className="w-full sm:flex sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard/workstation/subscription')}
+              className="w-full sm:w-auto gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              My Subscription
+            </Button>
           </div>
         </motion.div>
 
