@@ -36,18 +36,7 @@ import CustomerFormDialog from '@/components/business/CustomerFormDialog';
 import { DeleteConfirmDialog } from "@/components/business/DeleteConfirmDialog";
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  avatar?: string;
-  tags?: string[];
-  total_spent: number;
-  last_order_date: string;
-}
+import { Customer } from '@/types/business';
 
 const CustomerCard = ({ 
   customer, 
@@ -72,7 +61,6 @@ const CustomerCard = ({
       >
         <div className="flex items-start gap-4">
           <Avatar className="h-10 w-10 border">
-            <AvatarImage src={customer.avatar} />
             <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -125,7 +113,7 @@ const CustomerCard = ({
         <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
           <div>
             <p className="text-muted-foreground text-xs">Total Spent</p>
-            <p className="font-medium">{formatCurrency(customer.total_spent)}</p>
+            <p className="font-medium">{formatCurrency(customer.total_spent, customer.currency)}</p>
           </div>
           <div className="text-right">
             <p className="text-muted-foreground text-xs">Last Order</p>

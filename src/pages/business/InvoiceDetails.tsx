@@ -24,12 +24,14 @@ import {
   Send,
   AlertCircle,
   Loader2,
+  Calendar,
   Plus
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { toast } from 'sonner';
 import PaymentFormDialog from '@/components/business/PaymentFormDialog';
 import { getStatusBadgeProps, getPaymentStatusText } from "@/lib/format";
+import { differenceInDays, isSameDay, isPast, format } from 'date-fns';
 
 // Status badge variants mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "success"> = {
@@ -94,6 +96,32 @@ interface Invoice {
   currency: string;
 }
 
+// Helper function to get due date text and status
+function getDueDateInfo(dueDate: string) {
+  const dueDateObj = new Date(dueDate);
+  const today = new Date();
+  const isPastDue = isPast(dueDateObj) && !isSameDay(dueDateObj, today);
+  const isDueToday = isSameDay(dueDateObj, today);
+  const daysOverdue = differenceInDays(today, dueDateObj);
+  
+  let text = '';
+  let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
+  
+  if (isPastDue) {
+    text = `Payment is ${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`;
+    variant = "destructive";
+  } else if (isDueToday) {
+    text = "Payment is due today";
+    variant = "default";
+  } else {
+    const daysUntilDue = Math.abs(daysOverdue);
+    text = `Payment due in ${daysUntilDue} ${daysUntilDue === 1 ? 'day' : 'days'}`;
+    variant = "secondary";
+  }
+  
+  return { text, variant, isPastDue };
+}
+
 export default function InvoiceDetails() {
   const { customerId, invoiceId } = useParams();
   const navigate = useNavigate();
@@ -110,7 +138,12 @@ export default function InvoiceDetails() {
   } = useQuery({
     queryKey: ['invoice', invoiceId],
     queryFn: () => businessService.getInvoice(invoiceId!),
-    enabled: !!invoiceId
+    enabled: !!invoiceId,
+    retry: false,
+    onError: (error) => {
+      toast.error('Failed to load invoice details');
+      console.error('Invoice fetch error:', error);
+    }
   });
 
   if (isLoading) {
@@ -230,36 +263,89 @@ export default function InvoiceDetails() {
                 <div className="flex flex-col gap-2">
                   {invoice.status_details ? (
                     <>
-                      <Badge {...getStatusBadgeProps(invoice.status_details)}>
-                        {invoice.status_details.label}
-                      </Badge>
-                      <p className="text-sm text-muted-foreground">
-                        {getPaymentStatusText(invoice.status_details, invoice.currency)}
-                      </p>
-                      {invoice.status_details.is_overdue && invoice.status_details.status !== 'paid' && (
-                        <p className="text-sm text-destructive">
-                          Due date passed {invoice.status_details.days_overdue} days ago
+                      {/* Status Badge */}
+                      <div className="flex flex-col gap-2">
+                        <Badge 
+                          className="uppercase text-xs font-medium w-fit"
+                          {...getStatusBadgeProps(invoice.status_details)}
+                        >
+                          {invoice.status_details.label.toUpperCase()}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">
+                          {getPaymentStatusText(invoice.status_details, invoice.currency)}
                         </p>
+                      </div>
+                      {/* Due Date Info */}
+                      {invoice.status !== 'paid' && (
+                        <div className="border-t pt-2 mt-2">
+                          {/* Due Date Badge */}
+                          {(() => {
+                            const { text, variant, isPastDue } = getDueDateInfo(invoice.due_date);
+                            return (
+                              <div className="flex flex-col gap-2">
+                                <Badge 
+                                  variant={variant}
+                                  className="flex items-center gap-1.5 w-fit"
+                                >
+                                  {isPastDue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+                                  {text}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  ({format(new Date(invoice.due_date), 'MMM d, yyyy')})
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       )}
                     </>
                   ) : (
-                    <Badge variant="secondary">
-                      {invoice.status.replace('_', ' ')}
-                    </Badge>
+                    <div className="flex flex-col gap-2">
+                      {/* Status Badge */}
+                      <Badge 
+                        className="uppercase text-xs font-medium w-fit"
+                        variant="secondary"
+                      >
+                        {invoice.status.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                      {/* Due Date Info */}
+                      {invoice.status !== 'paid' && (
+                        <div className="border-t pt-2 mt-2">
+                          {/* Due Date Badge */}
+                          {(() => {
+                            const { text, variant, isPastDue } = getDueDateInfo(invoice.due_date);
+                            return (
+                              <div className="flex flex-col gap-2">
+                                <Badge 
+                                  variant={variant}
+                                  className="flex items-center gap-1.5 w-fit"
+                                >
+                                  {isPastDue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+                                  {text}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  ({format(new Date(invoice.due_date), 'MMM d, yyyy')})
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-muted-foreground">Amount Due</p>
-                    <p className="text-xl sm:text-2xl font-bold break-all">
-                      {formatCurrency(invoice.status_details?.remaining_amount ?? invoice.amount, invoice.currency)}
+                    <p className="text-xl sm:text-2xl font-bold truncate" title={formatCurrency(invoice.amount - invoice.paid_amount, invoice.currency)}>
+                      {formatCurrency(invoice.amount - invoice.paid_amount, invoice.currency)}
                     </p>
                   </div>
-                  {(invoice.status_details?.paid_amount ?? 0) > 0 && (
-                    <div>
+                  {invoice.paid_amount > 0 && (
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Amount Paid</p>
-                      <p className="text-xl sm:text-2xl font-bold text-success break-all">
-                        {formatCurrency(invoice.status_details?.paid_amount ?? 0, invoice.currency)}
+                      <p className="text-xl sm:text-2xl font-bold text-success truncate" title={formatCurrency(invoice.paid_amount, invoice.currency)}>
+                        {formatCurrency(invoice.paid_amount, invoice.currency)}
                       </p>
                     </div>
                   )}

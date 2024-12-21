@@ -12,6 +12,7 @@ class BusinessInvoicePayment extends Model
     protected $fillable = [
         'invoice_id',
         'amount',
+        'currency',
         'payment_date',
         'notes'
     ];

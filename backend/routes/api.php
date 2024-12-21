@@ -249,35 +249,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hustles/{hustleId}/messages/mark-read', [HustleMessageController::class, 'markMessagesAsRead']);
 });
 
-// Business Profile Routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::prefix('business')->group(function () {
-        // Profile routes
-        Route::get('/profile/check', [BusinessProfileController::class, 'checkProfile']);
-        Route::post('/profile', [BusinessProfileController::class, 'store']);
-        Route::put('/profile', [BusinessProfileController::class, 'update']);
-
-        // Customer routes
-        Route::get('/customers', [BusinessCustomerController::class, 'index']);
-        Route::post('/customers', [BusinessCustomerController::class, 'store']);
-        Route::get('/customers/{id}', [BusinessCustomerController::class, 'show']);
-        Route::put('/customers/{id}', [BusinessCustomerController::class, 'update']);
-        Route::delete('/customers/{id}', [BusinessCustomerController::class, 'destroy']);
-        Route::get('/customers/{customer}/invoices', [BusinessInvoiceController::class, 'getCustomerInvoices']);
-
-        // Invoice routes
-        Route::post('/invoices', [BusinessInvoiceController::class, 'store']);
-        Route::get('/invoices/{id}', [BusinessInvoiceController::class, 'getInvoice']);
-        Route::get('/invoices/{id}/download', [BusinessInvoiceController::class, 'downloadPDF']);
-        Route::post('/invoices/{id}/send', [BusinessInvoiceController::class, 'sendInvoice']);
-        Route::post('/invoices/{id}/payments', [BusinessInvoiceController::class, 'recordPayment']);
-        Route::patch('/invoices/{id}/status', [BusinessInvoiceController::class, 'updateStatus']);
-    });
-});
-
 // Business Routes
 Route::middleware('auth:sanctum')->prefix('business')->group(function () {
     // Business Profile Routes
+    Route::get('/profile/check', [BusinessProfileController::class, 'checkProfile']);
     Route::get('/profile', [BusinessProfileController::class, 'show']);
     Route::post('/profile', [BusinessProfileController::class, 'store']);
     Route::put('/profile', [BusinessProfileController::class, 'update']);
@@ -289,15 +264,17 @@ Route::middleware('auth:sanctum')->prefix('business')->group(function () {
     Route::put('/customers/{customer}', [BusinessCustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [BusinessCustomerController::class, 'destroy']);
 
-    // Invoice Routes
-    Route::get('/customers/{customer}/invoices', [BusinessInvoiceController::class, 'getCustomerInvoices']);
-    Route::get('/invoices/{invoice}', [BusinessInvoiceController::class, 'getInvoice']);
-    Route::post('/invoices', [BusinessInvoiceController::class, 'store']);
-    Route::get('/invoices/{invoice}/download', [BusinessInvoiceController::class, 'downloadPDF']);
-    Route::post('/invoices/{invoice}/send', [BusinessInvoiceController::class, 'sendInvoice']);
-    Route::post('/invoices/{invoice}/payments', [BusinessInvoiceController::class, 'recordPayment']);
-    Route::put('/invoices/{invoice}/status', [BusinessInvoiceController::class, 'updateStatus']);
+    // All invoice routes under /business prefix
+    Route::prefix('invoices')->group(function () {
+        Route::get('/{id}', [BusinessInvoiceController::class, 'show'])
+            ->name('business.invoices.show');
+        Route::get('/{invoice}/download', [BusinessInvoiceController::class, 'downloadPDF']);
+        Route::post('/{invoice}/send', [BusinessInvoiceController::class, 'sendInvoice']);
+        Route::post('/{invoice}/payments', [BusinessInvoiceController::class, 'recordPayment']);
+        Route::put('/{invoice}/status', [BusinessInvoiceController::class, 'updateStatus']);
+    });
 
-    // Transactions
+    // Customer invoice routes
+    Route::get('/customers/{customer}/invoices', [BusinessInvoiceController::class, 'getCustomerInvoices']);
     Route::get('/customers/{customer}/transactions', [BusinessInvoiceController::class, 'getCustomerTransactions']);
 });

@@ -1,29 +1,5 @@
-import { api } from '@/lib/api';
 import { apiClient } from '@/lib/axios';
-
-interface CreateCustomerDto {
-  name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  tags?: string[];
-}
-
-interface CreateInvoiceDto {
-  customer_id: string;
-  invoice_number?: string;
-  amount: number;
-  currency: string;
-  due_date: string;
-  notes?: string;
-  theme_color?: string;
-  items?: {
-    description?: string;
-    quantity?: number;
-    unit_price?: number;
-    amount?: number;
-  }[];
-}
+import { CreateCustomerDto } from '@/types/business';
 
 export const businessService = {
   checkProfile: async () => {
@@ -45,9 +21,9 @@ export const businessService = {
     return data;
   },
 
-  createCustomer: async (customerData: CreateCustomerDto) => {
-    const { data } = await apiClient.post('/business/customers', customerData);
-    return data;
+  createCustomer: async (data: CreateCustomerDto) => {
+    const { data: response } = await apiClient.post('/business/customers', data);
+    return response.data;
   },
 
   getCustomer: async (id: string) => {
@@ -55,9 +31,9 @@ export const businessService = {
     return data;
   },
 
-  updateCustomer: async (id: string, customerData: Partial<CreateCustomerDto>) => {
-    const { data } = await apiClient.put(`/business/customers/${id}`, customerData);
-    return data;
+  updateCustomer: async (id: string, data: CreateCustomerDto) => {
+    const { data: response } = await apiClient.put(`/business/customers/${id}`, data);
+    return response.data;
   },
 
   deleteCustomer: async (id: string) => {
@@ -65,9 +41,9 @@ export const businessService = {
     return data;
   },
 
-  createInvoice: async (data: CreateInvoiceDto) => {
+  createInvoice: async (data: any) => {
     const { data: response } = await apiClient.post('/business/invoices', data);
-    return response;
+    return response.data;
   },
 
   getCustomerInvoices: async (customerId: string) => {
@@ -76,17 +52,17 @@ export const businessService = {
   },
 
   getInvoice: async (id: string) => {
-    const response = await api.get(`/business/invoices/${id}`);
-    return response.data;
+    const { data } = await apiClient.get(`/business/invoices/${id}`);
+    return data;
   },
 
   downloadInvoice: async (id: string) => {
-    const response = await api.get(`/business/invoices/${id}/download`, {
+    const { data } = await apiClient.get(`/business/invoices/${id}/download`, {
       responseType: 'blob'
     });
     
     // Create blob link to download
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(new Blob([data]));
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `invoice-${id}.pdf`);
@@ -102,27 +78,23 @@ export const businessService = {
   },
 
   sendInvoice: async (id: string) => {
-    const response = await api.post(`/business/invoices/${id}/send`);
-    return response.data;
+    const { data } = await apiClient.post(`/business/invoices/${id}/send`);
+    return data;
   },
 
-  recordPayment: async (id: string, data: {
-    amount: number;
-    date: string;
-    notes?: string;
-  }) => {
-    const response = await api.post(`/business/invoices/${id}/payments`, data);
-    return response.data;
+  recordPayment: async (id: string, data: any) => {
+    const { data: response } = await apiClient.post(`/business/invoices/${id}/payments`, data);
+    return response;
   },
 
   updateInvoiceStatus: async (id: string, status: string) => {
-    const response = await api.patch(`/business/invoices/${id}/status`, { status });
-    return response.data;
+    const { data } = await apiClient.patch(`/business/invoices/${id}/status`, { status });
+    return data;
   },
 
   getCustomerTransactions: async (customerId: string) => {
-    const response = await api.get(`/business/customers/${customerId}/transactions`);
-    return response.data;
+    const { data } = await apiClient.get(`/business/customers/${customerId}/transactions`);
+    return data;
   },
 
   // Add other business-related API calls

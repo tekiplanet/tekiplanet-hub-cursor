@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useQueryClient } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
-import { CreateCustomerDto } from '@/types/business';
+import { CreateCustomerDto, CustomerDto } from '@/types/business';
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { getAllCountries, getStatesByCountry } from '@/data/locations';
@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { currencies } from '@/data/currencies';
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -45,6 +46,7 @@ const customerFormSchema = z.object({
   city: z.string().min(2, "City is required"),
   state: z.string().min(2, "State is required"),
   country: z.string().min(2, "Country is required"),
+  currency: z.string().min(3, "Currency is required"),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional()
 });
@@ -52,7 +54,7 @@ const customerFormSchema = z.object({
 interface CustomerFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer?: Partial<CreateCustomerDto>;
+  customer?: CustomerDto;
   mode?: 'create' | 'edit';
 }
 
@@ -65,7 +67,7 @@ export default function CustomerFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const queryClient = useQueryClient();
-  const [availableStates, setAvailableStates] = useState<readonly string[]>([]);
+  const [availableStates, setAvailableStates] = useState<{ code: string; name: string; }[]>([]);
 
   const form = useForm<z.infer<typeof customerFormSchema>>({
     resolver: zodResolver(customerFormSchema),
@@ -77,6 +79,7 @@ export default function CustomerFormDialog({
       city: customer?.city || '',
       state: customer?.state || '',
       country: customer?.country || 'NG',
+      currency: customer?.currency || 'NGN',
       notes: customer?.notes || '',
       tags: customer?.tags || []
     }
@@ -85,9 +88,8 @@ export default function CustomerFormDialog({
   useEffect(() => {
     const countryCode = form.watch('country');
     if (countryCode) {
-      const states = getStatesByCountry(countryCode);
-      setAvailableStates(states);
-      if (!states.find(state => state.name === form.getValues('state'))) {
+      setAvailableStates(getStatesByCountry(countryCode));
+      if (!availableStates.find(state => state.name === form.getValues('state'))) {
         form.setValue('state', '');
       }
     }
@@ -100,9 +102,10 @@ export default function CustomerFormDialog({
         email: customer.email || '',
         phone: customer.phone || '',
         address: customer.address || '',
-        city: customer.city || '',
-        state: customer.state || '',
-        country: customer.country || '',
+        city: customer.city,
+        state: customer.state,
+        country: customer.country,
+        currency: customer.currency,
         notes: customer.notes || '',
         tags: customer.tags || []
       });
@@ -125,12 +128,25 @@ export default function CustomerFormDialog({
   const onSubmit = async (values: z.infer<typeof customerFormSchema>) => {
     try {
       setIsSubmitting(true);
+      const customerData = {
+        name: values.name,
+        email: values.email || '',
+        phone: values.phone || '',
+        address: values.address || '',
+        city: values.city,
+        state: values.state,
+        country: values.country,
+        currency: values.currency,
+        notes: values.notes || '',
+        tags: values.tags || []
+      } satisfies CreateCustomerDto;
+
       if (mode === 'create') {
-        await businessService.createCustomer(values);
+        await businessService.createCustomer(customerData);
         toast.success('Customer created successfully');
       } else {
         if (!customer?.id) return;
-        await businessService.updateCustomer(customer.id, values);
+        await businessService.updateCustomer(customer.id, customerData);
         toast.success('Customer updated successfully');
       }
       queryClient.invalidateQueries({ queryKey: ['business-customers'] });
@@ -187,9 +203,6 @@ export default function CustomerFormDialog({
                       <FormControl>
                         <Input placeholder="customer@example.com" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        The primary contact email for this customer
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -231,29 +244,20 @@ export default function CustomerFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Country</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a country" />
+                            <SelectValue placeholder="Select country" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {getAllCountries().map((country) => (
                             <SelectItem key={country.code} value={country.code}>
-                              <div className="flex items-center gap-2">
-                                <span>{country.flag}</span>
-                                <span>{country.name}</span>
-                              </div>
+                              {country.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Select the country where your customer is located
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -265,14 +269,10 @@ export default function CustomerFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>State</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={!form.getValues('country')}
-                      >
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a state" />
+                            <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -283,9 +283,6 @@ export default function CustomerFormDialog({
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Select the state or region
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -298,67 +295,37 @@ export default function CustomerFormDialog({
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter city name" 
-                          {...field}
-                          disabled={!form.getValues('state')}
-                        />
+                        <Input placeholder="Enter city" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Enter the city or town name
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <FormLabel>Tags</FormLabel>
-                <FormDescription>
-                  Add tags to categorize your customer (e.g., VIP, Wholesale, Regular). Press Enter or click + to add a tag.
-                </FormDescription>
-                <div className="flex gap-2">
-                  <Input
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    placeholder="Type and press Enter..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleAddTag}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {form.watch('tags')?.map((tag) => (
-                    <Badge 
-                      key={tag} 
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      {tag}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0 hover:bg-transparent"
-                        onClick={() => handleRemoveTag(tag)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.code} - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <FormField
@@ -368,47 +335,81 @@ export default function CustomerFormDialog({
                   <FormItem>
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Add any additional notes..."
+                      <Textarea
+                        placeholder="Add any additional notes about this customer"
                         className="resize-none"
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Add any important information about this customer that you want to remember
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-4">
+                <FormLabel>Tags</FormLabel>
+                <FormDescription>
+                  Add tags to categorize and organize your customers (e.g., VIP, Wholesale, Regular). Press Enter to add a tag.
+                </FormDescription>
+                <div className="flex flex-wrap gap-2">
+                  {form.getValues('tags')?.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      {tag}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => handleRemoveTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add a tag"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleAddTag}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>Saving...</>
+                  ) : mode === 'create' ? (
+                    'Create Customer'
+                  ) : (
+                    'Update Customer'
+                  )}
+                </Button>
+              </div>
             </form>
           </Form>
         </ScrollArea>
-
-        <div className="flex justify-end gap-4 pt-4 border-t mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-              form.reset();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSubmitting}
-            onClick={form.handleSubmit(onSubmit)}
-          >
-            {isSubmitting 
-              ? 'Saving...' 
-              : mode === 'create' 
-                ? 'Add Customer' 
-                : 'Save Changes'
-            }
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

@@ -6,12 +6,13 @@ use App\Models\BusinessInvoice;
 use App\Models\BusinessInvoiceItem;
 use App\Models\BusinessProfile;
 use App\Models\BusinessInvoicePayment;
+use App\Models\BusinessCustomer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 use TCPDF;
-use Mail;
 
 class BusinessInvoiceController extends Controller
 {
@@ -47,12 +48,16 @@ class BusinessInvoiceController extends Controller
                 return response()->json(['message' => 'Business profile not found'], 404);
             }
 
+            // Get customer to use their currency
+            $customer = BusinessCustomer::findOrFail($request->customer_id);
+
             // Create invoice
             $invoice = BusinessInvoice::create([
                 'business_id' => $businessProfile->id,
                 'customer_id' => $request->customer_id,
                 'invoice_number' => $request->invoice_number ?? 'INV-' . time(),
                 'amount' => $request->amount,
+                'currency' => $customer->currency,
                 'paid_amount' => 0,
                 'due_date' => $request->due_date,
                 'status' => 'pending',
@@ -119,23 +124,40 @@ class BusinessInvoiceController extends Controller
         }
     }
 
-    public function getInvoice($id)
+    public function getInvoice(BusinessInvoice $invoice)
     {
-        $invoice = BusinessInvoice::with(['business', 'customer', 'items', 'payments'])
-            ->where('id', $id)
-            ->first();
+        try {
+            $businessProfile = auth()->user()->business_profile;
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
 
-        if (!$invoice) {
-            return response()->json(['message' => 'Invoice not found'], 404);
+            // Check if the user owns the business
+            if ($invoice->business_id !== $businessProfile->id) {
+                return response()->json([
+                    'message' => 'You are not authorized to view this invoice'
+                ], 403);
+            }
+
+            // Load relationships and add status details
+            $invoice->load(['customer', 'items', 'payments']);
+            $invoice->status_details = $invoice->getStatusDetails();
+
+            return response()->json($invoice);
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch invoice:', [
+                'id' => $invoice->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch invoice',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Check if the user owns the business
-        if ($invoice->business->user_id !== auth()->id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $invoice->status_details = $invoice->getStatusDetails();
-        return response()->json($invoice);
     }
 
     public function downloadPDF($id)
@@ -421,92 +443,99 @@ class BusinessInvoiceController extends Controller
 
     public function recordPayment(Request $request, $id)
     {
-        try {
-            DB::beginTransaction();
+        \Log::info('Recording payment:', [
+            'invoice_id' => $id,
+            'data' => $request->all()
+        ]);
 
-            $validator = Validator::make($request->all(), [
-                'amount' => 'required|numeric|min:0',
-                'date' => 'required|date',
+        try {
+            $invoice = BusinessInvoice::with(['business', 'customer'])->findOrFail($id);
+
+            // Check if the user owns the business
+            if ($invoice->business_id !== auth()->user()->business_profile->id) {
+                return response()->json([
+                    'message' => 'You are not authorized to record payments for this invoice'
+                ], 403);
+            }
+
+            $request->validate([
+                'amount' => 'required|numeric|min:0.01',
+                'payment_date' => 'required|date',
                 'notes' => 'nullable|string'
             ]);
 
-            if ($validator->fails()) {
+            // Validate that amount doesn't exceed remaining balance
+            $remainingBalance = $invoice->amount - $invoice->payments()->sum('amount');
+            if ($request->amount > $remainingBalance) {
                 return response()->json([
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'message' => 'Payment amount cannot exceed the remaining balance',
+                    'errors' => [
+                        'amount' => ['Payment amount cannot exceed the remaining balance']
+                    ]
                 ], 422);
             }
 
-            $invoice = BusinessInvoice::with(['business', 'customer'])
-                ->findOrFail($id);
-
-            // Check if user owns the business
-            if ($invoice->business->user_id !== Auth::id()) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // Check if payment amount is valid
-            $remainingAmount = $invoice->amount - $invoice->paid_amount;
-            if ($request->amount > $remainingAmount) {
-                return response()->json([
-                    'message' => 'Payment amount cannot exceed the remaining balance'
-                ], 422);
-            }
-
-            // Create payment record
-            $payment = BusinessInvoicePayment::create([
-                'invoice_id' => $invoice->id,
+            // Create the payment record
+            $payment = $invoice->payments()->create([
                 'amount' => $request->amount,
-                'payment_date' => $request->date,
+                'currency' => $invoice->currency,
+                'payment_date' => $request->payment_date,
                 'notes' => $request->notes
             ]);
 
-            // Update invoice paid amount and status
-            $newPaidAmount = $invoice->paid_amount + $request->amount;
-            $invoice->paid_amount = $newPaidAmount;
-            
-            // Update status based on payment
-            if ($newPaidAmount >= $invoice->amount) {
-                $invoice->status = 'paid';
-            } elseif ($newPaidAmount > 0) {
-                $invoice->status = 'partially_paid';
-            }
-            
-            $invoice->save();
+            // Calculate total paid amount and update invoice status
+            $totalPaid = $invoice->payments()->sum('amount');
+            $invoice->update([
+                'paid_amount' => $totalPaid,
+                'status' => $totalPaid >= $invoice->amount ? 'paid' : 
+                           ($totalPaid > 0 ? 'partially_paid' : $invoice->status)
+            ]);
 
-            // Send email notification to customer
+            // Send payment receipt email
             try {
                 Mail::send('emails.payment-received', [
                     'invoice' => $invoice,
                     'payment' => $payment,
                     'business' => $invoice->business,
                     'customer' => $invoice->customer
-                ], function($message) use ($invoice) {
-                    $message->to($invoice->customer->email)
-                            ->subject("Payment Recorded - Invoice #{$invoice->invoice_number}");
+                ], function ($message) use ($invoice, $payment) {
+                    $message->to($invoice->customer->email, $invoice->customer->name)
+                        ->subject('Payment Receipt for Invoice #' . $invoice->invoice_number);
                 });
-            } catch (\Exception $e) {
-                \Log::error('Failed to send payment notification email:', [
-                    'error' => $e->getMessage(),
+
+                \Log::info('Payment receipt email sent successfully', [
+                    'invoice_id' => $invoice->id,
+                    'customer_email' => $invoice->customer->email
+                ]);
+            } catch (\Exception $emailError) {
+                \Log::error('Failed to send payment receipt email:', [
+                    'error' => $emailError->getMessage(),
                     'invoice_id' => $invoice->id
                 ]);
+                // Don't throw the error - just log it and continue
             }
 
-            DB::commit();
+            \Log::info('Payment recorded successfully:', [
+                'payment_id' => $payment->id,
+                'invoice_id' => $id,
+                'new_status' => $invoice->status,
+                'total_paid' => $totalPaid,
+                'invoice_amount' => $invoice->amount
+            ]);
 
             return response()->json([
                 'message' => 'Payment recorded successfully',
-                'payment' => $payment->load('invoice'),
+                'payment' => $payment,
                 'invoice' => $invoice->fresh()
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error recording payment:', [
+            \Log::error('Failed to record payment:', [
+                'invoice_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
+            
             return response()->json([
                 'message' => 'Failed to record payment',
                 'error' => $e->getMessage()
@@ -630,6 +659,102 @@ class BusinessInvoiceController extends Controller
                 'message' => 'Failed to fetch customer transactions',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function createInvoice(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:business_customers,id',
+            'invoice_number' => 'nullable|string',
+            'amount' => 'required|numeric|min:0.01',
+            'due_date' => 'required|date',
+            'notes' => 'nullable|string',
+            'theme_color' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.description' => 'required|string',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.amount' => 'required|numeric|min:0'
+        ]);
+
+        // Get the customer to use their currency
+        $customer = BusinessCustomer::findOrFail($request->customer_id);
+
+        // Check if the user owns the business
+        if ($customer->business_id !== auth()->user()->business_profile->id) {
+            return response()->json([
+                'message' => 'You are not authorized to create invoices for this customer'
+            ], 403);
+        }
+
+        // Create the invoice
+        $invoice = BusinessInvoice::create([
+            'business_id' => auth()->user()->business_profile->id,
+            'customer_id' => $request->customer_id,
+            'invoice_number' => $request->invoice_number,
+            'amount' => $request->amount,
+            'currency' => $customer->currency,
+            'due_date' => $request->due_date,
+            'status' => 'draft',
+            'notes' => $request->notes,
+            'theme_color' => $request->theme_color
+        ]);
+
+        // Create invoice items
+        foreach ($request->items as $item) {
+            $invoice->items()->create([
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'amount' => $item['amount']
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Invoice created successfully',
+            'invoice' => $invoice->fresh(['items'])
+        ]);
+    }
+
+    public function show($id)
+    {
+        \Log::info('Fetching invoice:', ['id' => $id]);
+        try {
+            $invoice = BusinessInvoice::with(['items', 'business', 'customer', 'payments'])
+                ->findOrFail($id);
+            
+            // Get the business profile
+            $businessProfile = auth()->user()->business_profile;
+            if (!$businessProfile) {
+                \Log::error('Business profile not found for user:', ['user_id' => auth()->id()]);
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+            
+            // Add authorization check
+            if ($invoice->business_id !== $businessProfile->id) {
+                \Log::error('Unauthorized access to invoice:', [
+                    'invoice_id' => $id,
+                    'user_id' => auth()->id(),
+                    'business_id' => $businessProfile->id
+                ]);
+                abort(403);
+            }
+
+            \Log::info('Invoice found:', ['invoice' => $invoice->toArray()]);
+            return response()->json($invoice);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching invoice:', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Invoice not found',
+                'error' => $e->getMessage()
+            ], 404);
         }
     }
 } 

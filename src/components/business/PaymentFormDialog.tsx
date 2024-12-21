@@ -25,6 +25,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -91,15 +92,22 @@ export default function PaymentFormDialog({
       setIsSubmitting(true);
       await businessService.recordPayment(invoiceId, {
         amount: data.amount,
-        date: format(data.date, 'yyyy-MM-dd'),
+        payment_date: format(data.date, 'yyyy-MM-dd'),
         notes: data.notes,
       });
 
       toast.success('Payment recorded successfully');
       queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] });
+      form.reset({
+        amount: remainingAmount,
+        date: new Date(),
+        notes: '',
+      });
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Failed to record payment');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to record payment';
+      toast.error(errorMessage);
+      console.error('Payment error:', error.response?.data);
     } finally {
       setIsSubmitting(false);
     }
@@ -127,15 +135,14 @@ export default function PaymentFormDialog({
                   <FormControl>
                     <Input
                       type="number"
-                      step="0.01"
-                      min="0"
-                      max={remainingAmount}
-                      placeholder="Enter payment amount"
+                      placeholder="0.00"
                       {...field}
-                      onChange={e => field.onChange(e.target.valueAsNumber)}
-                      value={field.value}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Remaining amount: {formatCurrency(remainingAmount, invoice.currency)}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

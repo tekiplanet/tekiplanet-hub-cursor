@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,16 +23,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import { X, Plus, Trash } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { currencies } from '@/data/currencies';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
-  due_date: z.string().min(1, "Due date is required"),
+  due_date: z.date({
+    required_error: "Due date is required",
+  }),
   notes: z.string().optional(),
   theme_color: z.string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
@@ -45,7 +53,6 @@ const invoiceFormSchema = z.object({
   })).min(1, "At least one item is required"),
   amount: z.number().min(0.01, "Amount must be greater than 0"),
   currency: z.string().min(3, "Please select a currency"),
-  dueDate: z.date(),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
@@ -62,23 +69,35 @@ export default function InvoiceFormDialog({
   customerId
 }: InvoiceFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: customer } = useQuery({
+    queryKey: ['business-customer', customerId],
+    queryFn: () => businessService.getCustomer(customerId),
+    enabled: !!customerId
+  });
 
   const defaultValues: Partial<InvoiceFormValues> = {
     invoice_number: '',
-    due_date: '',
+    due_date: new Date(),
     notes: '',
     theme_color: '#0000FF',
     items: [{ description: '', quantity: 1, unit_price: 0, amount: 0 }],
     amount: 0,
-    currency: "USD",
-    dueDate: new Date(),
+    currency: customer?.currency || 'NGN',
   };
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: defaultValues
   });
+
+  useEffect(() => {
+    if (customer?.currency) {
+      form.setValue('currency', customer.currency);
+    }
+  }, [customer]);
 
   const addItem = () => {
     const currentItems = form.getValues('items') || [];
@@ -98,6 +117,10 @@ export default function InvoiceFormDialog({
     const item = items[index];
     const amount = item.quantity * item.unit_price;
     form.setValue(`items.${index}.amount`, amount);
+    
+    // Update total amount in form
+    const total = calculateTotal();
+    form.setValue('amount', total);
   };
 
   const calculateTotal = () => {
@@ -110,8 +133,7 @@ export default function InvoiceFormDialog({
       setIsSubmitting(true);
       await businessService.createInvoice({
         ...values,
-        customer_id: customerId,
-        amount: calculateTotal()
+        customer_id: customerId
       });
       
       queryClient.invalidateQueries({ queryKey: ['customer-invoices', customerId] });
@@ -160,11 +182,52 @@ export default function InvoiceFormDialog({
                   control={form.control}
                   name="due_date"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col relative">
                       <FormLabel>Due Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDatePopoverOpen(!datePopoverOpen);
+                          }}
+                          type="button"
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
                       </FormControl>
+                      {datePopoverOpen && (
+                        <div 
+                          className="absolute top-[calc(100%+4px)] left-0 z-50 rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              field.onChange(date);
+                              setDatePopoverOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            initialFocus
+                          />
+                        </div>
+                      )}
+                      <FormDescription>
+                        Select when this invoice is due. Past dates are disabled.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -209,6 +272,7 @@ export default function InvoiceFormDialog({
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        disabled={true}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -216,14 +280,19 @@ export default function InvoiceFormDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="USD">USD - US Dollar</SelectItem>
-                          <SelectItem value="EUR">EUR - Euro</SelectItem>
-                          <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                          <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
-                          <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
-                          <SelectItem value="ZAR">ZAR - South African Rand</SelectItem>
+                          {currencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              <div className="flex items-center gap-2">
+                                <span>{currency.symbol}</span>
+                                <span>{currency.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Using customer's preferred currency
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -248,32 +317,29 @@ export default function InvoiceFormDialog({
                 {form.watch('items')?.map((item, index) => (
                   <div key={index} className="space-y-4 p-4 border rounded-lg">
                     <div className="flex justify-between items-start">
-                      <FormLabel>Item {index + 1}</FormLabel>
-                      {index > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(index)}
-                        >
-                          <Trash className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.description`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Item description" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mt-8"
+                        onClick={() => removeItem(index)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.description`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <div className="grid grid-cols-3 gap-4">
                       <FormField
@@ -283,8 +349,8 @@ export default function InvoiceFormDialog({
                           <FormItem>
                             <FormLabel>Quantity</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
+                              <Input
+                                type="number"
                                 min="1"
                                 {...field}
                                 onChange={(e) => {
@@ -305,7 +371,7 @@ export default function InvoiceFormDialog({
                           <FormItem>
                             <FormLabel>Unit Price</FormLabel>
                             <FormControl>
-                              <Input 
+                              <Input
                                 type="number"
                                 min="0"
                                 step="0.01"
@@ -328,14 +394,11 @@ export default function InvoiceFormDialog({
                           <FormItem>
                             <FormLabel>Amount</FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Input 
-                                  type="text"
-                                  disabled
-                                  value={formatCurrency(field.value)}
-                                  className="bg-muted"
-                                />
-                              </div>
+                              <Input
+                                type="number"
+                                disabled
+                                value={field.value}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -345,11 +408,11 @@ export default function InvoiceFormDialog({
                   </div>
                 ))}
 
-                <div className="flex justify-end pt-4 border-t">
-                  <div className="space-y-1">
-                    <FormLabel>Total Amount</FormLabel>
+                <div className="flex justify-end">
+                  <div className="text-right">
+                    <Label>Total Amount</Label>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(calculateTotal())}
+                      {formatCurrency(calculateTotal(), form.getValues('currency'))}
                     </p>
                   </div>
                 </div>
@@ -362,8 +425,8 @@ export default function InvoiceFormDialog({
                   <FormItem>
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Add any notes or payment instructions..."
+                      <Textarea
+                        placeholder="Add any additional notes for this invoice"
                         className="resize-none"
                         {...field}
                       />
@@ -372,28 +435,26 @@ export default function InvoiceFormDialog({
                   </FormItem>
                 )}
               />
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>Creating...</>
+                  ) : (
+                    'Create Invoice'
+                  )}
+                </Button>
+              </div>
             </form>
           </Form>
         </ScrollArea>
-
-        <div className="flex justify-end gap-4 pt-4 border-t mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-              form.reset();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={form.handleSubmit(onSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Invoice'}
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

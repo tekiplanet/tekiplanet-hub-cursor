@@ -150,7 +150,6 @@ function TransactionsTab({ customerId }: { customerId: string }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Invoice #</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
@@ -160,20 +159,13 @@ function TransactionsTab({ customerId }: { customerId: string }) {
             <TableBody>
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
-                  <TableCell>{transaction.invoice_number}</TableCell>
-                  <TableCell className="capitalize">{transaction.type}</TableCell>
-                  <TableCell className="font-medium">
-                    {formatCurrency(transaction.amount)}
-                  </TableCell>
+                  <TableCell>{formatDate(transaction.payment_date)}</TableCell>
+                  <TableCell>Payment</TableCell>
+                  <TableCell>{formatCurrency(transaction.amount, transaction.invoice.currency)}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(transaction.status)}>
-                      {transaction.status}
-                    </Badge>
+                    <Badge variant="success">Completed</Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {transaction.notes || '-'}
-                  </TableCell>
+                  <TableCell>{transaction.notes || '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -465,7 +457,7 @@ export default function CustomerDetails() {
           <CardContent className="pt-4">
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Total Spent</span>
-              <span className="text-2xl font-bold">{formatCurrency(customer.total_spent)}</span>
+              <span className="text-2xl font-bold">{formatCurrency(customer.total_spent, customer.currency)}</span>
             </div>
           </CardContent>
         </Card>
@@ -474,7 +466,7 @@ export default function CustomerDetails() {
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Status</span>
               <div className="flex items-center gap-2">
-                <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                <Badge variant={customer.status === 'active' ? 'success' : 'secondary'}>
                   {customer.status}
                 </Badge>
               </div>
@@ -625,39 +617,34 @@ export default function CustomerDetails() {
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {invoices.map((invoice) => (
                           <TableRow key={invoice.id}>
-                            <TableCell className="font-medium">
-                              {invoice.invoice_number}
+                            <TableCell>{invoice.invoice_number}</TableCell>
+                            <TableCell>{formatDate(invoice.created_at)}</TableCell>
+                            <TableCell>{formatDate(invoice.due_date)}</TableCell>
+                            <TableCell>{formatCurrency(invoice.amount, invoice.currency)}</TableCell>
+                            <TableCell>
+                              {invoice.status_details ? (
+                                <Badge {...getStatusBadgeProps(invoice.status_details)}>
+                                  {invoice.status_details.label}
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">
+                                  {invoice.status.replace('_', ' ')}
+                                </Badge>
+                              )}
                             </TableCell>
                             <TableCell>
-                              {formatDate(invoice.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              {formatDate(invoice.due_date)}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(invoice.amount, invoice.currency)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge {...getStatusBadgeProps(invoice.status_details)}>
-                                {invoice.status_details?.label ?? invoice.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  navigate(`/dashboard/business/customers/${customerId}/invoices/${invoice.id}`);
-                                }}
+                                size="icon"
+                                onClick={() => navigate(`/dashboard/business/customers/${customerId}/invoices/${invoice.id}`)}
                               >
-                                <FileText className="h-4 w-4 mr-2" />
-                                View
+                                <FileText className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>

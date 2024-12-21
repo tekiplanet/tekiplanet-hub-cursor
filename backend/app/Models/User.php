@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $this->hasOne(BusinessProfile::class);
     }
 
+    public function business_profile()
+    {
+        return $this->hasOne(BusinessProfile::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

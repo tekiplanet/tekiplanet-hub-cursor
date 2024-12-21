@@ -18,6 +18,7 @@ class BusinessCustomer extends Model
         'city',
         'state',
         'country',
+        'currency',
         'tags',
         'notes',
         'status'
@@ -40,6 +41,22 @@ class BusinessCustomer extends Model
 
     public function getTotalSpent()
     {
-        return $this->invoices()->where('status', 'paid')->sum('amount');
+        $total = 0;
+        $invoices = $this->invoices()->where('status', 'paid')->get();
+
+        foreach ($invoices as $invoice) {
+            // If the invoice currency matches the customer's currency, add directly
+            if ($invoice->currency === $this->currency) {
+                $total += $invoice->amount;
+            }
+            // For other currencies, we'll need to implement conversion
+            // For now, we'll just add them as is, but this should be updated
+            // when we implement currency conversion
+            else {
+                $total += $invoice->amount;
+            }
+        }
+
+        return $total;
     }
 } 
