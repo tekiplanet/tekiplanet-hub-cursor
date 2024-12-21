@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,15 +28,23 @@ import { businessService } from '@/services/businessService';
 import { CreateCustomerDto } from '@/types/business';
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
+import { getAllCountries, getStatesByCountry } from '@/data/locations';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().optional(),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  country: z.string().min(2, "Country is required"),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional()
 });
@@ -57,6 +65,7 @@ export default function CustomerFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const queryClient = useQueryClient();
+  const [availableStates, setAvailableStates] = useState<readonly string[]>([]);
 
   const form = useForm<z.infer<typeof customerFormSchema>>({
     resolver: zodResolver(customerFormSchema),
@@ -67,11 +76,22 @@ export default function CustomerFormDialog({
       address: customer?.address || '',
       city: customer?.city || '',
       state: customer?.state || '',
-      country: customer?.country || '',
+      country: customer?.country || 'NG',
       notes: customer?.notes || '',
       tags: customer?.tags || []
     }
   });
+
+  useEffect(() => {
+    const countryCode = form.watch('country');
+    if (countryCode) {
+      const states = getStatesByCountry(countryCode);
+      setAvailableStates(states);
+      if (!states.find(state => state.name === form.getValues('state'))) {
+        form.setValue('state', '');
+      }
+    }
+  }, [form.watch('country')]);
 
   const handleAddTag = () => {
     if (tagInput.trim()) {
@@ -184,16 +204,36 @@ export default function CustomerFormDialog({
                 )}
               />
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="city"
+                  name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter city" {...field} />
-                      </FormControl>
+                      <FormLabel>Country</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a country" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {getAllCountries().map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              <div className="flex items-center gap-2">
+                                <span>{country.flag}</span>
+                                <span>{country.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select the country where your customer is located
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -205,9 +245,27 @@ export default function CustomerFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter state" {...field} />
-                      </FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={!form.getValues('country')}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a state" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableStates.map((state) => (
+                            <SelectItem key={state.code} value={state.name}>
+                              {state.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select the state or region
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -215,13 +273,20 @@ export default function CustomerFormDialog({
 
                 <FormField
                   control={form.control}
-                  name="country"
+                  name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter country" {...field} />
+                        <Input 
+                          placeholder="Enter city name" 
+                          {...field}
+                          disabled={!form.getValues('state')}
+                        />
                       </FormControl>
+                      <FormDescription>
+                        Enter the city or town name
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
