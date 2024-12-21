@@ -519,26 +519,85 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
                       {/* Menu Items */}
                       <nav className="space-y-1 p-4">
                         {menuItems.map((item) => (
-                          <Button
-                            key={item.path}
-                            variant={location.pathname === item.path ? "default" : "ghost"}
-                            className={cn(
-                              "w-full justify-start gap-2",
-                              location.pathname === item.path && "bg-primary text-primary-foreground"
-                            )}
-                            onClick={() => handleMenuItemClick(item.path)}
-                          >
-                            {item.icon}
-                            <span>{item.label}</span>
-                            {item.badge && (
-                              <Badge 
-                                variant={location.pathname === item.path ? "secondary" : "default"}
-                                className="ml-auto"
+                          <div key={item.path}>
+                            {/* Main Menu Item */}
+                            {item.submenu ? (
+                              // Items with submenu
+                              <>
+                                <Button
+                                  variant={location.pathname === item.path ? "default" : "ghost"}
+                                  className="w-full justify-start gap-2"
+                                  onClick={() => toggleSubmenu(item.path)}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center">
+                                      {item.icon}
+                                      <span className="ml-2">{item.label}</span>
+                                    </div>
+                                    {item.badge && (
+                                      <Badge variant="secondary" className="ml-auto mr-2">
+                                        {item.badge}
+                                      </Badge>
+                                    )}
+                                    <ChevronDown 
+                                      className={cn(
+                                        "h-4 w-4 transition-transform duration-200",
+                                        expandedMenus.includes(item.path) ? "rotate-180" : ""
+                                      )} 
+                                    />
+                                  </div>
+                                </Button>
+
+                                {/* Submenu Items */}
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ 
+                                    height: expandedMenus.includes(item.path) ? "auto" : 0,
+                                    opacity: expandedMenus.includes(item.path) ? 1 : 0
+                                  }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="ml-4 space-y-1 pt-1">
+                                    {item.submenu.map((subItem) => (
+                                      <Button
+                                        key={subItem.path}
+                                        variant={location.pathname === subItem.path ? "secondary" : "ghost"}
+                                        className="w-full justify-start pl-6"
+                                        onClick={() => {
+                                          navigate(subItem.path);
+                                          setIsSheetOpen(false);
+                                        }}
+                                      >
+                                        <div className="flex items-center">
+                                          {subItem.icon}
+                                          <span className="ml-3">{subItem.label}</span>
+                                        </div>
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              </>
+                            ) : (
+                              // Regular menu items without submenu
+                              <Button
+                                variant={location.pathname === item.path ? "default" : "ghost"}
+                                className="w-full justify-start gap-2"
+                                onClick={() => {
+                                  navigate(item.path);
+                                  setIsSheetOpen(false);
+                                }}
                               >
-                                {item.badge}
-                              </Badge>
+                                {item.icon}
+                                <span>{item.label}</span>
+                                {item.badge && (
+                                  <Badge variant="secondary" className="ml-auto">
+                                    {item.badge}
+                                  </Badge>
+                                )}
+                              </Button>
                             )}
-                          </Button>
+                          </div>
                         ))}
                       </nav>
                     </div>
