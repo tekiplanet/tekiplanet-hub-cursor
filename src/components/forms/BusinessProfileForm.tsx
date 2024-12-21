@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -25,22 +25,17 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState as useHookState } from "react";
 
 const businessProfileSchema = z.object({
   // Step 1: Basic Info
@@ -84,25 +79,59 @@ const steps = [
 ];
 
 const businessTypes = [
-  "Technology",
-  "Consulting",
-  "Marketing",
-  "E-commerce",
-  "Healthcare",
-  "Education",
-  "Finance",
-  "Real Estate",
-  "Manufacturing",
-  "Retail",
-  "Hospitality",
-  "Transportation",
-  "Construction",
-  "Agriculture",
-  "Entertainment",
-  "Media",
+  "Accounting & Financial Services",
+  "Advertising & Marketing",
+  "Aerospace & Aviation",
+  "Agriculture & Farming",
+  "Artificial Intelligence & Machine Learning",
+  "Automotive",
+  "Banking & Investment",
+  "Biotechnology",
+  "Chemical Industry",
+  "Cloud Computing & Services",
+  "Construction & Real Estate",
+  "Consulting Services",
+  "Consumer Electronics",
+  "Cybersecurity",
+  "Data Analytics & Business Intelligence",
+  "E-commerce & Online Retail",
+  "Education & E-learning",
+  "Energy & Utilities",
+  "Entertainment & Media",
+  "Environmental Services",
+  "Fashion & Apparel",
+  "Food & Beverage",
+  "Gaming & Esports",
+  "Healthcare & Medical Services",
+  "Hospitality & Tourism",
+  "Human Resources & Recruitment",
+  "Industrial Manufacturing",
+  "Information Technology",
+  "Insurance",
+  "Interior Design & Architecture",
+  "Legal Services",
+  "Logistics & Supply Chain",
+  "Mining & Metals",
+  "Mobile App Development",
+  "NGO & Non-Profit",
+  "Oil & Gas",
+  "Pharmaceutical",
+  "Photography & Visual Arts",
+  "Print & Publishing",
+  "Public Relations",
+  "Real Estate Development",
+  "Renewable Energy",
+  "Research & Development",
+  "Restaurant & Food Services",
+  "Retail & Consumer Goods",
+  "Social Media & Digital Marketing",
+  "Software Development",
+  "Sports & Fitness",
   "Telecommunications",
-  "Energy",
-  "Non-Profit",
+  "Transportation & Delivery",
+  "Travel & Tourism",
+  "Web Development & Design",
+  "Wholesale & Distribution",
   "Other"
 ] as const;
 
@@ -110,6 +139,8 @@ export function BusinessProfileForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useHookState("");
 
   const form = useForm<z.infer<typeof businessProfileSchema>>({
     resolver: zodResolver(businessProfileSchema),
@@ -164,6 +195,17 @@ export function BusinessProfileForm() {
   const currentFields = steps[currentStep].fields;
   const progress = ((currentStep + 1) / steps.length) * 100;
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (open && !(event.target as HTMLElement).closest('.relative')) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
   return (
     <div className="space-y-6">
       {/* Progress Bar */}
@@ -207,23 +249,76 @@ export function BusinessProfileForm() {
                         </FormLabel>
                         <FormControl>
                           {field === 'business_type' ? (
-                            <Select 
-                              onValueChange={fieldProps.onChange}
-                              defaultValue={fieldProps.value}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select business type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <ScrollArea className="h-[200px]">
-                                  {businessTypes.map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                      {type}
-                                    </SelectItem>
-                                  ))}
-                                </ScrollArea>
-                              </SelectContent>
-                            </Select>
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Business Type</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={open}
+                                      className={cn(
+                                        "w-full justify-between",
+                                        !fieldProps.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {fieldProps.value || "Select business type"}
+                                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent 
+                                  align="start"
+                                  side="top"
+                                  sideOffset={8}
+                                  alignOffset={0}
+                                  className={cn(
+                                    "p-0 w-[var(--radix-popper-anchor-width)]",
+                                    "max-w-[400px]"
+                                  )}
+                                >
+                                  <Command className="w-full">
+                                    <div className="flex items-center border-b px-3">
+                                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                      <input
+                                        placeholder="Search business types..."
+                                        value={searchValue}
+                                        onChange={(e) => setSearchValue(e.target.value)}
+                                        className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                      />
+                                    </div>
+                                    <div className="p-2 max-h-[300px] overflow-y-auto">
+                                      {businessTypes
+                                        .filter((type) =>
+                                          type.toLowerCase().includes(searchValue.toLowerCase())
+                                        )
+                                        .map((type) => (
+                                          <div
+                                            key={type}
+                                            onClick={() => {
+                                              fieldProps.onChange(type);
+                                              setOpen(false);
+                                            }}
+                                            className={cn(
+                                              "flex items-center gap-2 w-full rounded-sm px-2 py-3 cursor-pointer hover:bg-muted",
+                                              fieldProps.value === type && "bg-muted"
+                                            )}
+                                          >
+                                            <div className="flex flex-col flex-1">
+                                              <span className="font-medium">{type}</span>
+                                            </div>
+                                            {fieldProps.value === type && (
+                                              <Check className="h-4 w-4 text-primary" />
+                                            )}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
                           ) : field === 'description' ? (
                             <Textarea 
                               {...fieldProps}
