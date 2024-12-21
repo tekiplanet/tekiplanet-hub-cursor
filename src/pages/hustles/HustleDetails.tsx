@@ -209,79 +209,80 @@ const HustleDetails = () => {
         <motion.div variants={item} className="relative">
           <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg" />
           <div className="relative pt-6 px-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-2">
-                <Badge variant="secondary" className="mb-2">
-                  <Briefcase className="h-3 w-3 mr-1" />
-                  {hustle.category.name}
-                </Badge>
-                <h1 className="text-2xl md:text-3xl font-bold">{hustle.title}</h1>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Apply Button with Status */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      size="lg"
-                      onClick={() => setIsApplyDialogOpen(true)}
-                      disabled={!applicationStatus.can_apply || applyMutation.isPending}
-                      className={cn(
-                        "relative",
-                        applicationStatus.can_apply 
-                          ? "bg-primary text-white hover:bg-primary/90" 
-                          : "bg-muted"
-                      )}
-                    >
-                      {applyMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          Submitting Application...
-                        </>
-                      ) : (
-                        <>
-                          <UserCheck className="h-5 w-5 mr-2" />
-                          {applicationStatus.can_apply ? 'Apply for Hustle' : (
-                            hustle.application_status === 'pending' ? 'Application Pending' :
-                            hustle.application_status === 'approved' ? 'Application Approved' :
-                            hustle.application_status === 'rejected' ? 'Application Rejected' :
-                            'Cannot Apply'
-                          )}
-                        </>
-                      )}
-                    </Button>
+            {/* Category Badge */}
+            <Badge variant="secondary" className="mb-4">
+              <Briefcase className="h-3 w-3 mr-1" />
+              {hustle.category.name}
+            </Badge>
 
-                    <ApplyHustleDialog
-                      isOpen={isApplyDialogOpen}
-                      onClose={() => setIsApplyDialogOpen(false)}
-                      onConfirm={() => {
-                        applyMutation.mutate(id!);
-                        setIsApplyDialogOpen(false);
-                      }}
-                      isLoading={applyMutation.isPending}
-                      hustleTitle={hustle.title}
-                    />
+            {/* Title */}
+            <h1 className="text-2xl md:text-3xl font-bold mb-6">
+              {hustle.title}
+            </h1>
 
-                    {/* Status Badge */}
-                    {hustle.application_status && (
-                      <Badge variant={
-                        hustle.application_status === 'approved' ? 'success' :
-                        hustle.application_status === 'rejected' ? 'destructive' :
-                        'secondary'
-                      }>
-                        {hustle.application_status.toUpperCase()}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Reason - Now on its own line */}
+            {/* Application Status Section */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+              {/* Status Badge Row */}
+              {hustle.application_status && (
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={
+                      hustle.application_status === 'approved' ? 'success' :
+                      hustle.application_status === 'rejected' ? 'destructive' :
+                      'secondary'
+                    }
+                  >
+                    {hustle.application_status.toUpperCase()}
+                  </Badge>
                   {!applicationStatus.can_apply && (
-                    <p className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {applicationStatus.reason}
-                    </p>
+                    </span>
                   )}
                 </div>
-              </div>
+              )}
+
+              {/* Action Button */}
+              <Button 
+                size="lg"
+                onClick={() => setIsApplyDialogOpen(true)}
+                disabled={!applicationStatus.can_apply || applyMutation.isPending}
+                className={cn(
+                  "w-full",
+                  applicationStatus.can_apply 
+                    ? "bg-primary text-white hover:bg-primary/90" 
+                    : "bg-muted"
+                )}
+              >
+                {applyMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Submitting Application...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-5 w-5 mr-2" />
+                    {applicationStatus.can_apply ? 'Apply for Hustle' : (
+                      hustle.application_status === 'pending' ? 'Application Pending' :
+                      hustle.application_status === 'approved' ? 'Application Approved' :
+                      hustle.application_status === 'rejected' ? 'Application Rejected' :
+                      'Cannot Apply'
+                    )}
+                  </>
+                )}
+              </Button>
             </div>
+
+            <ApplyHustleDialog
+              isOpen={isApplyDialogOpen}
+              onClose={() => setIsApplyDialogOpen(false)}
+              onConfirm={() => {
+                applyMutation.mutate(id!);
+                setIsApplyDialogOpen(false);
+              }}
+              isLoading={applyMutation.isPending}
+              hustleTitle={hustle.title}
+            />
           </div>
         </motion.div>
 
