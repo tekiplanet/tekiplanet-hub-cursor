@@ -136,31 +136,44 @@ class HustleApplicationController extends Controller
     {
         try {
             $professional = Professional::where('user_id', Auth::id())->firstOrFail();
+            
+            // Add debug logging
+            Log::info('Getting hustles for professional:', [
+                'professional_id' => $professional->id,
+                'user_id' => Auth::id()
+            ]);
 
             $hustles = Hustle::with(['category', 'messages'])
                 ->where('assigned_professional_id', $professional->id)
                 ->whereIn('status', ['approved', 'in_progress', 'completed'])
                 ->latest()
-                ->get()
-                ->map(function($hustle) {
-                    return [
-                        'id' => $hustle->id,
-                        'title' => $hustle->title,
-                        'category' => $hustle->category->name,
-                        'budget' => $hustle->budget,
-                        'deadline' => $hustle->deadline->format('M d, Y'),
-                        'status' => $hustle->status,
-                        'initial_payment_released' => $hustle->initial_payment_released,
-                        'final_payment_released' => $hustle->final_payment_released,
-                        'unread_messages' => $hustle->messages()
-                            ->where('sender_type', 'admin')
-                            ->where('is_read', false)
-                            ->count()
-                    ];
-                });
+                ->get();
+
+            // Add debug logging
+            Log::info('Found hustles:', [
+                'count' => $hustles->count(),
+                'hustles' => $hustles->toArray()
+            ]);
+
+            $mappedHustles = $hustles->map(function($hustle) {
+                return [
+                    'id' => $hustle->id,
+                    'title' => $hustle->title,
+                    'category' => $hustle->category->name,
+                    'budget' => $hustle->budget,
+                    'deadline' => $hustle->deadline->format('M d, Y'),
+                    'status' => $hustle->status,
+                    'initial_payment_released' => $hustle->initial_payment_released,
+                    'final_payment_released' => $hustle->final_payment_released,
+                    'unread_messages' => $hustle->messages()
+                        ->where('sender_type', 'admin')
+                        ->where('is_read', false)
+                        ->count()
+                ];
+            });
 
             return response()->json([
-                'hustles' => $hustles
+                'hustles' => $mappedHustles
             ]);
 
         } catch (\Exception $e) {

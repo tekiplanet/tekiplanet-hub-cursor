@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Send, Loader2, Image as ImageIcon, Paperclip, Smile } from 'lucide-react';
+import { Send, Loader2, Smile } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -150,29 +150,15 @@ const HustleChat = ({ hustleId }: HustleChatProps) => {
                   handleSendMessage();
                 }
               }}
-              className="pr-24 py-6 rounded-full"
+              className="pr-12 py-6 rounded-full"
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
               <Button
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8 rounded-full opacity-70 hover:opacity-100"
               >
                 <Smile className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full opacity-70 hover:opacity-100"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full opacity-70 hover:opacity-100"
-              >
-                <ImageIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>

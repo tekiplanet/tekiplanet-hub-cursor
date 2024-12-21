@@ -122,5 +122,10 @@ export const hustleService = {
   markMessagesAsRead: async (hustleId: string) => {
     const { data } = await api.post(`/hustles/${hustleId}/messages/mark-read`);
     return data;
+  },
+
+  getMyHustles: async () => {
+    const { data } = await api.get('/my-hustles');
+    return data.hustles;
   }
 }; 
