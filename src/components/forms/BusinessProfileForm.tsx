@@ -28,7 +28,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search, ImageIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -36,6 +36,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useState as useHookState } from "react";
+import { FormDescription } from "@/components/ui/form";
 
 const businessProfileSchema = z.object({
   // Step 1: Basic Info
@@ -51,6 +52,7 @@ const businessProfileSchema = z.object({
   country: z.string().min(2, "Country is required"),
   
   // Step 3: Additional Info
+  logo: z.instanceof(File, { message: "Business logo is required" }),
   registration_number: z.string().optional(),
   tax_number: z.string().optional(),
   website: z.string().url().optional().or(z.literal("")),
@@ -74,7 +76,7 @@ const steps = [
     id: 'additional-info',
     title: 'Additional Information',
     description: 'Tell us more about your business',
-    fields: ['registration_number', 'tax_number', 'website', 'description']
+    fields: ['logo', 'registration_number', 'tax_number', 'website', 'description']
   }
 ];
 
@@ -135,12 +137,54 @@ const businessTypes = [
   "Other"
 ] as const;
 
+const nigerianStates = [
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "Federal Capital Territory",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara"
+] as const;
+
 export function BusinessProfileForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useHookState("");
+  const [stateSearchValue, setStateSearchValue] = useHookState("");
+  const [stateOpen, setStateOpen] = useState(false);
 
   const form = useForm<z.infer<typeof businessProfileSchema>>({
     resolver: zodResolver(businessProfileSchema),
@@ -152,13 +196,18 @@ export function BusinessProfileForm() {
       address: "",
       city: "",
       state: "",
-      country: "",
+      country: "Nigeria",
+      logo: null,
       registration_number: "",
       tax_number: "",
       website: "",
       description: ""
     },
   });
+
+  useEffect(() => {
+    form.setValue('country', 'Nigeria');
+  }, []);
 
   const nextStep = () => {
     const fields = steps[currentStep].fields;
@@ -318,10 +367,137 @@ export function BusinessProfileForm() {
                               </Popover>
                               <FormMessage />
                             </FormItem>
+                          ) : field === 'state' ? (
+                            <FormItem className="flex flex-col">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={stateOpen}
+                                      className={cn(
+                                        "w-full justify-between",
+                                        !fieldProps.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {fieldProps.value || "Select state"}
+                                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent 
+                                  align="start"
+                                  side="top"
+                                  sideOffset={8}
+                                  alignOffset={0}
+                                  className={cn(
+                                    "p-0 w-[var(--radix-popper-anchor-width)]",
+                                    "max-w-[400px]"
+                                  )}
+                                >
+                                  <Command className="w-full">
+                                    <div className="flex items-center border-b px-3">
+                                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                      <input
+                                        placeholder="Search states..."
+                                        value={stateSearchValue}
+                                        onChange={(e) => setStateSearchValue(e.target.value)}
+                                        className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                      />
+                                    </div>
+                                    <div className="p-2 max-h-[300px] overflow-y-auto">
+                                      {nigerianStates
+                                        .filter((state) =>
+                                          state.toLowerCase().includes(stateSearchValue.toLowerCase())
+                                        )
+                                        .map((state) => (
+                                          <div
+                                            key={state}
+                                            onClick={() => {
+                                              fieldProps.onChange(state);
+                                              setStateOpen(false);
+                                            }}
+                                            className={cn(
+                                              "flex items-center gap-2 w-full rounded-sm px-2 py-3 cursor-pointer hover:bg-muted",
+                                              fieldProps.value === state && "bg-muted"
+                                            )}
+                                          >
+                                            <div className="flex flex-col flex-1">
+                                              <span className="font-medium">{state}</span>
+                                            </div>
+                                            {fieldProps.value === state && (
+                                              <Check className="h-4 w-4 text-primary" />
+                                            )}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          ) : field === 'country' ? (
+                            <FormItem>
+                              <FormControl>
+                                <Input 
+                                  {...fieldProps}
+                                  value="Nigeria"
+                                  disabled
+                                  className="bg-muted"
+                                  onMount={() => fieldProps.onChange("Nigeria")}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          ) : field === 'logo' ? (
+                            <FormItem>
+                              <FormLabel>Business Logo</FormLabel>
+                              <FormControl>
+                                <div className="flex items-center gap-4">
+                                  {fieldProps.value instanceof File ? (
+                                    <div className="relative w-20 h-20 rounded-lg border overflow-hidden">
+                                      <img
+                                        src={URL.createObjectURL(fieldProps.value)}
+                                        alt="Preview"
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-1 right-1 h-6 w-6"
+                                        onClick={() => fieldProps.onChange(null)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted">
+                                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        fieldProps.onChange(file);
+                                      }
+                                    }}
+                                    className="flex-1"
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormDescription>
+                                Upload your business logo (PNG, JPG up to 2MB)
+                              </FormDescription>
+                            </FormItem>
                           ) : field === 'description' ? (
                             <Textarea 
                               {...fieldProps}
-                              placeholder={`Enter your business ${field.replace(/_/g, ' ')}`}
+                              placeholder="e.g. We are a leading technology solutions provider specializing in digital transformation..."
                               className="resize-none"
                               rows={4}
                             />
@@ -329,7 +505,17 @@ export function BusinessProfileForm() {
                             <Input 
                               {...fieldProps}
                               type={field.includes('email') ? 'email' : 'text'}
-                              placeholder={`Enter your business ${field.replace(/_/g, ' ')}`}
+                              placeholder={
+                                field === 'business_name' ? 'e.g. TechNova Solutions' :
+                                field === 'business_email' ? 'e.g. contact@technovasolutions.com' :
+                                field === 'phone_number' ? 'e.g. 08012345678' :
+                                field === 'address' ? 'e.g. 123 Business Avenue, Victoria Island' :
+                                field === 'city' ? 'e.g. Lagos' :
+                                field === 'registration_number' ? 'e.g. RC123456' :
+                                field === 'tax_number' ? 'e.g. TIN12345678' :
+                                field === 'website' ? 'e.g. https://technovasolutions.com' :
+                                ''
+                              }
                             />
                           )}
                         </FormControl>
