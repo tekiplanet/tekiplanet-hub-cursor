@@ -297,4 +297,7 @@ Route::middleware('auth:sanctum')->prefix('business')->group(function () {
     Route::post('/invoices/{invoice}/send', [BusinessInvoiceController::class, 'sendInvoice']);
     Route::post('/invoices/{invoice}/payments', [BusinessInvoiceController::class, 'recordPayment']);
     Route::put('/invoices/{invoice}/status', [BusinessInvoiceController::class, 'updateStatus']);
+
+    // Transactions
+    Route::get('/customers/{customer}/transactions', [BusinessInvoiceController::class, 'getCustomerTransactions']);
 });

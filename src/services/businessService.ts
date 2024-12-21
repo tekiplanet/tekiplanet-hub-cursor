@@ -119,5 +119,10 @@ export const businessService = {
     return response.data;
   },
 
+  getCustomerTransactions: async (customerId: string) => {
+    const response = await api.get(`/business/customers/${customerId}/transactions`);
+    return response.data;
+  },
+
   // Add other business-related API calls
 }; 

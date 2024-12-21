@@ -40,6 +40,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import InvoiceFormDialog from '@/components/business/InvoiceFormDialog';
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CustomerDetailsSkeleton = () => (
   <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-8">
@@ -108,6 +110,74 @@ const CustomerDetailsSkeleton = () => (
     </div>
   </div>
 );
+
+function TransactionsTab({ customerId }: { customerId: string }) {
+  const { data: transactions, isLoading } = useQuery({
+    queryKey: ["customer-transactions", customerId],
+    queryFn: () => businessService.getCustomerTransactions(customerId),
+  });
+
+  if (isLoading) {
+    return <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>;
+  }
+
+  if (!transactions?.length) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No transactions found for this customer.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Notes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
+              <TableCell>{transaction.type}</TableCell>
+              <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+              <TableCell>
+                <Badge variant={getStatusVariant(transaction.status)}>
+                  {transaction.status}
+                </Badge>
+              </TableCell>
+              <TableCell>{transaction.notes}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function getStatusVariant(status: string) {
+  switch (status.toLowerCase()) {
+    case "completed":
+    case "paid":
+      return "success";
+    case "pending":
+      return "warning";
+    case "failed":
+      return "destructive";
+    default:
+      return "secondary";
+  }
+}
 
 export default function CustomerDetails() {
   const { customerId } = useParams();
@@ -470,14 +540,7 @@ export default function CustomerDetails() {
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-4">
-          <Card>
-            <CardContent className="p-0">
-              {/* Add transactions table/list here */}
-              <div className="p-8 text-center text-muted-foreground">
-                No transactions found
-              </div>
-            </CardContent>
-          </Card>
+          <TransactionsTab customerId={customerId!} />
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">

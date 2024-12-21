@@ -486,4 +486,46 @@ class BusinessInvoiceController extends Controller
 
         return $pdf->Output('', 'S');
     }
+
+    public function getCustomerTransactions($customerId)
+    {
+        try {
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
+            if (!$businessProfile) {
+                return response()->json(['message' => 'Business profile not found'], 404);
+            }
+
+            // Get all invoice payments for the customer
+            $transactions = BusinessInvoicePayment::whereHas('invoice', function ($query) use ($businessProfile, $customerId) {
+                $query->where('business_id', $businessProfile->id)
+                    ->where('customer_id', $customerId);
+            })
+            ->with(['invoice:id,invoice_number'])
+            ->orderBy('payment_date', 'desc')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'date' => $payment->payment_date,
+                    'type' => 'payment',
+                    'amount' => $payment->amount,
+                    'status' => 'completed',
+                    'notes' => $payment->notes,
+                    'invoice_number' => $payment->invoice->invoice_number
+                ];
+            });
+
+            return response()->json($transactions);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching customer transactions:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch customer transactions',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 
