@@ -1,98 +1,166 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Card, CardContent, CardHeader, CardTitle, CardDescription 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription,
+  CardFooter 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { 
-  DollarSign, ShoppingBag, Users, Briefcase, Zap, 
-  Calendar, ChevronRight, BookOpen, Gift 
+  DollarSign, 
+  Users, 
+  Package, 
+  FileText,
+  TrendingUp,
+  ShoppingBag,
+  AlertCircle,
+  Plus,
+  ArrowRight,
+  Bell,
+  BarChart3,
+  Calendar,
+  CircleDollarSign,
+  Wallet
 } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import NoBusinessProfile from '../business/NoBusinessProfile';
 import InactiveBusinessProfile from '../business/InactiveBusinessProfile';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from 'date-fns';
 
-// Mock Data (to be replaced with actual backend data)
-const businessProfile = {
-  name: "TechNova Solutions",
-  avatar: "https://ui-avatars.com/api/?name=TechNova+Solutions",
-  activeSubscription: "Pro Workspace",
-  subscriptionDaysRemaining: 22
-};
+// Quick Action Component
+const QuickAction = ({ icon: Icon, title, onClick, variant = "default" }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <Card 
+      className={cn(
+        "cursor-pointer hover:shadow-md transition-all",
+        variant === "primary" && "bg-primary text-primary-foreground"
+      )}
+      onClick={onClick}
+    >
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "p-3 rounded-xl",
+            variant === "primary" ? "bg-primary-foreground/10" : "bg-primary/10"
+          )}>
+            <Icon className={cn(
+              "h-6 w-6",
+              variant === "primary" ? "text-primary-foreground" : "text-primary"
+            )} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold">{title}</h3>
+          </div>
+          <ArrowRight className={cn(
+            "h-5 w-5 opacity-50",
+            variant === "primary" ? "text-primary-foreground" : "text-foreground"
+          )} />
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
 
-const serviceRequests = [
-  {
-    id: "1",
-    title: "Cloud Migration Consultation",
-    progress: 65,
-    status: "In Progress"
-  },
-  {
-    id: "2", 
-    title: "Cybersecurity Assessment",
-    progress: 30,
-    status: "Pending"
-  }
-];
+// Metric Card Component with Animation
+const MetricCard = ({ title, value, trend, icon: Icon, trendValue, isLoading, color = "primary" }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Card className="relative overflow-hidden">
+      <div className={cn(
+        "absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 transform translate-x-8 -translate-y-8",
+        `bg-${color}-500`
+      )} />
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-x-4">
+          <div className="flex items-center space-x-4">
+            <div className={cn(
+              "p-3 rounded-xl",
+              `bg-${color}-500/10`
+            )}>
+              <Icon className={cn(
+                "h-6 w-6",
+                `text-${color}-500`
+              )} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              {isLoading ? (
+                <div className="h-8 w-24 animate-pulse bg-muted rounded" />
+              ) : (
+                <h3 className="text-2xl font-bold">{value}</h3>
+              )}
+            </div>
+          </div>
+          {trend && (
+            <Badge variant={trend === 'up' ? 'success' : 'destructive'} className="h-6">
+              <TrendingUp className={cn(
+                "h-4 w-4 mr-1",
+                trend === 'down' && "rotate-180"
+              )} />
+              {trendValue}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
 
-const promotions = [
-  {
-    id: "1",
-    title: "50% Off Enterprise Gadgets",
-    description: "Special discount for business owners",
-    image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4"
-  },
-  {
-    id: "2", 
-    title: "Free Consultation Week",
-    description: "Book your strategy session now",
-    image: "https://images.unsplash.com/photo-1552664730-4d5749dd1e3a"
-  }
-];
+// Recent Activity Item
+const ActivityItem = ({ icon: Icon, title, time, amount, status }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-lg cursor-pointer"
+  >
+    <div className="p-2 bg-primary/10 rounded-xl">
+      <Icon className="h-5 w-5 text-primary" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="font-medium truncate">{title}</p>
+      <p className="text-sm text-muted-foreground">{time}</p>
+    </div>
+    <div className="text-right">
+      <p className="font-medium">{amount}</p>
+      <Badge variant={status === 'completed' ? 'success' : 'secondary'}>
+        {status}
+      </Badge>
+    </div>
+  </motion.div>
+);
 
 export default function BusinessDashboard() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const { data: profileData, isLoading: profileLoading, error } = useQuery({
+  const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['business-profile'],
     queryFn: businessService.checkProfile,
     retry: false
   });
 
+  const { data: metrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ['business-metrics'],
+    queryFn: businessService.getMetrics,
+    enabled: !!profileData?.has_profile
+  });
+
   if (profileLoading) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="animate-pulse space-y-6">
-          {/* Avatar and Welcome Section */}
-          <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 rounded-full bg-muted" />
-            <div className="space-y-2">
-              <div className="h-6 w-48 bg-muted rounded" />
-              <div className="h-4 w-32 bg-muted rounded" />
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-muted rounded-lg" />
-            ))}
-          </div>
-
-          {/* Other sections */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="h-64 bg-muted rounded-lg" />
-            <div className="h-64 bg-muted rounded-lg" />
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (!profileData?.has_profile) {
@@ -103,168 +171,210 @@ export default function BusinessDashboard() {
     return <InactiveBusinessProfile />;
   }
 
-  const quickActions = [
-    {
-      icon: <Briefcase className="h-5 w-5" />,
-      title: "Request a Service",
-      onClick: () => navigate('/dashboard/services')
-    },
-    {
-      icon: <Calendar className="h-5 w-5" />,
-      title: "Book Workstation",
-      onClick: () => navigate('/dashboard/workspace/book')
-    },
-    {
-      icon: <ShoppingBag className="h-5 w-5" />,
-      title: "Shop Gadgets",
-      onClick: () => navigate('/dashboard/gadgets')
-    },
-    {
-      icon: <Gift className="h-5 w-5" />,
-      title: "Referral Dashboard",
-      onClick: () => navigate('/dashboard/referrals')
-    }
-  ];
-
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="flex items-center space-x-4">
+    <div className="space-y-8 p-4 md:p-8 max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16 border-2 border-primary">
-            <AvatarImage src={businessProfile.avatar} />
-            <AvatarFallback>TN</AvatarFallback>
+            <AvatarImage src={profileData?.profile?.logo} />
+            <AvatarFallback>BP</AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome, {businessProfile.name}! 🚀
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {profileData?.profile?.business_name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {businessProfile.activeSubscription} | {businessProfile.subscriptionDaysRemaining} days remaining
+            <p className="text-muted-foreground">
+              {format(new Date(), 'EEEE, MMMM do yyyy')}
             </p>
           </div>
         </div>
-      </motion.div>
-
-      {/* Business Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { 
-            title: "Total Revenue", 
-            value: "$45,231", 
-            icon: <DollarSign className="h-4 w-4 text-primary" />,
-            trend: "+20.1% this month" 
-          },
-          { 
-            title: "Active Services", 
-            value: "12", 
-            icon: <ShoppingBag className="h-4 w-4 text-primary" />,
-            trend: "3 pending" 
-          },
-          { 
-            title: "Clients", 
-            value: "24", 
-            icon: <Users className="h-4 w-4 text-primary" />,
-            trend: "+4 this week" 
-          },
-          { 
-            title: "Performance", 
-            value: "+573", 
-            icon: <Zap className="h-4 w-4 text-primary" />,
-            trend: "Growth rate" 
-          }
-        ].map((metric, index) => (
-          <Card key={metric.title} className="relative">
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex justify-between items-center mb-2">
-                {metric.icon}
-                <span className="text-xs text-muted-foreground">{metric.title}</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">{metric.value}</h3>
-                <p className="text-xs text-primary">{metric.trend}</p>
-              </div>
-            </CardContent>
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
-          </Card>
-        ))}
-      </div>
-
-      {/* Service Management & Promotions */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Service Requests */}
-        <Card className="relative">
-          <CardHeader>
-            <CardTitle>Current Services</CardTitle>
-            <CardDescription>Ongoing and pending service requests</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {serviceRequests.map((service) => (
-              <div key={service.id} className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">{service.title}</span>
-                  <span className="text-xs text-muted-foreground">{service.status}</span>
-                </div>
-                <Progress value={service.progress} className="h-2" />
-              </div>
-            ))}
-            <Button variant="secondary" className="w-full mt-4">
-              View All Services
-            </Button>
-          </CardContent>
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
-        </Card>
-
-        {/* Promotions Carousel */}
-        <Card className="relative">
-          <CardHeader>
-            <CardTitle>Promotions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Carousel>
-              <CarouselContent>
-                {promotions.map((promo) => (
-                  <CarouselItem key={promo.id}>
-                    <div className="relative">
-                      <img 
-                        src={promo.image} 
-                        alt={promo.title} 
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-lg" />
-                      <div className="absolute bottom-4 left-4 text-white">
-                        <h3 className="text-lg font-bold">{promo.title}</h3>
-                        <p className="text-sm">{promo.description}</p>
-                      </div>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          </CardContent>
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickActions.map((action) => (
-          <Button 
-            key={action.title}
-            variant="outline" 
-            className="relative flex flex-col h-24 justify-center items-center space-y-2"
-            onClick={action.onClick}
-          >
-            {action.icon}
-            <span className="text-xs">{action.title}</span>
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent rounded-lg pointer-events-none" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon">
+            <Bell className="h-5 w-5" />
           </Button>
-        ))}
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            New Transaction
+          </Button>
+        </div>
       </div>
+
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <QuickAction
+          icon={CircleDollarSign}
+          title="Create Invoice"
+          onClick={() => {}}
+          variant="primary"
+        />
+        <QuickAction
+          icon={Package}
+          title="Add Inventory"
+          onClick={() => {}}
+        />
+        <QuickAction
+          icon={Users}
+          title="Add Customer"
+          onClick={() => {}}
+        />
+        <QuickAction
+          icon={Wallet}
+          title="Record Payment"
+          onClick={() => {}}
+        />
+      </div>
+
+      {/* Metrics Section */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Monthly Revenue"
+          value={metrics?.revenue || "₦0"}
+          trend="up"
+          trendValue="12%"
+          icon={DollarSign}
+          isLoading={metricsLoading}
+          color="green"
+        />
+        <MetricCard
+          title="Total Customers"
+          value={metrics?.customers || "0"}
+          trend="up"
+          trendValue="8%"
+          icon={Users}
+          isLoading={metricsLoading}
+          color="blue"
+        />
+        <MetricCard
+          title="Inventory Items"
+          value={metrics?.inventory || "0"}
+          trend="down"
+          trendValue="3%"
+          icon={Package}
+          isLoading={metricsLoading}
+          color="orange"
+        />
+        <MetricCard
+          title="Pending Invoices"
+          value={metrics?.invoices || "0"}
+          icon={FileText}
+          isLoading={metricsLoading}
+          color="purple"
+        />
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="transactions" className="flex items-center gap-2">
+            <CircleDollarSign className="h-4 w-4" />
+            Transactions
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Inventory
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Charts Grid */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Overview</CardTitle>
+                <CardDescription>Monthly revenue breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={metrics?.revenueData || []}>
+                      <defs>
+                        <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))'
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="hsl(var(--primary))"
+                        fillOpacity={1}
+                        fill="url(#revenue)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent Activity</CardTitle>
+                  <CardDescription>Latest business transactions</CardDescription>
+                </div>
+                <Button variant="ghost" className="text-xs">View All</Button>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px] pr-4">
+                  <ActivityItem
+                    icon={CircleDollarSign}
+                    title="Payment from John Doe"
+                    time="2 minutes ago"
+                    amount="₦45,000"
+                    status="completed"
+                  />
+                  {/* Add more activity items */}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Low Stock Alert */}
+          <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/10">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                <CardTitle className="text-orange-500">Low Stock Alert</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Low stock items list */}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Add other tab contents */}
+      </Tabs>
     </div>
   );
 }
+
+const LoadingSkeleton = () => (
+  <div className="space-y-8 p-8">
+    <div className="h-20 bg-muted rounded-lg animate-pulse" />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
+      ))}
+    </div>
+    <div className="grid gap-4 md:grid-cols-2">
+      {[...Array(2)].map((_, i) => (
+        <div key={i} className="h-[400px] bg-muted rounded-lg animate-pulse" />
+      ))}
+    </div>
+  </div>
+);
