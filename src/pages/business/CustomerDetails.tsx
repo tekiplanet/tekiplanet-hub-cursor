@@ -127,51 +127,101 @@ function TransactionsTab({ customerId }: { customerId: string }) {
 
   if (!transactions?.length) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No transactions found for this customer.
-      </div>
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          No transactions found for this customer.
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Notes</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <Card>
+      <CardContent className="p-0">
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
+                  <TableCell>{transaction.invoice_number}</TableCell>
+                  <TableCell className="capitalize">{transaction.type}</TableCell>
+                  <TableCell className="font-medium">
+                    {formatCurrency(transaction.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(transaction.status)}>
+                      {transaction.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {transaction.notes || '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-border">
           {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
-              <TableCell>{transaction.type}</TableCell>
-              <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-              <TableCell>
+            <div key={transaction.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium">
+                    Invoice #{transaction.invoice_number}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(transaction.date), "PPP")}
+                  </p>
+                </div>
                 <Badge variant={getStatusVariant(transaction.status)}>
                   {transaction.status}
                 </Badge>
-              </TableCell>
-              <TableCell>{transaction.notes}</TableCell>
-            </TableRow>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <div>
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="capitalize">{transaction.type}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-muted-foreground">Amount</p>
+                  <p className="font-medium">{formatCurrency(transaction.amount)}</p>
+                </div>
+              </div>
+              {transaction.notes && (
+                <div className="text-sm">
+                  <p className="text-muted-foreground">Notes</p>
+                  <p>{transaction.notes}</p>
+                </div>
+              )}
+            </div>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function getStatusVariant(status: string) {
+function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "success" {
   switch (status.toLowerCase()) {
     case "completed":
     case "paid":
       return "success";
     case "pending":
-      return "warning";
+      return "secondary";
     case "failed":
       return "destructive";
     default:
@@ -265,8 +315,8 @@ export default function CustomerDetails() {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <Card className="col-span-2 md:col-span-1">
           <CardContent className="pt-4">
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Total Spent</span>
@@ -274,7 +324,7 @@ export default function CustomerDetails() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="col-span-1">
           <CardContent className="pt-4">
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Status</span>
@@ -286,19 +336,7 @@ export default function CustomerDetails() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Last Order</span>
-              <span className="font-medium">
-                {customer.last_order_date 
-                  ? formatDate(customer.last_order_date)
-                  : 'No orders yet'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
+        <Card className="col-span-1">
           <CardContent className="pt-4">
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Tags</span>
