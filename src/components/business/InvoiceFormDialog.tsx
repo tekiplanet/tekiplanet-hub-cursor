@@ -199,6 +199,35 @@ export default function InvoiceFormDialog({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="USD">USD - US Dollar</SelectItem>
+                          <SelectItem value="EUR">EUR - Euro</SelectItem>
+                          <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                          <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
+                          <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
+                          <SelectItem value="ZAR">ZAR - South African Rand</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Invoice Items */}
@@ -343,27 +372,6 @@ export default function InvoiceFormDialog({
                   </FormItem>
                 )}
               />
-
-              <div className="grid gap-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select
-                  defaultValue={form.getValues("currency")}
-                  onValueChange={(value) => form.setValue("currency", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD - US Dollar</SelectItem>
-                    <SelectItem value="EUR">EUR - Euro</SelectItem>
-                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                    <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
-                    <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
-                    <SelectItem value="ZAR">ZAR - South African Rand</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </div>
             </form>
           </Form>
         </ScrollArea>

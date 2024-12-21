@@ -11,7 +11,7 @@ interface CreateCustomerDto {
 
 interface CreateInvoiceDto {
   customer_id: string;
-  invoice_number: string;
+  invoice_number?: string;
   amount: number;
   currency: string;
   due_date: string;

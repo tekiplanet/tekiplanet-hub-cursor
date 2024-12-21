@@ -234,7 +234,7 @@ export default function InvoiceDetails() {
                         {invoice.status_details.label}
                       </Badge>
                       <p className="text-sm text-muted-foreground">
-                        {getPaymentStatusText(invoice.status_details)}
+                        {getPaymentStatusText(invoice.status_details, invoice.currency)}
                       </p>
                       {invoice.status_details.is_overdue && invoice.status_details.status !== 'paid' && (
                         <p className="text-sm text-destructive">
@@ -248,18 +248,18 @@ export default function InvoiceDetails() {
                     </Badge>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Amount Due</p>
-                    <p className="text-2xl font-bold">
-                      {formatCurrency(invoice.status_details?.remaining_amount ?? invoice.amount)}
+                    <p className="text-xl sm:text-2xl font-bold break-all">
+                      {formatCurrency(invoice.status_details?.remaining_amount ?? invoice.amount, invoice.currency)}
                     </p>
                   </div>
                   {(invoice.status_details?.paid_amount ?? 0) > 0 && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Amount Paid</p>
-                      <p className="text-2xl font-bold text-success">
-                        {formatCurrency(invoice.status_details?.paid_amount ?? 0)}
+                      <p className="text-xl sm:text-2xl font-bold text-success break-all">
+                        {formatCurrency(invoice.status_details?.paid_amount ?? 0, invoice.currency)}
                       </p>
                     </div>
                   )}
@@ -328,13 +328,13 @@ export default function InvoiceDetails() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span>Unit Price:</span>
-                            <span className="text-foreground font-medium">{formatCurrency(item.unit_price)}</span>
+                            <span className="text-foreground font-medium">{formatCurrency(item.unit_price, invoice.currency)}</span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="font-medium">{formatCurrency(item.amount)}</p>
+                        <p className="font-medium">{formatCurrency(item.amount, invoice.currency)}</p>
                       </div>
                     </div>
                   </div>
@@ -344,7 +344,7 @@ export default function InvoiceDetails() {
               {/* Total Section */}
               <div className="mt-6 flex items-center justify-between p-4 rounded-lg bg-muted/50">
                 <p className="font-medium">Total Amount</p>
-                <p className="text-lg font-bold">{formatCurrency(invoice.amount)}</p>
+                <p className="text-lg font-bold">{formatCurrency(invoice.amount, invoice.currency)}</p>
               </div>
 
               {/* Notes Section */}
@@ -366,7 +366,7 @@ export default function InvoiceDetails() {
                     {invoice.paid_amount === 0 ? (
                       'No payments recorded yet'
                     ) : (
-                      `${formatCurrency(invoice.paid_amount)} paid of ${formatCurrency(invoice.amount)}`
+                      `${formatCurrency(invoice.paid_amount, invoice.currency)} paid of ${formatCurrency(invoice.amount, invoice.currency)}`
                     )}
                   </p>
                 </div>
@@ -390,7 +390,7 @@ export default function InvoiceDetails() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="font-medium">
-                            {formatCurrency(payment.amount, invoice.currency || 'USD')}
+                            {formatCurrency(payment.amount, invoice.currency)}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Recorded on {formatDate(payment.payment_date)}

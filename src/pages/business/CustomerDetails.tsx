@@ -296,10 +296,10 @@ function InvoicesTab({ customerId }: { customerId: string }) {
           {invoices.map((invoice) => (
             <Link
               key={invoice.id}
-              to={`invoices/${invoice.id}`}
+              to={`/dashboard/business/customers/${customerId}/invoices/${invoice.id}`}
               className="block"
             >
-              <div className="p-4 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors">
+              <div className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -329,16 +329,16 @@ function InvoicesTab({ customerId }: { customerId: string }) {
                       {invoice.status_details?.paid_amount > 0 ? (
                         <div className="space-y-1">
                           <p className="text-success">
-                            {formatCurrency(invoice.status_details.paid_amount)} paid
+                            {formatCurrency(invoice.status_details.paid_amount, invoice.currency)} paid
                           </p>
                           {invoice.status_details.remaining_amount > 0 && (
                             <p>
-                              {formatCurrency(invoice.status_details.remaining_amount)} due
+                              {formatCurrency(invoice.status_details.remaining_amount, invoice.currency)} due
                             </p>
                           )}
                         </div>
                       ) : (
-                        formatCurrency(invoice.amount)
+                        formatCurrency(invoice.amount, invoice.currency)
                       )}
                     </div>
                   </div>
@@ -641,7 +641,7 @@ export default function CustomerDetails() {
                               {formatDate(invoice.due_date)}
                             </TableCell>
                             <TableCell>
-                              {formatCurrency(invoice.amount, invoice.currency || 'USD')}
+                              {formatCurrency(invoice.amount, invoice.currency)}
                             </TableCell>
                             <TableCell>
                               <Badge {...getStatusBadgeProps(invoice.status_details)}>

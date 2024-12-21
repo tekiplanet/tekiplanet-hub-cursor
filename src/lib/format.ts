@@ -1,7 +1,7 @@
-export const formatCurrency = (amount: number) => {
+export const formatCurrency = (amount: number, currency: string = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
   }).format(amount);
 };
 
@@ -53,7 +53,7 @@ export const getStatusBadgeProps = (statusDetails?: InvoiceStatusDetails) => {
   };
 };
 
-export const getPaymentStatusText = (statusDetails?: InvoiceStatusDetails) => {
+export const getPaymentStatusText = (statusDetails?: InvoiceStatusDetails, currency: string = 'USD') => {
   if (!statusDetails) {
     return '';
   }
@@ -63,7 +63,7 @@ export const getPaymentStatusText = (statusDetails?: InvoiceStatusDetails) => {
   }
 
   if (statusDetails.status === 'partially_paid') {
-    return `${formatCurrency(statusDetails.paid_amount)} paid, ${formatCurrency(statusDetails.remaining_amount)} remaining`;
+    return `${formatCurrency(statusDetails.paid_amount, currency)} paid, ${formatCurrency(statusDetails.remaining_amount, currency)} remaining`;
   }
 
   if (statusDetails.is_overdue) {
