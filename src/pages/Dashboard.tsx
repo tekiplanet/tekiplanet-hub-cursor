@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package, BrainCircuit, Calendar, Building2, LayoutDashboard, CreditCard } from "lucide-react"
+import { Home, BookOpen, Briefcase, ShoppingBag, Wallet, Settings, LogOut, UserCircle2, GraduationCap, Menu, ArrowLeft, Bell, ChevronDown, ShoppingCart, Package, BrainCircuit, Calendar, Building2, LayoutDashboard, CreditCard, Users } from "lucide-react"
 import { useNavigate, Routes, Route, useLocation, Outlet } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -62,6 +62,7 @@ interface MenuItem {
   icon: React.ReactNode;
   badge?: string;
   submenu?: MenuItem[];
+  show?: boolean;
 }
 
 const Dashboard = ({ children }: { children?: React.ReactNode }) => {
@@ -260,6 +261,12 @@ const Dashboard = ({ children }: { children?: React.ReactNode }) => {
       path: "/dashboard/hustles",
       icon: <Briefcase className="h-4 w-4" />,
       badge: "New"
+    },
+    {
+      path: '/dashboard/business/customers',
+      label: 'Customers',
+      icon: <Users className="h-5 w-5" />,
+      show: user?.account_type === 'business'
     }
   ];
 
