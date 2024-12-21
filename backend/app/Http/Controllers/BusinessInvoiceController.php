@@ -121,36 +121,21 @@ class BusinessInvoiceController extends Controller
 
     public function getInvoice($id)
     {
-        try {
-            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
-            if (!$businessProfile) {
-                return response()->json(['message' => 'Business profile not found'], 404);
-            }
+        $invoice = BusinessInvoice::with(['business', 'customer', 'items', 'payments'])
+            ->where('id', $id)
+            ->first();
 
-            $invoice = BusinessInvoice::with(['items', 'business', 'customer', 'payments'])
-                ->where('business_id', $businessProfile->id)
-                ->findOrFail($id);
-
-            // Add status details to the response
-            $invoice->status_details = $invoice->getStatusDetails();
-
-            return response()->json($invoice);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Invoice not found',
-                'error' => 'The requested invoice does not exist'
-            ], 404);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching invoice:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to fetch invoice',
-                'error' => $e->getMessage()
-            ], 500);
+        if (!$invoice) {
+            return response()->json(['message' => 'Invoice not found'], 404);
         }
+
+        // Check if the user owns the business
+        if ($invoice->business->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $invoice->status_details = $invoice->getStatusDetails();
+        return response()->json($invoice);
     }
 
     public function downloadPDF($id)
@@ -252,15 +237,14 @@ class BusinessInvoiceController extends Controller
             foreach ($invoice->items as $item) {
                 $pdf->Cell(90, 8, $item->description, 1, 0, 'L');
                 $pdf->Cell(30, 8, $item->quantity, 1, 0, 'C');
-                $pdf->Cell(30, 8, number_format($item->unit_price, 2), 1, 0, 'R');
-                $pdf->Cell(30, 8, number_format($item->amount, 2), 1, 1, 'R');
+                $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($item->unit_price, 2), 1, 0, 'R');
+                $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($item->amount, 2), 1, 1, 'R');
             }
 
             // Total
             $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(150, 8, 'Total:', 1, 0, 'R', true);
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(30, 8, number_format($invoice->amount, 2), 1, 1, 'R');
+            $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($invoice->amount, 2), 1, 1, 'R', true);
 
             if ($invoice->notes) {
                 $pdf->Ln(10);
@@ -388,8 +372,8 @@ class BusinessInvoiceController extends Controller
             foreach ($invoice->items as $item) {
                 $pdf->Cell(90, 8, $item->description, 1, 0, 'L');
                 $pdf->Cell(30, 8, $item->quantity, 1, 0, 'C');
-                $pdf->Cell(30, 8, number_format($item->unit_price, 2), 1, 0, 'R');
-                $pdf->Cell(30, 8, number_format($item->amount, 2), 1, 1, 'R');
+                $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($item->unit_price, 2), 1, 0, 'R');
+                $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($item->amount, 2), 1, 1, 'R');
             }
 
             // Total
@@ -398,7 +382,7 @@ class BusinessInvoiceController extends Controller
             $pdf->SetTextColor(255, 255, 255);
             $pdf->Cell(150, 8, 'Total:', 1, 0, 'R', true);
             $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell(30, 8, number_format($invoice->amount, 2), 1, 1, 'R');
+            $pdf->Cell(30, 8, $invoice->currency . ' ' . number_format($invoice->amount, 2), 1, 1, 'R', true);
 
             if ($invoice->notes) {
                 $pdf->Ln(10);

@@ -11,16 +11,17 @@ interface CreateCustomerDto {
 
 interface CreateInvoiceDto {
   customer_id: string;
-  invoice_number?: string;
+  invoice_number: string;
   amount: number;
+  currency: string;
   due_date: string;
   notes?: string;
-  theme_color: string;
-  items: {
-    description: string;
-    quantity: number;
-    unit_price: number;
-    amount: number;
+  theme_color?: string;
+  items?: {
+    description?: string;
+    quantity?: number;
+    unit_price?: number;
+    amount?: number;
   }[];
 }
 

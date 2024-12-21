@@ -91,6 +91,7 @@ interface Invoice {
     address?: string;
   };
   payments: Payment[];
+  currency: string;
 }
 
 export default function InvoiceDetails() {
@@ -389,7 +390,7 @@ export default function InvoiceDetails() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="font-medium">
-                            {formatCurrency(payment.amount)}
+                            {formatCurrency(payment.amount, invoice.currency || 'USD')}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Recorded on {formatDate(payment.payment_date)}
@@ -455,8 +456,11 @@ export default function InvoiceDetails() {
         open={isPaymentFormOpen}
         onOpenChange={setIsPaymentFormOpen}
         invoiceId={invoice.id}
-        totalAmount={invoice.amount}
-        paidAmount={invoice.paid_amount}
+        invoice={{
+          amount: invoice.amount,
+          paid_amount: invoice.paid_amount,
+          currency: invoice.currency,
+        }}
       />
     </div>
   );

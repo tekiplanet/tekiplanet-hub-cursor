@@ -27,6 +27,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import { X, Plus, Trash } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
@@ -40,8 +42,13 @@ const invoiceFormSchema = z.object({
     quantity: z.number().min(1, "Quantity must be at least 1"),
     unit_price: z.number().min(0, "Price must be positive"),
     amount: z.number()
-  })).min(1, "At least one item is required")
+  })).min(1, "At least one item is required"),
+  amount: z.number().min(0.01, "Amount must be greater than 0"),
+  currency: z.string().min(3, "Please select a currency"),
+  dueDate: z.date(),
 });
+
+type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
 interface InvoiceFormDialogProps {
   open: boolean;
@@ -57,15 +64,20 @@ export default function InvoiceFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  const form = useForm<z.infer<typeof invoiceFormSchema>>({
+  const defaultValues: Partial<InvoiceFormValues> = {
+    invoice_number: '',
+    due_date: '',
+    notes: '',
+    theme_color: '#0000FF',
+    items: [{ description: '', quantity: 1, unit_price: 0, amount: 0 }],
+    amount: 0,
+    currency: "USD",
+    dueDate: new Date(),
+  };
+
+  const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
-    defaultValues: {
-      invoice_number: '',
-      due_date: '',
-      notes: '',
-      theme_color: '#0000FF',
-      items: [{ description: '', quantity: 1, unit_price: 0, amount: 0 }]
-    }
+    defaultValues: defaultValues
   });
 
   const addItem = () => {
@@ -93,7 +105,7 @@ export default function InvoiceFormDialog({
     return items.reduce((sum, item) => sum + (item.amount || 0), 0);
   };
 
-  const onSubmit = async (values: z.infer<typeof invoiceFormSchema>) => {
+  const onSubmit = async (values: InvoiceFormValues) => {
     try {
       setIsSubmitting(true);
       await businessService.createInvoice({
@@ -331,6 +343,27 @@ export default function InvoiceFormDialog({
                   </FormItem>
                 )}
               />
+
+              <div className="grid gap-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select
+                  defaultValue={form.getValues("currency")}
+                  onValueChange={(value) => form.setValue("currency", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - US Dollar</SelectItem>
+                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                    <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
+                    <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
+                    <SelectItem value="ZAR">ZAR - South African Rand</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </div>
             </form>
           </Form>
         </ScrollArea>

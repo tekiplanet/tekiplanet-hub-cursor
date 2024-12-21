@@ -67,7 +67,7 @@
         <div class="invoice-details">
             <p><strong>Invoice Number:</strong> #{{ $invoice->invoice_number }}</p>
             <p><strong>Due Date:</strong> {{ $invoice->due_date->format('M d, Y') }}</p>
-            <p><strong>Amount:</strong> <span class="amount">{{ number_format($invoice->amount, 2) }}</span></p>
+            <p><strong>Amount:</strong> <span class="amount">{{ $invoice->currency ?? 'USD' }} {{ number_format($invoice->amount, 2) }}</span></p>
         </div>
 
         @if($invoice->notes)

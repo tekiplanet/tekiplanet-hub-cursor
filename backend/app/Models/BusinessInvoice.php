@@ -14,7 +14,7 @@ class BusinessInvoice extends Model
         'customer_id',
         'invoice_number',
         'amount',
-        'paid_amount',
+        'currency',
         'due_date',
         'status',
         'payment_reminder_sent',

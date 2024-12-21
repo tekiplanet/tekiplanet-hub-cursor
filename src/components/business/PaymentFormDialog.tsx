@@ -49,21 +49,23 @@ interface PaymentFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
-  totalAmount: number;
-  paidAmount: number;
+  invoice: {
+    amount: number;
+    paid_amount: number;
+    currency?: string;
+  };
 }
 
 export default function PaymentFormDialog({
   open,
   onOpenChange,
   invoiceId,
-  totalAmount,
-  paidAmount,
+  invoice,
 }: PaymentFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const queryClient = useQueryClient();
-  const remainingAmount = totalAmount - paidAmount;
+  const remainingAmount = invoice.amount - invoice.paid_amount;
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -110,7 +112,7 @@ export default function PaymentFormDialog({
           <DialogTitle>Record Payment</DialogTitle>
           <DialogDescription>
             Record a payment for this invoice. The remaining balance is{" "}
-            {formatCurrency(remainingAmount)}.
+            {formatCurrency(remainingAmount, invoice.currency || 'USD')}.
           </DialogDescription>
         </DialogHeader>
 

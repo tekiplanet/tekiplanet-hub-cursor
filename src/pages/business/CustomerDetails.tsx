@@ -641,9 +641,7 @@ export default function CustomerDetails() {
                               {formatDate(invoice.due_date)}
                             </TableCell>
                             <TableCell>
-                              <span className="font-medium">
-                                {formatCurrency(invoice.amount)}
-                              </span>
+                              {formatCurrency(invoice.amount, invoice.currency || 'USD')}
                             </TableCell>
                             <TableCell>
                               <Badge {...getStatusBadgeProps(invoice.status_details)}>
