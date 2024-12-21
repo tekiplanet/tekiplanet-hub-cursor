@@ -1,4 +1,5 @@
-import apiClient, { isAxiosError } from '@/lib/axios';
+import axios, { isAxiosError } from 'axios';
+import { api } from '@/lib/api';
 
 export interface Enrollment {
   enrollment_id: string;
@@ -59,7 +60,7 @@ export const enrollmentService = {
       }
 
       // Proceed with enrollment if not already enrolled
-      const response = await apiClient.post('/enrollments/enroll', { course_id: courseId });
+      const response = await api.post('/enrollments/enroll', { course_id: courseId });
       
       return {
         success: true,
@@ -83,7 +84,7 @@ export const enrollmentService = {
 
   async getUserEnrollments() {
     try {
-      const response = await apiClient.get('/courses/enrolled');
+      const response = await api.get('/courses/enrolled');
       
       console.log('Full user enrollments response:', JSON.stringify(response.data, null, 2));
       
@@ -108,7 +109,7 @@ export const enrollmentService = {
   async getUserEnrolledCourses() {
     try {
       console.log('Attempting to fetch enrolled courses');
-      const response = await apiClient.get('/courses/enrolled');
+      const response = await api.get('/courses/enrolled');
       
       console.log('Enrolled courses response:', JSON.stringify(response.data, null, 2));
       
@@ -175,7 +176,7 @@ export const enrollmentService = {
 
   getCourseInstallments: async (courseId: string) => {
     try {
-      const response = await apiClient.get(`/courses/${courseId}/installments`);
+      const response = await api.get(`/courses/${courseId}/installments`);
       return response.data;
     } catch (error) {
       console.error('Failed to fetch course installments', error);
@@ -186,7 +187,7 @@ export const enrollmentService = {
   
   async getUserCourseEnrollment(courseId: number | string) {
     try {
-      const response = await apiClient.get(`/courses/${courseId}/enrollment`);
+      const response = await api.get(`/courses/${courseId}/enrollment`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course enrollment:', error);
@@ -196,7 +197,7 @@ export const enrollmentService = {
 
   async getCourseDetails(courseId: string) {
     try {
-      const response = await apiClient.get(`/courses/${courseId}/details`);
+      const response = await api.get(`/courses/${courseId}/details`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course details:', error);
@@ -206,7 +207,7 @@ export const enrollmentService = {
 
   async getCourseExams(courseId: string) {
     try {
-      const response = await apiClient.get(`/courses/${courseId}/exams`);
+      const response = await api.get(`/courses/${courseId}/exams`);
       return response;
     } catch (error) {
       console.error('Error fetching course exams:', error);
@@ -216,7 +217,7 @@ export const enrollmentService = {
 
   async processFullPayment(courseId: string, amount: number) {
     try {
-      const response = await apiClient.post('/enrollments/full-payment', {
+      const response = await api.post('/enrollments/full-payment', {
         course_id: courseId,
         amount: amount
       });
@@ -232,7 +233,7 @@ export const enrollmentService = {
 
   async processFullTuitionPayment(courseId: string, amount: number) {
     try {
-      const response = await apiClient.post('/enrollments/full-tuition-payment', {
+      const response = await api.post('/enrollments/full-tuition-payment', {
         course_id: courseId,
         amount: amount
       });
@@ -299,7 +300,7 @@ export const enrollmentService = {
         }
       }
 
-      const response = await apiClient.post('/enrollments/specific-installment-payment', {
+      const response = await api.post('/enrollments/specific-installment-payment', {
         course_id: courseId,
         installment_id: installmentId,
         amount,
@@ -369,7 +370,7 @@ export const enrollmentService = {
   }> {
     try {
       console.log('Processing initial installment plan', { courseId, amount });
-      const response = await apiClient.post('/enrollments/installment-plan', {
+      const response = await api.post('/enrollments/installment-plan', {
         course_id: courseId,
         amount: amount
       });
@@ -429,7 +430,7 @@ export const enrollmentService = {
     try {
       console.log('Processing installment payment', { installmentId, amount });
       
-      const response = await apiClient.post('/enrollments/pay-installment', {
+      const response = await api.post('/enrollments/pay-installment', {
         installment_id: installmentId,
         amount: amount
       });
@@ -465,7 +466,7 @@ export const enrollmentService = {
 
   async startExamParticipation(courseId: string, examId: string) {
     try {
-      const response = await apiClient.post(
+      const response = await api.post(
         `/courses/${courseId}/exams/${examId}/participate`
       );
       return response.data;
