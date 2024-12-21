@@ -50,8 +50,8 @@ class DatabaseSeeder extends Seeder
             ConsultingNotificationsSeeder::class,
             WorkstationPlansSeeder::class,
             ProfessionalCategorySeeder::class,
+            HustleSeeder::class,
+            HustlePaymentSeeder::class,
         ]);
-
-        $this->call(HustleSeeder::class);
     }
 }

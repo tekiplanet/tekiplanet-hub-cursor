@@ -27,6 +27,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 import ApplyHustleDialog from '@/components/hustles/ApplyHustleDialog';
 import { ChatNotificationBadge } from '@/components/hustles/ChatNotificationBadge';
 import HustleChat from '@/components/hustles/HustleChat';
+import PaymentTab from '@/components/hustles/PaymentTab';
 
 const container = {
   hidden: { opacity: 0 },
@@ -360,13 +361,19 @@ const HustleDetails = () => {
                 Details
               </TabsTrigger>
               {hustle.application_status === 'approved' && (
-                <TabsTrigger value="chat" className="flex items-center gap-2 relative">
-                  <Send className="h-4 w-4" />
-                  Chat
-                  <ChatNotificationBadge 
-                    count={hustle.unread_messages_count || 0}
-                  />
-                </TabsTrigger>
+                <>
+                  <TabsTrigger value="chat" className="flex items-center gap-2 relative">
+                    <Send className="h-4 w-4" />
+                    Chat
+                    <ChatNotificationBadge 
+                      count={hustle.unread_messages_count || 0}
+                    />
+                  </TabsTrigger>
+                  <TabsTrigger value="payments" className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Payments
+                  </TabsTrigger>
+                </>
               )}
             </TabsList>
 
@@ -408,16 +415,21 @@ const HustleDetails = () => {
             </TabsContent>
 
             {hustle.application_status === 'approved' && (
-              <TabsContent value="chat">
-                <Card className="h-[500px]">
-                  <CardHeader>
-                    <CardTitle>Chat with Admin</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0 h-[calc(500px-4rem)]">
-                    <HustleChat hustleId={id!} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              <>
+                <TabsContent value="chat">
+                  <Card className="h-[500px]">
+                    <CardHeader>
+                      <CardTitle>Chat with Admin</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 h-[calc(500px-4rem)]">
+                      <HustleChat hustleId={id!} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="payments">
+                  <PaymentTab hustle={hustle} />
+                </TabsContent>
+              </>
             )}
           </Tabs>
         </motion.div>
