@@ -140,64 +140,59 @@ class BusinessInvoice extends Model
     {
         $now = now();
         $dueDate = $this->due_date;
-        $isOverdue = $dueDate < $now && $this->status !== 'paid';
+        $effectiveStatus = $this->getEffectiveStatus();
+        $isOverdue = $effectiveStatus === self::STATUS_OVERDUE;
         $daysOverdue = $isOverdue ? $dueDate->diffInDays($now) : 0;
         $remainingAmount = $this->amount - $this->paid_amount;
 
         $details = [
-            'status' => $this->status,
+            'status' => $effectiveStatus,
             'paid_amount' => $this->paid_amount,
             'remaining_amount' => $remainingAmount,
             'is_overdue' => $isOverdue,
             'days_overdue' => $daysOverdue,
         ];
 
-        // Set label, color, and description based on status and payment
-        switch ($this->status) {
-            case 'paid':
+        // Set label, color, and description based on effective status
+        switch ($effectiveStatus) {
+            case self::STATUS_PAID:
                 $details['label'] = 'Paid';
                 $details['color'] = 'success';
                 $details['description'] = 'Payment completed';
                 break;
 
-            case 'partially_paid':
+            case self::STATUS_PARTIALLY_PAID:
                 $details['label'] = 'Partially Paid';
                 $details['color'] = 'warning';
                 $details['description'] = "Partial payment received";
                 break;
 
-            case 'sent':
-                if ($isOverdue) {
-                    $details['label'] = 'Overdue';
-                    $details['color'] = 'destructive';
-                    $details['description'] = "Payment overdue by {$daysOverdue} days";
-                } else {
-                    $details['label'] = 'Sent';
-                    $details['color'] = 'info';
-                    $details['description'] = 'Invoice sent to customer';
-                }
+            case self::STATUS_OVERDUE:
+                $details['label'] = 'Overdue';
+                $details['color'] = 'destructive';
+                $details['description'] = "Payment overdue by {$daysOverdue} days";
                 break;
 
-            case 'pending':
-                if ($isOverdue) {
-                    $details['label'] = 'Overdue';
-                    $details['color'] = 'destructive';
-                    $details['description'] = "Payment overdue by {$daysOverdue} days";
-                } else {
-                    $details['label'] = 'Pending';
-                    $details['color'] = 'muted';
-                    $details['description'] = 'Invoice not sent yet';
-                }
+            case self::STATUS_SENT:
+                $details['label'] = 'Sent';
+                $details['color'] = 'info';
+                $details['description'] = 'Invoice sent to customer';
                 break;
 
-            case 'cancelled':
+            case self::STATUS_PENDING:
+                $details['label'] = 'Pending';
+                $details['color'] = 'muted';
+                $details['description'] = 'Invoice not sent yet';
+                break;
+
+            case self::STATUS_CANCELLED:
                 $details['label'] = 'Cancelled';
                 $details['color'] = 'destructive';
                 $details['description'] = 'Invoice cancelled';
                 break;
 
             default:
-                $details['label'] = ucfirst($this->status);
+                $details['label'] = ucfirst($effectiveStatus);
                 $details['color'] = 'muted';
                 $details['description'] = '';
         }

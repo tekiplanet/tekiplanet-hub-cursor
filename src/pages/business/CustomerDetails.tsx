@@ -646,16 +646,8 @@ export default function CustomerDetails() {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <Badge 
-                                variant={
-                                  invoice.status === 'paid' 
-                                    ? 'success' 
-                                    : invoice.status === 'overdue'
-                                    ? 'destructive'
-                                    : 'secondary'
-                                }
-                              >
-                                {invoice.status}
+                              <Badge {...getStatusBadgeProps(invoice.status_details)}>
+                                {invoice.status_details?.label ?? invoice.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -691,16 +683,8 @@ export default function CustomerDetails() {
                               {formatDate(invoice.created_at)}
                             </p>
                           </div>
-                          <Badge 
-                            variant={
-                              invoice.status === 'paid' 
-                                ? 'success' 
-                                : invoice.status === 'overdue'
-                                ? 'destructive'
-                                : 'secondary'
-                            }
-                          >
-                            {invoice.status}
+                          <Badge {...getStatusBadgeProps(invoice.status_details)}>
+                            {invoice.status_details?.label ?? invoice.status}
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center text-sm">
