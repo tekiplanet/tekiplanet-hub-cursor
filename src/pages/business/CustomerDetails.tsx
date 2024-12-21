@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import { 
@@ -13,25 +13,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Tag,
-  Edit,
-  Trash,
-  FileText,
-  Plus,
-  Clock,
-  CircleDollarSign
-} from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import CustomerFormDialog from '@/components/business/CustomerFormDialog';
-import { DeleteConfirmDialog } from '@/components/business/DeleteConfirmDialog';
-import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   Table,
   TableBody,
   TableCell,
@@ -39,9 +23,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import InvoiceFormDialog from '@/components/business/InvoiceFormDialog';
+import { 
+  ArrowLeft,
+  Download,
+  Mail,
+  FileText,
+  Clock,
+  DollarSign,
+  Send,
+  AlertCircle,
+  Loader2,
+  Plus,
+  Calendar,
+  Edit,
+  Trash,
+  Phone,
+  MapPin,
+  CircleDollarSign
+} from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { getStatusBadgeProps } from "@/lib/format";
+import { toast } from 'sonner';
 import { format } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
+import InvoiceFormDialog from '@/components/business/InvoiceFormDialog';
+import CustomerFormDialog from '@/components/business/CustomerFormDialog';
+import { DeleteConfirmDialog } from '@/components/business/DeleteConfirmDialog';
 
 const CustomerDetailsSkeleton = () => (
   <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-8">
@@ -227,6 +233,145 @@ function getStatusVariant(status: string): "default" | "secondary" | "destructiv
     default:
       return "secondary";
   }
+}
+
+function InvoicesTabSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-40 bg-muted rounded animate-pulse mt-1" />
+        </div>
+        <div className="h-9 w-32 bg-muted rounded animate-pulse" />
+      </div>
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="p-4 rounded-lg border">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-32 bg-muted rounded animate-pulse mt-2" />
+              </div>
+              <div>
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+                <div className="h-5 w-24 bg-muted rounded animate-pulse mt-1" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InvoicesTab({ customerId }: { customerId: string }) {
+  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
+  const { data: invoices, isLoading } = useQuery({
+    queryKey: ['customer-invoices', customerId],
+    queryFn: () => businessService.getCustomerInvoices(customerId)
+  });
+
+  if (isLoading) {
+    return <InvoicesTabSkeleton />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-medium">Invoices</h3>
+          <p className="text-sm text-muted-foreground">
+            Manage customer invoices
+          </p>
+        </div>
+        <Button onClick={() => setIsCreateInvoiceOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Invoice
+        </Button>
+      </div>
+
+      {invoices?.length > 0 ? (
+        <div className="space-y-4">
+          {invoices.map((invoice) => (
+            <Link
+              key={invoice.id}
+              to={`invoices/${invoice.id}`}
+              className="block"
+            >
+              <div className="p-4 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">
+                        Invoice #{invoice.invoice_number}
+                      </p>
+                      <Badge {...getStatusBadgeProps(invoice.status_details)}>
+                        {invoice.status_details?.label ?? invoice.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Due {formatDate(invoice.due_date)}</span>
+                      </div>
+                      {invoice.status_details?.is_overdue && invoice.status_details.status !== 'paid' && (
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>Overdue by {invoice.status_details.days_overdue} days</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Amount</p>
+                    <div className="font-medium">
+                      {invoice.status_details?.paid_amount > 0 ? (
+                        <div className="space-y-1">
+                          <p className="text-success">
+                            {formatCurrency(invoice.status_details.paid_amount)} paid
+                          </p>
+                          {invoice.status_details.remaining_amount > 0 && (
+                            <p>
+                              {formatCurrency(invoice.status_details.remaining_amount)} due
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        formatCurrency(invoice.amount)
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-4 opacity-50" />
+              <p>No invoices created yet</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setIsCreateInvoiceOpen(true)}
+              >
+                Create First Invoice
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <InvoiceFormDialog
+        open={isCreateInvoiceOpen}
+        onOpenChange={setIsCreateInvoiceOpen}
+        customerId={customerId}
+      />
+    </div>
+  );
 }
 
 export default function CustomerDetails() {

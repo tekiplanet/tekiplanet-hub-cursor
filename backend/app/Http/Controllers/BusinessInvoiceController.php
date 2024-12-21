@@ -104,7 +104,11 @@ class BusinessInvoiceController extends Controller
             $invoices = BusinessInvoice::where('business_id', $businessProfile->id)
                 ->where('customer_id', $customerId)
                 ->with('items')
-                ->get();
+                ->get()
+                ->map(function ($invoice) {
+                    $invoice->status_details = $invoice->getStatusDetails();
+                    return $invoice;
+                });
 
             return response()->json($invoices);
         } catch (\Exception $e) {
