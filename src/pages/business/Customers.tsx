@@ -35,6 +35,7 @@ import { formatCurrency } from "@/lib/utils";
 import CustomerFormDialog from '@/components/business/CustomerFormDialog';
 import { DeleteConfirmDialog } from "@/components/business/DeleteConfirmDialog";
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const CustomerCard = ({ 
   customer, 
@@ -44,76 +45,83 @@ const CustomerCard = ({
   customer: Customer; 
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="group"
-  >
-    <Card className="hover:shadow-md transition-all cursor-pointer">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-12 w-12 border">
-            <AvatarImage src={customer.avatar} />
-            <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold truncate">{customer.name}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-3 w-3" />
-                  <span className="truncate">{customer.email}</span>
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group"
+    >
+      <Card 
+        className="hover:shadow-md transition-all cursor-pointer"
+        onClick={() => navigate(`/dashboard/business/customers/${customer.id}`)}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-12 w-12 border">
+              <AvatarImage src={customer.avatar} />
+              <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold truncate">{customer.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-3 w-3" />
+                    <span className="truncate">{customer.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-3 w-3" />
+                    <span>{customer.phone}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-3 w-3" />
-                  <span>{customer.phone}</span>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEdit(customer)}>
+                      Edit Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => onDelete(customer)}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>View Details</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onEdit(customer)}>
-                    Edit Customer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => onDelete(customer)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {customer.tags?.map((tag: string) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  <Tag className="h-3 w-3 mr-1" />
-                  {tag}
-                </Badge>
-              ))}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {customer.tags?.map((tag: string) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Total Spent</p>
-            <p className="font-semibold">{formatCurrency(customer.total_spent)}</p>
+          <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">Total Spent</p>
+              <p className="font-semibold">{formatCurrency(customer.total_spent)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Last Order</p>
+              <p className="font-semibold">{customer.last_order_date}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-muted-foreground">Last Order</p>
-            <p className="font-semibold">{customer.last_order_date}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 const EmptyState = ({ onAddCustomer }: { onAddCustomer: () => void }) => (
   <motion.div

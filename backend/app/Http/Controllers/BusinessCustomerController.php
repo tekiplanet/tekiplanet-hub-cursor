@@ -134,13 +134,53 @@ class BusinessCustomerController extends Controller
     public function show($id)
     {
         try {
-            $customer = BusinessCustomer::where('business_id', Auth::id())
-                ->where('id', $id)
-                ->firstOrFail();
+            // Get the business profile first
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
 
-            return response()->json($customer);
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+
+            $customer = BusinessCustomer::where('business_id', $businessProfile->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'address' => $customer->address,
+                'city' => $customer->city,
+                'state' => $customer->state,
+                'country' => $customer->country,
+                'tags' => $customer->tags,
+                'notes' => $customer->notes,
+                'status' => $customer->status,
+                'total_spent' => $customer->getTotalSpent(),
+                'last_order_date' => null,
+                'created_at' => $customer->created_at,
+                'updated_at' => $customer->updated_at
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Customer not found'], 404);
+            \Log::error('Error fetching customer:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch customer',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

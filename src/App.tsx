@@ -23,6 +23,7 @@ import ConsultingBookingDetails from "@/pages/ConsultingBookingDetails";
 import CreateProfileForm from '@/components/professional/CreateProfileForm';
 import CreateBusinessProfile from "@/pages/business/CreateBusinessProfile";
 import Customers from "@/pages/business/Customers";
+import CustomerDetails from "@/pages/business/CustomerDetails";
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -129,6 +130,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute>
                   <Customers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="business/customers/:customerId" 
+              element={
+                <ProtectedRoute>
+                  <CustomerDetails />
                 </ProtectedRoute>
               } 
             />
