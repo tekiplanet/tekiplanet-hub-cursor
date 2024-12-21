@@ -21,12 +21,12 @@ const DashboardHome = () => {
 
   return (
     <>
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <h1 className="text-2xl font-bold">Welcome back!</h1>
         <p className="text-muted-foreground">
           Here's an overview of your activities
         </p>
-      </div>
+      </div> */}
       {renderDashboard()}
     </>
   );

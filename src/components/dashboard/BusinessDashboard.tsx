@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Card, 
@@ -37,6 +37,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Quick Action Component
 const QuickAction = ({ icon: Icon, title, onClick, variant = "default" }) => (
@@ -51,22 +57,22 @@ const QuickAction = ({ icon: Icon, title, onClick, variant = "default" }) => (
       )}
       onClick={onClick}
     >
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
+      <CardContent className="p-3">
+        <div className="flex items-center gap-3">
           <div className={cn(
-            "p-3 rounded-xl",
+            "p-2 rounded-lg",
             variant === "primary" ? "bg-primary-foreground/10" : "bg-primary/10"
           )}>
             <Icon className={cn(
-              "h-6 w-6",
+              "h-4 w-4",
               variant === "primary" ? "text-primary-foreground" : "text-primary"
             )} />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold">{title}</h3>
+            <h3 className="text-sm font-medium">{title}</h3>
           </div>
           <ArrowRight className={cn(
-            "h-5 w-5 opacity-50",
+            "h-4 w-4 opacity-50",
             variant === "primary" ? "text-primary-foreground" : "text-foreground"
           )} />
         </div>
@@ -147,6 +153,8 @@ const ActivityItem = ({ icon: Icon, title, time, amount, status }) => (
 );
 
 export default function BusinessDashboard() {
+  const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
+
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['business-profile'],
     queryFn: businessService.checkProfile,
@@ -189,78 +197,95 @@ export default function BusinessDashboard() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Transaction
-          </Button>
-        </div>
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setIsQuickActionOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          Quick Action
+        </Button>
       </div>
 
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <QuickAction
-          icon={CircleDollarSign}
-          title="Create Invoice"
-          onClick={() => {}}
-          variant="primary"
-        />
-        <QuickAction
-          icon={Package}
-          title="Add Inventory"
-          onClick={() => {}}
-        />
-        <QuickAction
-          icon={Users}
-          title="Add Customer"
-          onClick={() => {}}
-        />
-        <QuickAction
-          icon={Wallet}
-          title="Record Payment"
-          onClick={() => {}}
-        />
-      </div>
+      {/* Quick Actions Dialog */}
+      <Dialog open={isQuickActionOpen} onOpenChange={setIsQuickActionOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Quick Actions</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <QuickAction
+              icon={CircleDollarSign}
+              title="Create Invoice"
+              onClick={() => {
+                setIsQuickActionOpen(false);
+                // Add navigation logic
+              }}
+              variant="primary"
+            />
+            <QuickAction
+              icon={Package}
+              title="Add Inventory"
+              onClick={() => {
+                setIsQuickActionOpen(false);
+                // Add navigation logic
+              }}
+            />
+            <QuickAction
+              icon={Users}
+              title="Add Customer"
+              onClick={() => {
+                setIsQuickActionOpen(false);
+                // Add navigation logic
+              }}
+            />
+            <QuickAction
+              icon={Wallet}
+              title="Record Payment"
+              onClick={() => {
+                setIsQuickActionOpen(false);
+                // Add navigation logic
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Metrics Section */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Monthly Revenue"
-          value={metrics?.revenue || "₦0"}
-          trend="up"
-          trendValue="12%"
-          icon={DollarSign}
-          isLoading={metricsLoading}
-          color="green"
-        />
-        <MetricCard
-          title="Total Customers"
-          value={metrics?.customers || "0"}
-          trend="up"
-          trendValue="8%"
-          icon={Users}
-          isLoading={metricsLoading}
-          color="blue"
-        />
-        <MetricCard
-          title="Inventory Items"
-          value={metrics?.inventory || "0"}
-          trend="down"
-          trendValue="3%"
-          icon={Package}
-          isLoading={metricsLoading}
-          color="orange"
-        />
-        <MetricCard
-          title="Pending Invoices"
-          value={metrics?.invoices || "0"}
-          icon={FileText}
-          isLoading={metricsLoading}
-          color="purple"
-        />
+      <div className="space-y-4">
+        {/* Monthly Revenue - Full Width */}
+        <div className="w-full">
+          <MetricCard
+            title="Monthly Revenue"
+            value={metrics?.revenue || "₦0"}
+            trend="up"
+            trendValue="12%"
+            icon={DollarSign}
+            isLoading={metricsLoading}
+            color="green"
+          />
+        </div>
+        
+        {/* Inventory and Customers - Two columns on mobile */}
+        <div className="grid grid-cols-2 gap-4">
+          <MetricCard
+            title="Total Customers"
+            value={metrics?.customers || "0"}
+            trend="up"
+            trendValue="8%"
+            icon={Users}
+            isLoading={metricsLoading}
+            color="blue"
+          />
+          <MetricCard
+            title="Inventory Items"
+            value={metrics?.inventory || "0"}
+            trend="down"
+            trendValue="3%"
+            icon={Package}
+            isLoading={metricsLoading}
+            color="orange"
+          />
+        </div>
       </div>
 
       {/* Main Content Tabs */}
