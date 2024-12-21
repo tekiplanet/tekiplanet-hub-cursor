@@ -250,7 +250,6 @@ export function BusinessProfileForm() {
                         <FormControl>
                           {field === 'business_type' ? (
                             <FormItem className="flex flex-col">
-                              <FormLabel>Business Type</FormLabel>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <FormControl>
