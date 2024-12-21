@@ -205,10 +205,33 @@ class BusinessCustomerController extends Controller
     public function destroy($id)
     {
         try {
-            $customer = BusinessCustomer::where('business_id', Auth::id())
-                ->where('id', $id)
-                ->firstOrFail();
+            // Get the business profile first
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
 
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+
+            // Find the customer that belongs to this business
+            $customer = BusinessCustomer::where('business_id', $businessProfile->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            \Log::info('Deleting customer:', [
+                'customer_id' => $id,
+                'business_id' => $businessProfile->id,
+                'customer_data' => $customer->toArray()
+            ]);
+
+            // Delete the customer
             $customer->delete();
 
             return response()->json([
@@ -216,7 +239,15 @@ class BusinessCustomerController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to delete customer'], 500);
+            \Log::error('Error deleting customer:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete customer',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 } 

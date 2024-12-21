@@ -28,18 +28,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/utils";
 import CustomerFormDialog from '@/components/business/CustomerFormDialog';
+import { DeleteConfirmDialog } from "@/components/business/DeleteConfirmDialog";
+import { toast } from 'react-hot-toast';
 
 const CustomerCard = ({ 
   customer, 
-  onEdit 
+  onEdit, 
+  onDelete 
 }: { 
   customer: Customer; 
   onEdit: (customer: Customer) => void;
+  onDelete: (customer: Customer) => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -77,7 +81,12 @@ const CustomerCard = ({
                   <DropdownMenuItem onClick={() => onEdit(customer)}>
                     Edit Customer
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => onDelete(customer)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -141,12 +150,16 @@ export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['business-customers'],
     queryFn: businessService.getCustomers,
     initialData: [],
   });
+
+  const queryClient = useQueryClient();
 
   const handleAddCustomer = () => {
     setIsCustomerFormOpen(true);
@@ -156,6 +169,29 @@ export default function Customers() {
     { label: 'Total Customers', value: customers?.length || '0', icon: Users },
     { label: 'Active This Month', value: '0', icon: UserPlus },
   ];
+
+  const handleDelete = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await businessService.deleteCustomer(customerToDelete.id);
+      
+      queryClient.setQueryData(['business-customers'], (old: Customer[]) => 
+        old.filter(c => c.id !== customerToDelete.id)
+      );
+
+      toast.success('Customer deleted successfully');
+      setCustomerToDelete(null);
+    } catch (error) {
+      toast.error(
+        'Failed to delete customer',
+        { description: 'Please try again later' }
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-8">
@@ -241,10 +277,20 @@ export default function Customers() {
               key={customer.id} 
               customer={customer} 
               onEdit={setCustomerToEdit}
+              onDelete={setCustomerToDelete}
             />
           ))}
         </div>
       )}
+
+      <DeleteConfirmDialog 
+        open={!!customerToDelete}
+        onOpenChange={(open) => !open && setCustomerToDelete(null)}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+        title={`Delete ${customerToDelete?.name}?`}
+        description={`Are you sure you want to delete ${customerToDelete?.name}? This action cannot be undone.`}
+      />
 
       <CustomerFormDialog 
         open={isCustomerFormOpen || !!customerToEdit}
