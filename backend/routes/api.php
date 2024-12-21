@@ -274,3 +274,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/invoices/{id}/status', [BusinessInvoiceController::class, 'updateStatus']);
     });
 });
+
+// Business Routes
+Route::middleware('auth:sanctum')->prefix('business')->group(function () {
+    // Business Profile Routes
+    Route::get('/profile', [BusinessProfileController::class, 'show']);
+    Route::post('/profile', [BusinessProfileController::class, 'store']);
+    Route::put('/profile', [BusinessProfileController::class, 'update']);
+
+    // Customer Routes
+    Route::get('/customers', [BusinessCustomerController::class, 'index']);
+    Route::post('/customers', [BusinessCustomerController::class, 'store']);
+    Route::get('/customers/{customer}', [BusinessCustomerController::class, 'show']);
+    Route::put('/customers/{customer}', [BusinessCustomerController::class, 'update']);
+    Route::delete('/customers/{customer}', [BusinessCustomerController::class, 'destroy']);
+
+    // Invoice Routes
+    Route::get('/customers/{customer}/invoices', [BusinessInvoiceController::class, 'getCustomerInvoices']);
+    Route::get('/invoices/{invoice}', [BusinessInvoiceController::class, 'getInvoice']);
+    Route::post('/invoices', [BusinessInvoiceController::class, 'store']);
+    Route::get('/invoices/{invoice}/download', [BusinessInvoiceController::class, 'downloadPDF']);
+    Route::post('/invoices/{invoice}/send', [BusinessInvoiceController::class, 'sendInvoice']);
+    Route::post('/invoices/{invoice}/payments', [BusinessInvoiceController::class, 'recordPayment']);
+    Route::put('/invoices/{invoice}/status', [BusinessInvoiceController::class, 'updateStatus']);
+});

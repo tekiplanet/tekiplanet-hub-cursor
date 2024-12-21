@@ -23,10 +23,12 @@ import {
   DollarSign,
   Send,
   AlertCircle,
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from 'sonner';
+import PaymentFormDialog from '@/components/business/PaymentFormDialog';
 
 // Status badge variants mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "success"> = {
@@ -46,6 +48,15 @@ interface InvoiceItem {
   quantity: number;
   unit_price: number;
   amount: number;
+}
+
+interface Payment {
+  id: string;
+  invoice_id: string;
+  amount: number;
+  date: string;
+  notes?: string;
+  created_at: string;
 }
 
 interface Invoice {
@@ -78,6 +89,7 @@ interface Invoice {
     phone: string;
     address?: string;
   };
+  payments: Payment[];
 }
 
 export default function InvoiceDetails() {
@@ -86,6 +98,7 @@ export default function InvoiceDetails() {
   const [activeTab, setActiveTab] = useState('details');
   const [isSending, setIsSending] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
 
   // Fetch invoice details
   const { 
@@ -331,13 +344,76 @@ export default function InvoiceDetails() {
           </TabsContent>
 
           <TabsContent value="payments">
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground text-center py-8">
-                  No payments recorded yet
-                </p>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">Payment History</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {invoice.paid_amount === 0 ? (
+                      'No payments recorded yet'
+                    ) : (
+                      `${formatCurrency(invoice.paid_amount)} paid of ${formatCurrency(invoice.amount)}`
+                    )}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setIsPaymentFormOpen(true)}
+                  disabled={invoice.status === 'paid'}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Record Payment
+                </Button>
+              </div>
+
+              {invoice.payments?.length > 0 ? (
+                <div className="space-y-4">
+                  {invoice.payments.map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="p-4 rounded-lg border bg-card"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium">
+                            {formatCurrency(payment.amount)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Recorded on {formatDate(payment.date)}
+                          </p>
+                          {payment.notes && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              {payment.notes}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline">
+                          Payment #{payment.id.split('-')[0]}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="text-center py-8 text-muted-foreground">
+                      <DollarSign className="h-8 w-8 mx-auto mb-4 opacity-50" />
+                      <p>No payments have been recorded yet</p>
+                      {invoice.status !== 'paid' && (
+                        <Button
+                          variant="outline"
+                          className="mt-4"
+                          onClick={() => setIsPaymentFormOpen(true)}
+                        >
+                          Record First Payment
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="activity">
@@ -361,6 +437,14 @@ export default function InvoiceDetails() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <PaymentFormDialog
+        open={isPaymentFormOpen}
+        onOpenChange={setIsPaymentFormOpen}
+        invoiceId={invoice.id}
+        totalAmount={invoice.amount}
+        paidAmount={invoice.paid_amount}
+      />
     </div>
   );
 }

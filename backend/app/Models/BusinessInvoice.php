@@ -64,6 +64,11 @@ class BusinessInvoice extends Model
         return $this->hasMany(BusinessInvoiceItem::class, 'invoice_id');
     }
 
+    public function payments()
+    {
+        return $this->hasMany(BusinessInvoicePayment::class, 'invoice_id');
+    }
+
     public function getRemainingAmount()
     {
         return $this->amount - $this->paid_amount;
