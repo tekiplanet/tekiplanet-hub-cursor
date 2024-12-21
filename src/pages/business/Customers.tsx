@@ -32,6 +32,7 @@ import { useQuery } from '@tanstack/react-query';
 import { businessService } from '@/services/businessService';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/utils";
+import CustomerFormDialog from '@/components/business/CustomerFormDialog';
 
 const CustomerCard = ({ customer }) => (
   <motion.div
@@ -97,17 +98,54 @@ const CustomerCard = ({ customer }) => (
   </motion.div>
 );
 
+const EmptyState = ({ onAddCustomer }: { onAddCustomer: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="text-center"
+  >
+    <Card className="border-dashed">
+      <CardContent className="py-12 px-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="p-4 bg-primary/10 rounded-full">
+            <Users className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold">No Customers Yet</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Start building your customer base by adding your first customer.
+            </p>
+          </div>
+          <Button 
+            onClick={onAddCustomer}
+            className="mt-4"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Your First Customer
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['business-customers'],
-    queryFn: businessService.getCustomers
+    queryFn: businessService.getCustomers,
+    initialData: [],
   });
 
+  const handleAddCustomer = () => {
+    setIsCustomerFormOpen(true);
+  };
+
   const stats = [
-    { label: 'Total Customers', value: '234', icon: Users },
-    { label: 'Active This Month', value: '45', icon: UserPlus },
+    { label: 'Total Customers', value: customers?.length || '0', icon: Users },
+    { label: 'Active This Month', value: '0', icon: UserPlus },
   ];
 
   return (
@@ -118,7 +156,11 @@ export default function Customers() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
-        <Button className="flex items-center gap-2" size="sm">
+        <Button 
+          className="flex items-center gap-2" 
+          size="sm"
+          onClick={handleAddCustomer}
+        >
           <Plus className="h-4 w-4" />
           Add Customer
         </Button>
@@ -147,7 +189,7 @@ export default function Customers() {
       </div>
 
       {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -157,16 +199,16 @@ export default function Customers() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" className="shrink-0">
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Customer List */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          // Loading skeleton
-          [...Array(6)].map((_, i) => (
+      {/* Customer List or Empty State */}
+      {isLoading ? (
+        // Loading skeleton
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -179,13 +221,23 @@ export default function Customers() {
                 </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          customers?.map((customer) => (
+          ))}
+        </div>
+      ) : !customers || customers.length === 0 ? (
+        <EmptyState onAddCustomer={handleAddCustomer} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {customers.map((customer) => (
             <CustomerCard key={customer.id} customer={customer} />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <CustomerFormDialog 
+        open={isCustomerFormOpen}
+        onOpenChange={setIsCustomerFormOpen}
+        mode="create"
+      />
     </div>
   );
 } 

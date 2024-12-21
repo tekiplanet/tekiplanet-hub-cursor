@@ -22,6 +22,7 @@ import ConsultingBookings from "@/pages/ConsultingBookings";
 import ConsultingBookingDetails from "@/pages/ConsultingBookingDetails";
 import CreateProfileForm from '@/components/professional/CreateProfileForm';
 import CreateBusinessProfile from "@/pages/business/CreateBusinessProfile";
+import Customers from "@/pages/business/Customers";
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -123,6 +124,14 @@ const AppContent = () => {
             <Route path="hustles/:id" element={<HustleDetails />} />
             <Route path="hustles/applications" element={<MyHustleApplications />} />
             <Route path="business/profile/create" element={<CreateBusinessProfile />} />
+            <Route 
+              path="business/customers" 
+              element={
+                <ProtectedRoute>
+                  <Customers />
+                </ProtectedRoute>
+              } 
+            />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />

@@ -15,5 +15,30 @@ export const businessService = {
     return data;
   },
 
+  getCustomers: async () => {
+    const { data } = await api.get('/business/customers');
+    return data;
+  },
+
+  createCustomer: async (customerData: CreateCustomerDto) => {
+    const { data } = await api.post('/business/customers', customerData);
+    return data;
+  },
+
+  getCustomer: async (id: string) => {
+    const { data } = await api.get(`/business/customers/${id}`);
+    return data;
+  },
+
+  updateCustomer: async (id: string, customerData: Partial<CreateCustomerDto>) => {
+    const { data } = await api.put(`/business/customers/${id}`, customerData);
+    return data;
+  },
+
+  deleteCustomer: async (id: string) => {
+    const { data } = await api.delete(`/business/customers/${id}`);
+    return data;
+  },
+
   // Add other business-related API calls
 }; 

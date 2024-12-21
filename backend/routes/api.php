@@ -31,6 +31,7 @@ use App\Http\Controllers\HustleController;
 use App\Http\Controllers\HustleApplicationController;
 use App\Http\Controllers\HustleMessageController;
 use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\BusinessCustomerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -252,4 +253,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/business/profile/check', [BusinessProfileController::class, 'checkProfile']);
     Route::post('/business/profile', [BusinessProfileController::class, 'store']);
     Route::put('/business/profile', [BusinessProfileController::class, 'update']);
+});
+
+// Business Customer Routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/business/customers', [BusinessCustomerController::class, 'index']);
+    Route::post('/business/customers', [BusinessCustomerController::class, 'store']);
+    Route::get('/business/customers/{id}', [BusinessCustomerController::class, 'show']);
+    Route::put('/business/customers/{id}', [BusinessCustomerController::class, 'update']);
+    Route::delete('/business/customers/{id}', [BusinessCustomerController::class, 'destroy']);
 });
