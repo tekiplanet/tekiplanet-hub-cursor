@@ -36,7 +36,9 @@ import {
 } from '@/components/ui/popover';
 
 const paymentFormSchema = z.object({
-  amount: z.number().min(0),
+  amount: z.number()
+    .min(0, 'Amount must be greater than 0')
+    .max(Number.MAX_SAFE_INTEGER, 'Amount is too large'),
   date: z.date(),
   notes: z.string().optional(),
 });
@@ -128,6 +130,8 @@ export default function PaymentFormDialog({
                       max={remainingAmount}
                       placeholder="Enter payment amount"
                       {...field}
+                      onChange={e => field.onChange(e.target.valueAsNumber)}
+                      value={field.value}
                     />
                   </FormControl>
                   <FormMessage />

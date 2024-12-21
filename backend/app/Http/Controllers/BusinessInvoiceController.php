@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BusinessInvoice;
 use App\Models\BusinessInvoiceItem;
 use App\Models\BusinessProfile;
+use App\Models\BusinessInvoicePayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
