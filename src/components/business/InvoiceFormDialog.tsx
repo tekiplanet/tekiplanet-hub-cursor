@@ -32,7 +32,9 @@ const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
   due_date: z.string().min(1, "Due date is required"),
   notes: z.string().optional(),
-  theme_color: z.string().optional(),
+  theme_color: z.string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
+    .default('#0000FF'),
   items: z.array(z.object({
     description: z.string().min(1, "Description is required"),
     quantity: z.number().min(1, "Quantity must be at least 1"),
@@ -151,6 +153,36 @@ export default function InvoiceFormDialog({
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="theme_color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Theme Color</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2 items-center">
+                          <Input 
+                            type="color" 
+                            {...field}
+                            className="w-[60px] h-[38px] p-1 cursor-pointer"
+                          />
+                          <Input 
+                            type="text" 
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            placeholder="#000000"
+                            className="font-mono"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Choose a color for invoice headers and accents
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

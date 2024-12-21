@@ -127,6 +127,9 @@ class BusinessInvoiceController extends Controller
                 ->where('business_id', $businessProfile->id)
                 ->findOrFail($id);
 
+            // Add status details to the response
+            $invoice->status_details = $invoice->getStatusDetails();
+
             return response()->json($invoice);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([

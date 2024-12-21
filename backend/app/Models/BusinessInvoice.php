@@ -105,4 +105,70 @@ class BusinessInvoice extends Model
     {
         return $this->status === self::STATUS_CANCELLED;
     }
+
+    public function getEffectiveStatus(): string
+    {
+        // If invoice is cancelled, return cancelled status
+        if ($this->status === self::STATUS_CANCELLED) {
+            return self::STATUS_CANCELLED;
+        }
+
+        // If invoice is fully paid, return paid status regardless of due date
+        if ($this->paid_amount >= $this->amount) {
+            return self::STATUS_PAID;
+        }
+
+        // If invoice is partially paid
+        if ($this->paid_amount > 0) {
+            // Check if it's overdue
+            if (now()->greaterThan($this->due_date)) {
+                return self::STATUS_OVERDUE;
+            }
+            return self::STATUS_PARTIALLY_PAID;
+        }
+
+        // If no payment has been made
+        if (now()->greaterThan($this->due_date)) {
+            return self::STATUS_OVERDUE;
+        }
+
+        // Return current status for other cases
+        return $this->status;
+    }
+
+    public function getStatusDetails(): array
+    {
+        $status = $this->getEffectiveStatus();
+        $color = match($status) {
+            self::STATUS_PAID => 'success',
+            self::STATUS_PARTIALLY_PAID => 'warning',
+            self::STATUS_OVERDUE => 'destructive',
+            self::STATUS_SENT => 'info',
+            self::STATUS_PENDING => 'secondary',
+            self::STATUS_CANCELLED => 'muted',
+            default => 'secondary'
+        };
+
+        $label = ucwords(str_replace('_', ' ', $status));
+        $description = match($status) {
+            self::STATUS_PAID => 'Payment completed',
+            self::STATUS_PARTIALLY_PAID => 'Partial payment received',
+            self::STATUS_OVERDUE => 'Payment is overdue',
+            self::STATUS_SENT => 'Invoice sent to customer',
+            self::STATUS_PENDING => 'Awaiting payment',
+            self::STATUS_CANCELLED => 'Invoice cancelled',
+            default => ''
+        };
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'color' => $color,
+            'description' => $description,
+            'paid_amount' => $this->paid_amount,
+            'remaining_amount' => $this->getRemainingAmount(),
+            'is_overdue' => now()->greaterThan($this->due_date),
+            'days_overdue' => now()->greaterThan($this->due_date) ? now()->diffInDays($this->due_date) : 0
+        ];
+    }
 } 

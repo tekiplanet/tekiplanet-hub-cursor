@@ -15,7 +15,7 @@ interface CreateInvoiceDto {
   amount: number;
   due_date: string;
   notes?: string;
-  theme_color?: string;
+  theme_color: string;
   items: {
     description: string;
     quantity: number;

@@ -29,6 +29,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from 'sonner';
 import PaymentFormDialog from '@/components/business/PaymentFormDialog';
+import { getStatusBadgeProps, getPaymentStatusText } from "@/lib/format";
 
 // Status badge variants mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "success"> = {
@@ -225,30 +226,42 @@ export default function InvoiceDetails() {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Status and Amount */}
               <div className="flex-1 space-y-6">
-                <div className="flex flex-wrap gap-4">
-                  <Badge 
-                    variant={statusVariants[invoice.status]}
-                    className="h-6 px-3 text-sm"
-                  >
-                    {invoice.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                  <div className="text-muted-foreground text-sm">
-                    Due {formatDate(invoice.due_date)}
-                  </div>
+                <div className="flex flex-col gap-2">
+                  {invoice.status_details ? (
+                    <>
+                      <Badge {...getStatusBadgeProps(invoice.status_details)}>
+                        {invoice.status_details.label}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground">
+                        {getPaymentStatusText(invoice.status_details)}
+                      </p>
+                      {invoice.status_details.is_overdue && invoice.status_details.status !== 'paid' && (
+                        <p className="text-sm text-destructive">
+                          Due date passed {invoice.status_details.days_overdue} days ago
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <Badge variant="secondary">
+                      {invoice.status.replace('_', ' ')}
+                    </Badge>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Amount</p>
-                    <p className="text-2xl font-bold truncate" title={formatCurrency(invoice.amount)}>
-                      {formatCurrency(invoice.amount)}
+                    <p className="text-sm font-medium text-muted-foreground">Amount Due</p>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(invoice.status_details?.remaining_amount ?? invoice.amount)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Paid Amount</p>
-                    <p className="text-2xl font-bold truncate" title={formatCurrency(invoice.paid_amount)}>
-                      {formatCurrency(invoice.paid_amount)}
-                    </p>
-                  </div>
+                  {(invoice.status_details?.paid_amount ?? 0) > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Amount Paid</p>
+                      <p className="text-2xl font-bold text-success">
+                        {formatCurrency(invoice.status_details?.paid_amount ?? 0)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
