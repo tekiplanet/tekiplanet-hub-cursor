@@ -1,13 +1,14 @@
 import { api } from '@/lib/api';
+import { apiClient } from '@/lib/axios';
 
 export const businessService = {
   checkProfile: async () => {
-    const { data } = await api.get('/business/profile/check');
+    const { data } = await apiClient.get('/business/profile/check');
     return data;
   },
 
   createProfile: async (formData: FormData) => {
-    const { data } = await api.post('/business/profile', formData, {
+    const { data } = await apiClient.post('/business/profile', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -16,37 +17,37 @@ export const businessService = {
   },
 
   getCustomers: async () => {
-    const { data } = await api.get('/business/customers');
+    const { data } = await apiClient.get('/business/customers');
     return data;
   },
 
   createCustomer: async (customerData: CreateCustomerDto) => {
-    const { data } = await api.post('/business/customers', customerData);
+    const { data } = await apiClient.post('/business/customers', customerData);
     return data;
   },
 
   getCustomer: async (id: string) => {
-    const { data } = await api.get(`/business/customers/${id}`);
+    const { data } = await apiClient.get(`/business/customers/${id}`);
     return data;
   },
 
   updateCustomer: async (id: string, customerData: Partial<CreateCustomerDto>) => {
-    const { data } = await api.put(`/business/customers/${id}`, customerData);
+    const { data } = await apiClient.put(`/business/customers/${id}`, customerData);
     return data;
   },
 
   deleteCustomer: async (id: string) => {
-    const { data } = await api.delete(`/business/customers/${id}`);
+    const { data } = await apiClient.delete(`/business/customers/${id}`);
     return data;
   },
 
   createInvoice: async (data: CreateInvoiceDto) => {
-    const { data: response } = await api.post('/business/invoices', data);
+    const { data: response } = await apiClient.post('/business/invoices', data);
     return response;
   },
 
   getCustomerInvoices: async (customerId: string) => {
-    const { data } = await api.get(`/business/customers/${customerId}/invoices`);
+    const { data } = await apiClient.get(`/business/customers/${customerId}/invoices`);
     return data;
   },
 
