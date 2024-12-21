@@ -107,5 +107,20 @@ export const hustleService = {
   getMyApplications: async () => {
     const { data } = await api.get('/hustle-applications');
     return data.applications;
+  },
+
+  getMessages: async (hustleId: string) => {
+    const { data } = await api.get(`/hustles/${hustleId}/messages`);
+    return data.messages;
+  },
+
+  sendMessage: async (hustleId: string, message: string) => {
+    const { data } = await api.post(`/hustles/${hustleId}/messages`, { message });
+    return data;
+  },
+
+  markMessagesAsRead: async (hustleId: string) => {
+    const { data } = await api.post(`/hustles/${hustleId}/messages/mark-read`);
+    return data;
   }
 }; 

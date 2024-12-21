@@ -25,6 +25,8 @@ import { toast } from 'sonner';
 import { hustleService, type Hustle } from '@/services/hustleService';
 import { cn, formatCurrency } from '@/lib/utils';
 import ApplyHustleDialog from '@/components/hustles/ApplyHustleDialog';
+import { ChatNotificationBadge } from '@/components/hustles/ChatNotificationBadge';
+import HustleChat from '@/components/hustles/HustleChat';
 
 const container = {
   hidden: { opacity: 0 },
@@ -358,9 +360,12 @@ const HustleDetails = () => {
                 Details
               </TabsTrigger>
               {hustle.application_status === 'approved' && (
-                <TabsTrigger value="chat" className="flex items-center gap-2">
+                <TabsTrigger value="chat" className="flex items-center gap-2 relative">
                   <Send className="h-4 w-4" />
                   Chat
+                  <ChatNotificationBadge 
+                    count={hustle.unread_messages_count || 0}
+                  />
                 </TabsTrigger>
               )}
             </TabsList>
@@ -409,10 +414,7 @@ const HustleDetails = () => {
                     <CardTitle>Chat with Admin</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 h-[calc(500px-4rem)]">
-                    {/* Chat interface will be implemented next */}
-                    <div className="text-center text-muted-foreground">
-                      Chat feature coming soon
-                    </div>
+                    <HustleChat hustleId={id!} />
                   </CardContent>
                 </Card>
               </TabsContent>
