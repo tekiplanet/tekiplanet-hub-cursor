@@ -24,7 +24,8 @@ class BusinessCustomer extends Model
     ];
 
     protected $casts = [
-        'tags' => 'array'
+        'tags' => 'array',
+        'status' => 'string'
     ];
 
     public function business()

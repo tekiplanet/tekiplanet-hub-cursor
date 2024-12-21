@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessCustomer;
+use App\Models\BusinessProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -12,8 +13,16 @@ class BusinessCustomerController extends Controller
     public function index()
     {
         try {
-            $customers = BusinessCustomer::where('business_id', Auth::id())
-                ->with(['transactions']) // If you have transactions relationship
+            // Get the business profile first
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
+
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+
+            $customers = BusinessCustomer::where('business_id', $businessProfile->id)
                 ->get()
                 ->map(function ($customer) {
                     return [
@@ -28,22 +37,38 @@ class BusinessCustomerController extends Controller
                         'tags' => $customer->tags,
                         'notes' => $customer->notes,
                         'status' => $customer->status,
-                        'total_spent' => $customer->transactions->sum('amount'),
-                        'last_order_date' => $customer->transactions->max('created_at'),
+                        'total_spent' => $customer->getTotalSpent(), // Using the model method
+                        'last_order_date' => null, // Update this when you have orders
                         'created_at' => $customer->created_at,
                         'updated_at' => $customer->updated_at
                     ];
                 });
 
+            \Log::info('Fetched customers:', [
+                'count' => $customers->count(),
+                'business_id' => $businessProfile->id,
+                'customers' => $customers->toArray()
+            ]);
+
             return response()->json($customers);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to fetch customers'], 500);
+            \Log::error('Failed to fetch customers:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to fetch customers',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     public function store(Request $request)
     {
         try {
+            \Log::info('Creating customer with data:', $request->all());
+
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'nullable|email|max:255',
@@ -63,8 +88,17 @@ class BusinessCustomerController extends Controller
                 ], 422);
             }
 
+            // Get the business profile ID
+            $businessProfile = BusinessProfile::where('user_id', Auth::id())->first();
+
+            if (!$businessProfile) {
+                return response()->json([
+                    'message' => 'Business profile not found'
+                ], 404);
+            }
+
             $customer = BusinessCustomer::create([
-                'business_id' => Auth::id(),
+                'business_id' => $businessProfile->id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
@@ -77,13 +111,23 @@ class BusinessCustomerController extends Controller
                 'status' => 'active'
             ]);
 
+            \Log::info('Customer created successfully:', $customer->toArray());
+
             return response()->json([
                 'message' => 'Customer created successfully',
                 'customer' => $customer
             ], 201);
 
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create customer'], 500);
+            \Log::error('Error creating customer:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to create customer',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
