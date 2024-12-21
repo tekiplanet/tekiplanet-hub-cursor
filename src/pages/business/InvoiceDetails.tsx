@@ -175,197 +175,163 @@ export default function InvoiceDetails() {
         </div>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Main Content */}
+      <div className="grid gap-6">
+        {/* Summary Card */}
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Status</span>
-              <Badge variant={statusVariants[invoice.status]}>
-                {invoice.status.replace('_', ' ').toUpperCase()}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Total Amount</span>
-              <span className="text-2xl font-bold">
-                {formatCurrency(invoice.amount)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Paid Amount</span>
-              <span className="text-2xl font-bold">
-                {formatCurrency(invoice.paid_amount)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Due Date</span>
-              <span className="font-medium">
-                {formatDate(invoice.due_date)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="details" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Details
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Payments
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Activity
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details" className="space-y-6">
-          {/* Invoice Details Content */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Business Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Business Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="font-medium">{invoice.business.business_name}</p>
-                <p className="text-sm text-muted-foreground">{invoice.business.email}</p>
-                <p className="text-sm text-muted-foreground">{invoice.business.phone}</p>
-                <p className="text-sm text-muted-foreground">{invoice.business.address}</p>
-              </CardContent>
-            </Card>
-
-            {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Customer Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="font-medium">{invoice.customer.name}</p>
-                <p className="text-sm text-muted-foreground">{invoice.customer.email}</p>
-                <p className="text-sm text-muted-foreground">{invoice.customer.phone}</p>
-                {invoice.customer.address && (
-                  <p className="text-sm text-muted-foreground">{invoice.customer.address}</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Invoice Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Invoice Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <table className="min-w-full divide-y divide-border">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="px-4 py-3 text-left text-sm font-medium">Description</th>
-                      <th className="px-4 py-3 text-center text-sm font-medium">Quantity</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Unit Price</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {invoice.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="px-4 py-3 text-sm">{item.description}</td>
-                        <td className="px-4 py-3 text-sm text-center">{item.quantity}</td>
-                        <td className="px-4 py-3 text-sm text-right">
-                          {formatCurrency(item.unit_price)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right">
-                          {formatCurrency(item.amount)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-muted/50">
-                      <td colSpan={3} className="px-4 py-3 text-sm font-medium text-right">
-                        Total:
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-right">
-                        {formatCurrency(invoice.amount)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notes Section */}
-          {invoice.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {invoice.notes}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="payments" className="space-y-6">
-          {/* Payments Content - To be implemented */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Payment History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                No payments recorded yet
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="activity" className="space-y-6">
-          {/* Activity Timeline - To be implemented */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Activity Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Status and Amount */}
+              <div className="flex-1 space-y-6">
+                <div className="flex flex-wrap gap-4">
+                  <Badge 
+                    variant={statusVariants[invoice.status]}
+                    className="h-6 px-3 text-sm"
+                  >
+                    {invoice.status.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                  <div className="text-muted-foreground text-sm">
+                    Due {formatDate(invoice.due_date)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Amount</p>
+                    <p className="text-2xl font-bold truncate" title={formatCurrency(invoice.amount)}>
+                      {formatCurrency(invoice.amount)}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Invoice Created</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(invoice.created_at)}
+                    <p className="text-sm text-muted-foreground">Paid Amount</p>
+                    <p className="text-2xl font-bold truncate" title={formatCurrency(invoice.paid_amount)}>
+                      {formatCurrency(invoice.paid_amount)}
                     </p>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+
+              {/* Business and Customer Info */}
+              <div className="flex-1 grid gap-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">From</p>
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">{invoice.business.business_name}</p>
+                    <p>{invoice.business.email}</p>
+                    <p>{invoice.business.phone}</p>
+                    <p>{invoice.business.address}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">To</p>
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">{invoice.customer.name}</p>
+                    <p>{invoice.customer.email}</p>
+                    <p>{invoice.customer.phone}</p>
+                    {invoice.customer.address && <p>{invoice.customer.address}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabs Section */}
+        <Tabs defaultValue="items" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="items" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Items
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Payments
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Activity
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="items">
+            <div className="space-y-4">
+              {invoice.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm line-clamp-2">
+                          {item.description}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span>Quantity:</span>
+                            <span className="text-foreground font-medium">{item.quantity}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span>Unit Price:</span>
+                            <span className="text-foreground font-medium">{formatCurrency(item.unit_price)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Amount</p>
+                        <p className="font-medium">{formatCurrency(item.amount)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Total Section */}
+              <div className="mt-6 flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <p className="font-medium">Total Amount</p>
+                <p className="text-lg font-bold">{formatCurrency(invoice.amount)}</p>
+              </div>
+
+              {/* Notes Section */}
+              {invoice.notes && (
+                <div className="mt-6 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Notes</p>
+                  <p className="whitespace-pre-wrap">{invoice.notes}</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground text-center py-8">
+                  No payments recorded yet
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="mt-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Invoice Created</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(invoice.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

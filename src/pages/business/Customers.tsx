@@ -37,6 +37,18 @@ import { DeleteConfirmDialog } from "@/components/business/DeleteConfirmDialog";
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  avatar?: string;
+  tags?: string[];
+  total_spent: number;
+  last_order_date: string;
+}
+
 const CustomerCard = ({ 
   customer, 
   onEdit, 
@@ -54,50 +66,52 @@ const CustomerCard = ({
       animate={{ opacity: 1, y: 0 }}
       className="group"
     >
-      <Card 
-        className="hover:shadow-md transition-all cursor-pointer"
+      <div 
+        className="p-4 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer flex flex-col"
         onClick={() => navigate(`/dashboard/business/customers/${customer.id}`)}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12 border">
-              <AvatarImage src={customer.avatar} />
-              <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-semibold truncate">{customer.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-start gap-4">
+          <Avatar className="h-10 w-10 border">
+            <AvatarImage src={customer.avatar} />
+            <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold truncate">{customer.name}</h3>
+                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <Mail className="h-3 w-3" />
                     <span className="truncate">{customer.email}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <Phone className="h-3 w-3" />
                     <span>{customer.phone}</span>
                   </div>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEdit(customer)}>
-                      Edit Customer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive"
-                      onClick={() => onDelete(customer)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>View Details</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(customer)}>
+                    Edit Customer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => onDelete(customer)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            {customer.tags?.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {customer.tags?.map((tag: string) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
                     <Tag className="h-3 w-3 mr-1" />
@@ -105,20 +119,20 @@ const CustomerCard = ({
                   </Badge>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-          <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Total Spent</p>
-              <p className="font-semibold">{formatCurrency(customer.total_spent)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last Order</p>
-              <p className="font-semibold">{customer.last_order_date}</p>
-            </div>
+        </div>
+        <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
+          <div>
+            <p className="text-muted-foreground text-xs">Total Spent</p>
+            <p className="font-medium">{formatCurrency(customer.total_spent)}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-right">
+            <p className="text-muted-foreground text-xs">Last Order</p>
+            <p className="font-medium">{customer.last_order_date}</p>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -129,28 +143,24 @@ const EmptyState = ({ onAddCustomer }: { onAddCustomer: () => void }) => (
     animate={{ opacity: 1, y: 0 }}
     className="text-center"
   >
-    <Card className="border-dashed">
-      <CardContent className="py-12 px-4">
-        <div className="flex flex-col items-center gap-4">
-          <div className="p-4 bg-primary/10 rounded-full">
-            <Users className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold">No Customers Yet</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-              Start building your customer base by adding your first customer.
-            </p>
-          </div>
-          <Button 
-            onClick={onAddCustomer}
-            className="mt-4"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Your First Customer
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="p-12 rounded-lg border border-dashed flex flex-col items-center gap-4">
+      <div className="p-4 bg-primary/10 rounded-full">
+        <Users className="h-8 w-8 text-primary" />
+      </div>
+      <div className="space-y-2">
+        <h3 className="text-xl font-semibold">No Customers Yet</h3>
+        <p className="text-muted-foreground max-w-sm mx-auto">
+          Start building your customer base by adding your first customer.
+        </p>
+      </div>
+      <Button 
+        onClick={onAddCustomer}
+        className="mt-4"
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Add Your First Customer
+      </Button>
+    </div>
   </motion.div>
 );
 
@@ -161,7 +171,7 @@ export default function Customers() {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: customers, isLoading } = useQuery({
+  const { data: customers, isLoading } = useQuery<Customer[]>({
     queryKey: ['business-customers'],
     queryFn: businessService.getCustomers,
     initialData: [],
@@ -185,95 +195,86 @@ export default function Customers() {
       setIsDeleting(true);
       await businessService.deleteCustomer(customerToDelete.id);
       
-      queryClient.setQueryData(['business-customers'], (old: Customer[]) => 
-        old.filter(c => c.id !== customerToDelete.id)
+      queryClient.setQueryData(['business-customers'], (old: Customer[] | undefined) => 
+        old?.filter(c => c.id !== customerToDelete.id) ?? []
       );
 
       toast.success('Customer deleted successfully');
       setCustomerToDelete(null);
     } catch (error) {
-      toast.error(
-        'Failed to delete customer',
-        { description: 'Please try again later' }
-      );
+      toast.error('Failed to delete customer', {
+        id: 'delete-customer-error'
+      });
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
+    <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-6">
+      {/* Header with Stats */}
+      <div className="flex flex-col md:flex-row gap-6 md:items-center">
+        <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer relationships</p>
+          <div className="flex items-center gap-4 mt-2 text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>{customers?.length || '0'} total</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              <span>0 this month</span>
+            </div>
+          </div>
         </div>
-        <Button 
-          className="flex items-center gap-2" 
-          size="sm"
-          onClick={handleAddCustomer}
-        >
-          <Plus className="h-4 w-4" />
-          Add Customer
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-xl font-bold">{stat.value}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Search and Filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search customers..." 
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 md:w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search customers..." 
+              className="pl-9 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button 
+            className="shrink-0" 
+            size="sm"
+            onClick={handleAddCustomer}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer
+          </Button>
         </div>
-        <Button variant="outline" size="icon" className="shrink-0">
-          <Filter className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Customer List or Empty State */}
       {isLoading ? (
-        // Loading skeleton
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                    <div className="h-3 bg-muted rounded w-1/3" />
-                  </div>
+            <div key={i} className="p-4 rounded-lg border animate-pulse">
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                  <div className="h-3 bg-muted rounded w-1/3" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <div className="space-y-1">
+                  <div className="h-2 bg-muted rounded w-16" />
+                  <div className="h-3 bg-muted rounded w-20" />
+                </div>
+                <div className="space-y-1">
+                  <div className="h-2 bg-muted rounded w-16" />
+                  <div className="h-3 bg-muted rounded w-20" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : !customers || customers.length === 0 ? (
