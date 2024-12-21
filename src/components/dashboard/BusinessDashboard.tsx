@@ -134,18 +134,21 @@ const ActivityItem = ({ icon: Icon, title, time, amount, status }) => (
   <motion.div
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
-    className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-lg cursor-pointer"
+    className="flex items-center gap-4 p-3 hover:bg-muted/50 rounded-lg cursor-pointer border border-transparent hover:border-border transition-colors"
   >
-    <div className="p-2 bg-primary/10 rounded-xl">
-      <Icon className="h-5 w-5 text-primary" />
+    <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+      <Icon className="h-4 w-4 text-primary" />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="font-medium truncate">{title}</p>
-      <p className="text-sm text-muted-foreground">{time}</p>
+      <p className="font-medium text-sm truncate">{title}</p>
+      <p className="text-xs text-muted-foreground">{time}</p>
     </div>
-    <div className="text-right">
-      <p className="font-medium">{amount}</p>
-      <Badge variant={status === 'completed' ? 'success' : 'secondary'}>
+    <div className="text-right shrink-0">
+      <p className="font-medium text-sm">{amount}</p>
+      <Badge 
+        variant={status === 'completed' ? 'success' : 'secondary'} 
+        className="text-xs"
+      >
         {status}
       </Badge>
     </div>
@@ -288,33 +291,49 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* Main Content Tabs */}
+      {/* Main Content Tabs - Fix mobile overflow */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="transactions" className="flex items-center gap-2">
-            <CircleDollarSign className="h-4 w-4" />
-            Transactions
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Inventory
-          </TabsTrigger>
-        </TabsList>
+        <div className="relative -mx-4 md:mx-0">
+          <div className="border-b overflow-x-auto scrollbar-none">
+            <div className="min-w-full inline-block px-4 md:px-0">
+              <TabsList className="flex w-auto bg-transparent p-0">
+                <TabsTrigger 
+                  value="overview" 
+                  className="flex items-center gap-1 px-3 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none whitespace-nowrap text-sm"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="transactions" 
+                  className="flex items-center gap-1 px-3 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none whitespace-nowrap text-sm"
+                >
+                  <CircleDollarSign className="h-4 w-4" />
+                  Transactions
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="inventory" 
+                  className="flex items-center gap-1 px-3 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none whitespace-nowrap text-sm"
+                >
+                  <Package className="h-4 w-4" />
+                  Inventory
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Charts Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
+          {/* Charts Grid - Stack on mobile, side by side on md screens */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Revenue Overview - Full width on mobile */}
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Revenue Overview</CardTitle>
                 <CardDescription>Monthly revenue breakdown</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[250px] md:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={metrics?.revenueData || []}>
                       <defs>
@@ -345,24 +364,43 @@ export default function BusinessDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+            {/* Recent Activity - Full width on mobile */}
+            <Card className="w-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
                   <CardDescription>Latest business transactions</CardDescription>
                 </div>
-                <Button variant="ghost" className="text-xs">View All</Button>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  View All
+                </Button>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[300px] pr-4">
-                  <ActivityItem
-                    icon={CircleDollarSign}
-                    title="Payment from John Doe"
-                    time="2 minutes ago"
-                    amount="₦45,000"
-                    status="completed"
-                  />
-                  {/* Add more activity items */}
+                <ScrollArea className="h-[250px] md:h-[300px]">
+                  <div className="space-y-1 pr-4">
+                    <ActivityItem
+                      icon={CircleDollarSign}
+                      title="Payment from John Doe"
+                      time="2 minutes ago"
+                      amount="₦45,000"
+                      status="completed"
+                    />
+                    <ActivityItem
+                      icon={CircleDollarSign}
+                      title="Invoice sent to Sarah Williams"
+                      time="1 hour ago"
+                      amount="₦120,000"
+                      status="pending"
+                    />
+                    <ActivityItem
+                      icon={CircleDollarSign}
+                      title="Payment from Tech Solutions Ltd"
+                      time="3 hours ago"
+                      amount="₦250,000"
+                      status="completed"
+                    />
+                    {/* Add more activity items */}
+                  </div>
                 </ScrollArea>
               </CardContent>
             </Card>
