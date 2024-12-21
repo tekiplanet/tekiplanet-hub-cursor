@@ -222,25 +222,28 @@ const HustleDetails = () => {
 
             {/* Application Status Section */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-4">
-              {/* Status Badge Row */}
-              {hustle.application_status && (
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={
-                      hustle.application_status === 'approved' ? 'success' :
-                      hustle.application_status === 'rejected' ? 'destructive' :
-                      'secondary'
-                    }
-                  >
-                    {hustle.application_status.toUpperCase()}
-                  </Badge>
-                  {!applicationStatus.can_apply && (
-                    <span className="text-sm text-primary">
-                      {applicationStatus.reason}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Status Badge and Reason */}
+              <div className="flex flex-col gap-2">
+                {hustle.application_status && (
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={
+                        hustle.application_status === 'approved' ? 'success' :
+                        hustle.application_status === 'rejected' ? 'destructive' :
+                        'secondary'
+                      }
+                    >
+                      {hustle.application_status.toUpperCase()}
+                    </Badge>
+                  </div>
+                )}
+                {/* Show reason if user cannot apply - moved outside the application status check */}
+                {!applicationStatus.can_apply && (
+                  <span className="text-sm text-primary">
+                    {applicationStatus.reason}
+                  </span>
+                )}
+              </div>
 
               {/* Action Button */}
               <Button 
