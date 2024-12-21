@@ -77,7 +77,8 @@ class HustleController extends Controller
                 'messages' => function($query) {
                     $query->orderBy('created_at', 'asc');
                 },
-                'messages.user'
+                'messages.user',
+                'payments'
             ])->findOrFail($id);
 
             $professional = Professional::where('user_id', Auth::id())->first();
@@ -121,7 +122,16 @@ class HustleController extends Controller
                             ],
                             'created_at' => $message->created_at->format('Y-m-d H:i:s')
                         ];
-                    }) : []
+                    }) : [],
+                    'payments' => $hustle->payments->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'amount' => $payment->amount,
+                            'payment_type' => $payment->payment_type,
+                            'status' => $payment->status,
+                            'paid_at' => $payment->paid_at ? $payment->paid_at->format('M d, Y') : null
+                        ];
+                    }),
                 ]
             ]);
 
