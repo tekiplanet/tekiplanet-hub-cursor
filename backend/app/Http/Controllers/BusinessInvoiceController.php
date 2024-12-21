@@ -473,7 +473,7 @@ class BusinessInvoiceController extends Controller
             $payment = BusinessInvoicePayment::create([
                 'invoice_id' => $invoice->id,
                 'amount' => $request->amount,
-                'date' => $request->date,
+                'payment_date' => $request->date,
                 'notes' => $request->notes
             ]);
 

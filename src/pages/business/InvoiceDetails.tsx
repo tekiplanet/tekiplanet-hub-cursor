@@ -392,7 +392,7 @@ export default function InvoiceDetails() {
                             {formatCurrency(payment.amount)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Recorded on {formatDate(payment.date)}
+                            Recorded on {formatDate(payment.payment_date)}
                           </p>
                           {payment.notes && (
                             <p className="mt-2 text-sm text-muted-foreground">
