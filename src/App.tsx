@@ -21,6 +21,7 @@ import ITConsulting from '@/pages/ITConsulting';
 import ConsultingBookings from "@/pages/ConsultingBookings";
 import ConsultingBookingDetails from "@/pages/ConsultingBookingDetails";
 import CreateProfileForm from '@/components/professional/CreateProfileForm';
+import CreateBusinessProfile from "@/pages/business/CreateBusinessProfile";
 
 // Lazy load pages
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
@@ -121,6 +122,7 @@ const AppContent = () => {
             <Route path="hustles" element={<Hustles />} />
             <Route path="hustles/:id" element={<HustleDetails />} />
             <Route path="hustles/applications" element={<MyHustleApplications />} />
+            <Route path="business/profile/create" element={<CreateBusinessProfile />} />
           </Route>
 
           <Route path="/academy/course/:courseId" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
