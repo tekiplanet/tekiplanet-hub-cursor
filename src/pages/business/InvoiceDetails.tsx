@@ -22,7 +22,8 @@ import {
   Clock,
   DollarSign,
   Send,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from 'sonner';
@@ -83,6 +84,8 @@ export default function InvoiceDetails() {
   const { customerId, invoiceId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('details');
+  const [isSending, setIsSending] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Fetch invoice details
   const { 
@@ -118,19 +121,25 @@ export default function InvoiceDetails() {
 
   const handleDownloadInvoice = async () => {
     try {
+      setIsDownloading(true);
       await businessService.downloadInvoice(invoice.id);
       toast.success('Invoice downloaded successfully');
     } catch (error) {
       toast.error('Failed to download invoice');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handleSendInvoice = async () => {
     try {
+      setIsSending(true);
       await businessService.sendInvoice(invoice.id);
       toast.success('Invoice sent successfully');
     } catch (error) {
       toast.error('Failed to send invoice');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -161,16 +170,36 @@ export default function InvoiceDetails() {
             variant="outline"
             size="sm"
             onClick={handleDownloadInvoice}
+            disabled={isDownloading}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Download
+            {isDownloading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </>
+            )}
           </Button>
           <Button 
             size="sm"
             onClick={handleSendInvoice}
+            disabled={isSending}
           >
-            <Send className="h-4 w-4 mr-2" />
-            Send Invoice
+            {isSending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Send Invoice
+              </>
+            )}
           </Button>
         </div>
       </div>
