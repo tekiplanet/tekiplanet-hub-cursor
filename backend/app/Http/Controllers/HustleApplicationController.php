@@ -15,7 +15,16 @@ class HustleApplicationController extends Controller
     public function index()
     {
         try {
-            $professional = Professional::where('user_id', Auth::id())->firstOrFail();
+            // Check if professional profile exists
+            $professional = Professional::where('user_id', Auth::id())->first();
+
+            // If no professional profile, return empty applications
+            if (!$professional) {
+                return response()->json([
+                    'applications' => [],
+                    'message' => 'No professional profile found'
+                ]);
+            }
 
             $applications = HustleApplication::with(['hustle.category'])
                 ->where('professional_id', $professional->id)
