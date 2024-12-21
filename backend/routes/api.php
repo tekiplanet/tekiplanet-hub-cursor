@@ -266,7 +266,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 // Business Invoice Routes
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/business/invoices', [BusinessInvoiceController::class, 'store']);
-    Route::get('/business/customers/{customerId}/invoices', [BusinessInvoiceController::class, 'getCustomerInvoices']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/business/invoices/{id}', [BusinessInvoiceController::class, 'getInvoice']);
+    Route::get('/business/invoices/{id}/download', [BusinessInvoiceController::class, 'downloadPDF']);
+    Route::post('/business/invoices/{id}/send', [BusinessInvoiceController::class, 'sendInvoice']);
+    Route::post('/business/invoices/{id}/payments', [BusinessInvoiceController::class, 'recordPayment']);
+    Route::patch('/business/invoices/{id}/status', [BusinessInvoiceController::class, 'updateStatus']);
 });

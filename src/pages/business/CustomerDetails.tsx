@@ -361,35 +361,83 @@ export default function CustomerDetails() {
                   No invoices found
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop View */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invoices.map((invoice) => (
+                          <TableRow key={invoice.id}>
+                            <TableCell className="font-medium">
+                              {invoice.invoice_number}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(invoice.created_at)}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(invoice.due_date)}
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">
+                                {formatCurrency(invoice.amount)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  invoice.status === 'paid' 
+                                    ? 'success' 
+                                    : invoice.status === 'overdue'
+                                    ? 'destructive'
+                                    : 'secondary'
+                                }
+                              >
+                                {invoice.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  navigate(`/dashboard/business/customers/${customerId}/invoices/${invoice.id}`);
+                                }}
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile View */}
+                  <div className="block md:hidden divide-y divide-border">
                     {invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">
-                          {invoice.invoice_number}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(invoice.created_at)}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(invoice.due_date)}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {formatCurrency(invoice.amount)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
+                      <div 
+                        key={invoice.id} 
+                        className="p-4 space-y-3"
+                        onClick={() => navigate(`/dashboard/business/customers/${customerId}/invoices/${invoice.id}`)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">#{invoice.invoice_number}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(invoice.created_at)}
+                            </p>
+                          </div>
                           <Badge 
                             variant={
                               invoice.status === 'paid' 
@@ -401,23 +449,21 @@ export default function CustomerDetails() {
                           >
                             {invoice.status}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              // Add view invoice action
-                            }}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Due Date</p>
+                            <p>{formatDate(invoice.due_date)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-muted-foreground">Amount</p>
+                            <p className="font-medium">{formatCurrency(invoice.amount)}</p>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
